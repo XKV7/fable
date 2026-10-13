@@ -155,12 +155,12 @@ export class CodexScene implements Scene {
     g.fillStyle = '#2a2238';
     g.fillRect(204, 150, 110, 2);
     const f = charFrame(c.id, this.pose());
-    g.drawImage(own ? f : tinted(f, '#05030a'), 259 - 72, 156 - 132, 144, 144);
+    g.drawImage(own ? f : tinted(f, '#05030a'), 259 - 48, 150 - 88, 96, 96);
     g.save();
     g.beginPath();
     g.rect(204, 32, 110, 128);
     g.clip();
-    g.translate(259 - 120, 110 - 150);
+    g.translate(259 - 120, 128 - 150);
     this.fx.renderFront(g, 0, 0);
     g.restore();
     const seq = this.seq();
@@ -207,7 +207,7 @@ export class CodexScene implements Scene {
       g.fillRect(x, y, 32, 32);
       g.strokeStyle = own ? RARITY_COL[w.rarity] : '#2a2238';
       g.strokeRect(x + 0.5, y + 0.5, 31, 31);
-      drawIcon(g, w.icon, x + 4, y + 4, 24, own ? w.col : '#1a1424');
+      drawIcon(g, w.icon, x + 4, y + 4, 24, own ? w.col : '#2e2640');
       if (own && own.rf > 1) text(g, `${own.rf}`, x + 29, y + 22, { size: 6, align: 'right', color: '#ffe080', bold: true });
       hot.add(`cx:${i}`, x, y, 32, 32);
     });
@@ -216,7 +216,7 @@ export class CodexScene implements Scene {
     panel(g, 200, 28, 274, 226, { border: RARITY_COL[w.rarity] });
     g.fillStyle = 'rgba(0,0,0,0.3)';
     g.fillRect(208, 36, 80, 80);
-    drawIcon(g, w.icon, 216, 44, 64, own ? w.col : '#1a1424');
+    drawIcon(g, w.icon, 216, 44, 64, own ? w.col : '#2e2640');
     stars(g, 296, 38, w.rarity, 8);
     text(g, w.name, 296, 52, { size: 10, color: '#ffffff', bold: true, maxW: 172 });
     text(g, `공격력 +${w.atk}`, 296, 68, { size: 7, color: '#c8c0d8' });

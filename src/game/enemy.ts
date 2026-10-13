@@ -100,7 +100,7 @@ export class Enemy {
         this.status.burn = 180;
         break;
       case 'bleed': {
-        this.stacks.bleed = Math.min(5 + flags.flag('poisonMax') * 0, before + n);
+        this.stacks.bleed = Math.min(5 + Math.min(3, flags.flag('poisonMax')), before + n);
         this.status.bleed = 240;
         const rup = flags.flag('bleedRupture');
         if (rup && (this.stacks.bleed ?? 0) >= 5) {

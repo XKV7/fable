@@ -7,7 +7,7 @@ export const CRESTS: CrestDef[] = [
     tiers: [
       { n: 2, desc: '공격 시 15% 확률로 화상', effects: [{ on: 'hit', chance: 0.15, do: [{ k: 'status', s: 'burn' }] }] },
       { n: 4, desc: '화상 대상 처치 시 폭발 (공격력 120%)', effects: [{ flags: { burnSpread: 1.2 } }] },
-      { n: 6, desc: '화상 피해 +100%, 화상 최대 중첩 +3', effects: [{ stats: { dotDmg: 0.6, vsBurn: 0.25 }, flags: { burnMax: 3 } }] },
+      { n: 6, desc: '화상 피해 +100%, 화상 최대 중첩 +3', effects: [{ stats: { dotDmg: 1.0 }, flags: { burnMax: 3 } }] },
     ],
   },
   {
@@ -70,7 +70,7 @@ export const CRESTS: CrestDef[] = [
     id: 'venom', name: '맹독', col: '#8bdc3a', icon: 'skull',
     tiers: [
       { n: 2, desc: '공격 시 20% 확률로 독', effects: [{ on: 'hit', chance: 0.2, do: [{ k: 'status', s: 'poison' }] }] },
-      { n: 4, desc: '독 최대 중첩 +5, 독 피해 +50%', effects: [{ flags: { poisonMax: 5 }, stats: { dotDmg: 0.3, vsPoison: 0.1 } }] },
+      { n: 4, desc: '독 최대 중첩 +5, 독 피해 +50%', effects: [{ flags: { poisonMax: 5 }, stats: { dotDmg: 0.5 } }] },
       { n: 6, desc: '독 대상 처치 시 독구름 생성', effects: [{ flags: { poisonCloud: 1 } }] },
     ],
   },

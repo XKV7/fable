@@ -328,7 +328,10 @@ export class Field {
       return;
     }
     g.globalCompositeOperation = 'lighter';
-    g.fillStyle = rgba(col, 0.18);
+    const gr = g.createLinearGradient(0, y, 0, y + d.h);
+    gr.addColorStop(0, rgba(col, 0));
+    gr.addColorStop(1, rgba(col, d.vis === 'time' || d.vis === 'void' ? 0.22 : 0.3));
+    g.fillStyle = gr;
     g.fillRect(x, y, d.w, d.h);
     if (d.vis === 'time') {
       g.strokeStyle = rgba(col, 0.6);

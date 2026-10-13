@@ -127,10 +127,10 @@ export class Hud {
       // ── 문장 요약 ──
       const cs = room.build.crests.slice(0, 6);
       if (cs.length) {
-        panel(g, 4, 210, 84, 8 + cs.length * 9, { alpha: 0.75 });
+        panel(g, 4, 92, 84, 8 + cs.length * 9, { alpha: 0.75 });
         cs.forEach((c, i) => {
           const cd = CREST_MAP[c.id];
-          const y = 214 + i * 9;
+          const y = 96 + i * 9;
           drawIcon(g, cd.icon, 8, y, 7, c.tier > 0 ? cd.col : '#6a6078');
           text(g, cd.name, 18, y, { size: 6, color: c.tier > 0 ? cd.col : '#8a8098' });
           for (let k = 0; k < 3; k++) {
@@ -141,13 +141,13 @@ export class Hud {
         });
       }
       // ── 아이템 ──
-      panel(g, 438, 228, 38, 38, { alpha: 0.85 });
+      panel(g, 88, 58, 30, 30, { alpha: 0.85 });
       const it = run.items[0];
       if (it) {
-        drawIcon(g, ITEM_ICON[it] ?? 'potion', 446, 234, 22, ITEM_MAP[it].col);
-        if (run.items.length > 1) text(g, `×${run.items.filter((x) => x === it).length}`, 470, 254, { size: 6, align: 'right', color: '#fff' });
+        drawIcon(g, ITEM_ICON[it] ?? 'potion', 93, 64, 20, ITEM_MAP[it].col);
+        if (run.items.length > 1) text(g, `+${run.items.length - 1}`, 116, 79, { size: 6, align: 'right', color: '#fff' });
       }
-      text(g, input.label('item'), 441, 230, { size: 6, color: '#ffffff', bold: true });
+      text(g, input.label('item'), 91, 59, { size: 6, color: '#ffffff', bold: true });
     }
     // ── 콤보 ──
     if (room.combo > 1) {
@@ -165,13 +165,17 @@ export class Hud {
       const f = boss.hp / boss.maxHp;
       this.bossGhost += (f - this.bossGhost) * 0.04;
       if (this.bossGhost < f) this.bossGhost = f;
-      text(g, `${boss.bd.name}`, 240, 238, { size: 9, align: 'center', color: '#ffd0e0', bold: true });
-      text(g, boss.bd.title, 240, 249, { size: 6, align: 'center', color: '#a090b0' });
-      bar(g, 110, 258, 260, 6, f, '#d02050', '#200810', this.bossGhost);
+      const bx = 180;
+      const bw = 182;
+      g.fillStyle = 'rgba(10,4,12,0.75)';
+      g.fillRect(bx - 4, 3, bw + 8, 26);
+      text(g, `${boss.bd.name}`, bx + bw / 2, 4, { size: 8, align: 'center', color: '#ffd0e0', bold: true });
+      bar(g, bx, 16, bw, 5, f, '#d02050', '#200810', this.bossGhost);
       for (const ph of boss.bd.phases) {
         g.fillStyle = '#ffffff';
-        g.fillRect(110 + 260 * ph, 257, 1, 8);
+        g.fillRect(bx + bw * ph, 15, 1, 7);
       }
+      text(g, boss.bd.title, bx + bw / 2, 22, { size: 5, align: 'center', color: '#a090b0' });
     }
   }
 

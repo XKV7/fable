@@ -345,6 +345,7 @@ export class EventOverlay implements Overlay {
       this.ev.choices.map((c) => ({ label: c.label, disabled: (c.needGold !== undefined && run.gold < c.needGold) || (!!c.fx.usePotion && !run.items.includes('potion')) })),
       'ev',
     );
+    this.menu.sel = Math.max(0, this.menu.items.findIndex((i) => !i.disabled));
   }
   update(): 'close' | null {
     if (this.result !== null) {

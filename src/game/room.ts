@@ -347,8 +347,7 @@ export class Room {
       list.push({ def: d, elite: false, flying: !!d.flying });
     }
     // 웨이브 분할
-    const cap = Math.max(3, this.spawnE.length + this.spawnF.length);
-    const w1 = list.slice(0, Math.min(list.length, Math.max(3, Math.ceil(list.length * 0.6), Math.min(cap, list.length))));
+    const w1 = list.slice(0, list.length >= 6 ? Math.ceil(list.length * 0.6) : list.length);
     const w2 = list.slice(w1.length);
     this.waves = [w1];
     if (w2.length) this.waves.push(w2);

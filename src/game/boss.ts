@@ -37,7 +37,7 @@ export class Boss extends Enemy {
 
   constructor(id: string, x: number, y: number, curse: number) {
     const bd = BOSS_MAP[id];
-    const fake: EnemyDef = { id, name: bd.name, chapter: bd.chapter, ai: 'dummy', hp: bd.hp, atk: bd.atk, speed: 1, w: bd.w, h: bd.h, range: 0, windup: 0, cd: 0, kbRes: 1, gold: 0, col: bd.col, eliteSkill: 'enrage', weight: 0 };
+    const fake: EnemyDef = { id, name: bd.name, chapter: bd.chapter, ai: 'boss', hp: bd.hp, atk: bd.atk, speed: 1, w: bd.w, h: bd.h, range: 0, windup: 0, cd: 0, kbRes: 1, gold: 0, col: bd.col, eliteSkill: 'enrage', weight: 0 };
     super(fake, x, y, false, 1, 0, 0);
     this.bd = bd;
     this.isBoss = true;
@@ -673,7 +673,11 @@ export class Boss extends Enemy {
     let sx = 0;
     if (this.state === 'wind' && (time >> 1) % 2) sx = 1;
     draw(img, sx);
-    if (this.flash > 0 || this.dead) draw(white(img), sx);
+    if (this.flash > 0 || this.dead) {
+      g.globalAlpha = a0 * (this.dead ? 1 : 0.55);
+      draw(white(img), sx);
+      g.globalAlpha = a0;
+    }
     else if (this.status.freeze) {
       g.globalAlpha = a0 * 0.5;
       draw(tinted(img, '#bfefff'));

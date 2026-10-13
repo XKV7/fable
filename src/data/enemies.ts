@@ -1,6 +1,6 @@
 import type { ProjDef } from '../game/types';
 
-export type EnemyAI = 'melee' | 'archer' | 'flyer' | 'jumper' | 'charger' | 'turret' | 'shield' | 'teleporter' | 'caster' | 'bomber' | 'lancer' | 'golem' | 'dummy';
+export type EnemyAI = 'boss' | 'melee' | 'archer' | 'flyer' | 'jumper' | 'charger' | 'turret' | 'shield' | 'teleporter' | 'caster' | 'bomber' | 'lancer' | 'golem' | 'dummy';
 
 export interface EnemyDef {
   id: string;

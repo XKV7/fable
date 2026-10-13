@@ -176,7 +176,7 @@ export class TitleScene implements Scene {
         hot.add(`tconf:${i}`, 150 + i * 94, 144, 86, 20);
       });
     }
-    keyHint(g, [['↑↓', '선택'], ['Enter / X', '결정']], 246);
+    keyHint(g, [['W/S · ↑↓', '선택'], [`Enter / ${app.input.label('attack')}`, '결정']], 246);
     text(g, 'v1.0 · 싱글 플레이 전용 · 현실 결제 없음', 476, 260, { size: 6, align: 'right', color: '#6a6078' });
   }
 }

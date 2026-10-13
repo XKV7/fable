@@ -39,12 +39,12 @@ export class CodexScene implements Scene {
       app.go(this.back);
       return;
     }
-    if (inp.menu('tabL') || inp.pressed('skill1')) {
+    if (inp.menu('tabL')) {
       this.tab = (this.tab + 3) % 4;
       this.sel = 0;
       audio.play('select');
     }
-    if (inp.menu('tabR') || inp.pressed('skill2')) {
+    if (inp.menu('tabR')) {
       this.tab = (this.tab + 1) % 4;
       this.sel = 0;
       audio.play('select');
@@ -124,7 +124,7 @@ export class CodexScene implements Scene {
     else if (this.tab === 1) this.weaponGrid(g);
     else if (this.tab === 2) this.relicGrid(g);
     else this.crestList(g);
-    keyHint(g, [['Q/E', '탭'], ['방향키', '선택'], ['Esc', '나가기']], 258);
+    keyHint(g, [[`${app.input.label('skill1')}/${app.input.label('skill2')}`, '탭'], ['방향키', '선택'], ['Esc', '나가기']], 258);
   }
 
   private gridCell(i: number): [number, number] {

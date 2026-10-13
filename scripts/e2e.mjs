@@ -44,7 +44,7 @@ async function walkTo(hub) {
       return p.x - r.player.cx;
     }, hub);
     if (Math.abs(d) < 10) return;
-    const k = d > 0 ? 'ArrowRight' : 'ArrowLeft';
+    const k = d > 0 ? 'KeyD' : 'KeyA';
     await page.keyboard.down(k);
     await wait(Math.min(400, Math.abs(d) * 6));
     await page.keyboard.up(k);
@@ -75,13 +75,13 @@ try {
   await press('Enter', 1700);
   await shot('04_gacha_beam');
   const phase = () => page.evaluate(() => window.__app.scene.phase);
-  for (let i = 0; i < 20 && (await phase()) !== 'cards'; i++) await press('KeyX', 300);
-  await press('KeyX', 400);
-  await press('KeyX', 400);
+  for (let i = 0; i < 20 && (await phase()) !== 'cards'; i++) await press('KeyJ', 300);
+  await press('KeyJ', 400);
+  await press('KeyJ', 400);
   await shot('05_gacha_cards');
   for (let i = 0; i < 60 && (await phase()) !== 'summary'; i++) {
     if ((await phase()) === 'reveal') await shot('05b_gacha_reveal');
-    await press('KeyX', 450);
+    await press('KeyJ', 450);
   }
   await wait(400);
   await shot('06_gacha_summary');
@@ -99,17 +99,17 @@ try {
   await shot('08_run_start');
 
   step('이동/공격/점프/대시/교대');
-  await page.keyboard.down('ArrowRight');
-  for (const k of ['KeyX', 'KeyX', 'KeyX', 'KeyC', 'KeyC', 'KeyZ', 'KeyX', 'KeyX']) await press(k, 140);
-  await page.keyboard.up('ArrowRight');
+  await page.keyboard.down('KeyD');
+  for (const k of ['KeyJ', 'KeyJ', 'KeyJ', 'KeyW', 'Space', 'KeyQ', 'KeyJ', 'KeyJ']) await press(k, 140);
+  await page.keyboard.up('KeyD');
   await shot('09_run_combat');
-  await press('KeyD', 200);
+  await press('KeyG', 200);
   await shot('10_run_swap');
-  await press('KeyA', 300);
-  await press('KeyS', 300);
-  await page.keyboard.down('ArrowRight');
+  await press('KeyE', 300);
+  await press('KeyR', 300);
+  await page.keyboard.down('KeyD');
   await wait(1200);
-  await page.keyboard.up('ArrowRight');
+  await page.keyboard.up('KeyD');
   await press('Tab', 400);
   await shot('11_build');
   await press('Tab', 300);
@@ -120,7 +120,7 @@ try {
   await press('Digit4', 3000);
   await shot('12_boss_intro');
   await wait(2000);
-  for (let i = 0; i < 10; i++) await press(i % 3 === 2 ? 'KeyA' : 'KeyX', 150);
+  for (let i = 0; i < 10; i++) await press(i % 3 === 2 ? 'KeyE' : 'KeyJ', 150);
   await shot('13_boss_fight');
   const bossOk = await page.evaluate(() => !!window.__app.scene.room.boss);
   if (!bossOk) throw new Error('보스방에 보스가 없음');

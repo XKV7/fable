@@ -42,6 +42,24 @@ export interface Binding {
 export type Bindings = Record<Action, Binding>;
 
 export const DEFAULT_BINDINGS: Bindings = {
+  left: { keys: ['KeyA'], pad: [14] },
+  right: { keys: ['KeyD'], pad: [15] },
+  up: { keys: ['KeyW'], pad: [12] },
+  down: { keys: ['KeyS'], pad: [13] },
+  jump: { keys: ['KeyW', 'Space'], pad: [0] },
+  attack: { keys: ['KeyJ'], pad: [2] },
+  dash: { keys: ['KeyQ'], pad: [1, 7] },
+  skill1: { keys: ['KeyE'], pad: [4] },
+  skill2: { keys: ['KeyR'], pad: [5] },
+  swap: { keys: ['KeyG'], pad: [3] },
+  interact: { keys: ['KeyF'], pad: [11] },
+  item: { keys: ['KeyK'], pad: [6] },
+  build: { keys: ['Tab'], pad: [8] },
+  pause: { keys: ['Escape'], pad: [9] },
+};
+
+/** 방향키 배치 프리셋 (이전 기본값) */
+export const ARROW_BINDINGS: Bindings = {
   left: { keys: ['ArrowLeft'], pad: [14] },
   right: { keys: ['ArrowRight'], pad: [15] },
   up: { keys: ['ArrowUp'], pad: [12] },
@@ -53,24 +71,6 @@ export const DEFAULT_BINDINGS: Bindings = {
   skill2: { keys: ['KeyS'], pad: [5] },
   swap: { keys: ['KeyD'], pad: [3] },
   interact: { keys: ['KeyF'], pad: [11] },
-  item: { keys: ['KeyQ'], pad: [6] },
-  build: { keys: ['Tab'], pad: [8] },
-  pause: { keys: ['Escape'], pad: [9] },
-};
-
-/** WASD 이동 프리셋: 스킬 키가 겹치므로 손 위치를 오른쪽으로 옮긴다. */
-export const WASD_BINDINGS: Bindings = {
-  left: { keys: ['KeyA'], pad: [14] },
-  right: { keys: ['KeyD'], pad: [15] },
-  up: { keys: ['KeyW'], pad: [12] },
-  down: { keys: ['KeyS'], pad: [13] },
-  jump: { keys: ['KeyK', 'Space'], pad: [0] },
-  attack: { keys: ['KeyJ'], pad: [2] },
-  dash: { keys: ['KeyL', 'ShiftLeft'], pad: [1, 7] },
-  skill1: { keys: ['KeyU'], pad: [4] },
-  skill2: { keys: ['KeyI'], pad: [5] },
-  swap: { keys: ['KeyO'], pad: [3] },
-  interact: { keys: ['KeyE'], pad: [11] },
   item: { keys: ['KeyQ'], pad: [6] },
   build: { keys: ['Tab'], pad: [8] },
   pause: { keys: ['Escape'], pad: [9] },
@@ -109,8 +109,8 @@ const MENU_KEYS: Record<MenuKey, { keys: string[]; pad: number[] }> = {
   mright: { keys: ['ArrowRight'], pad: [15] },
   mup: { keys: ['ArrowUp'], pad: [12] },
   mdown: { keys: ['ArrowDown'], pad: [13] },
-  tabL: { keys: ['KeyQ', 'PageUp'], pad: [4] },
-  tabR: { keys: ['KeyE', 'PageDown'], pad: [5] },
+  tabL: { keys: ['PageUp'], pad: [4] },
+  tabR: { keys: ['PageDown'], pad: [5] },
 };
 
 /** 키보드 + 게임패드 입력. 고정 스텝마다 poll() → 질의 → endStep(). */
@@ -246,7 +246,13 @@ export class Input {
     if (k === 'mright') return x > 0 || this.bindHeld(this.bindings.right, prev);
     if (k === 'mup') return y < 0 || this.bindHeld(this.bindings.up, prev);
     if (k === 'mdown') return y > 0 || this.bindHeld(this.bindings.down, prev);
-    if (k === 'ok') return this.bindHeld(this.bindings.attack, prev) || this.bindHeld(this.bindings.jump, prev) || this.bindHeld(this.bindings.interact, prev);
+    if (k === 'ok') {
+      const dirs = new Set([...this.bindings.left.keys, ...this.bindings.right.keys, ...this.bindings.up.keys, ...this.bindings.down.keys]);
+      const jumpKeys = { keys: this.bindings.jump.keys.filter((x) => !dirs.has(x)), pad: this.bindings.jump.pad };
+      return this.bindHeld(this.bindings.attack, prev) || this.bindHeld(jumpKeys, prev) || this.bindHeld(this.bindings.interact, prev);
+    }
+    if (k === 'tabL') return this.bindHeld(this.bindings.skill1, prev);
+    if (k === 'tabR') return this.bindHeld(this.bindings.skill2, prev);
     if (k === 'back') return this.bindHeld(this.bindings.pause, prev) || this.bindHeld(this.bindings.dash, prev);
     return false;
   }

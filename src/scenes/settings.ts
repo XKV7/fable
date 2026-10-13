@@ -1,6 +1,6 @@
 import { app, type Scene } from '../app';
 import { audio } from '../core/audio';
-import { ACTIONS, ACTION_LABELS, cloneBindings, DEFAULT_BINDINGS, keyName, padName, WASD_BINDINGS, type Action } from '../core/input';
+import { ACTIONS, ACTION_LABELS, cloneBindings, DEFAULT_BINDINGS, keyName, padName, ARROW_BINDINGS, type Action } from '../core/input';
 import { text } from '../gfx/renderer';
 import { clearSave, newSave, sanitize } from '../game/save';
 import { button, hot, keyHint, Menu, panel } from '../ui/widgets';
@@ -36,8 +36,8 @@ export class SettingsScene implements Scene {
     ];
     this.keys.items = [
       ...ACTIONS.map((a) => ({ label: `${ACTION_LABELS[a]}` })),
-      { label: '기본 배치로 (방향키)' },
-      { label: 'WASD 배치로' },
+      { label: '기본 배치로 (WASD)' },
+      { label: '방향키 배치로' },
       { label: '돌아가기' },
     ];
   }
@@ -122,10 +122,10 @@ export class SettingsScene implements Scene {
           app.persist();
           app.toast('기본 키 배치로 되돌렸다');
         } else if (i === ACTIONS.length + 1) {
-          app.save.settings.bindings = cloneBindings(WASD_BINDINGS);
+          app.save.settings.bindings = cloneBindings(ARROW_BINDINGS);
           app.applySettings();
           app.persist();
-          app.toast('WASD 배치 적용 (J 공격 · K 점프 · L 대시 · U/I 스킬 · O 교대 · E 상호작용)');
+          app.toast('방향키 배치 적용 (C 점프 · X 공격 · Z 대시 · A/S 스킬 · D 교대 · Q 아이템)');
         }
       }
       return;

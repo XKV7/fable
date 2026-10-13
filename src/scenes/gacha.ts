@@ -34,6 +34,7 @@ export class GachaScene implements Scene {
   results: PullOutcome[] = [];
   flipped = 0;
   flipT = 0;
+  flipAnim = 0;
   revealIdx = -1;
   revealT = 0;
   sparks: Spark[] = [];
@@ -117,6 +118,7 @@ export class GachaScene implements Scene {
   private flipNext(): void {
     if (this.flipped >= this.results.length) return;
     const i = this.flipped++;
+    this.flipAnim = 12;
     const r = this.results[i];
     const [x, y, w, h] = this.cardPos(i);
     this.burst(x + w / 2, y + h / 2, RARITY_COL[r.rarity], r.rarity === 5 ? 40 : r.rarity === 4 ? 20 : 8, r.rarity === 5 ? 4 : 2.5);
@@ -130,6 +132,7 @@ export class GachaScene implements Scene {
     const inp = app.input;
     this.t++;
     if (this.shakeT > 0) this.shakeT--;
+    if (this.flipAnim > 0) this.flipAnim--;
     for (const s of this.sparks) {
       s.x += s.vx;
       s.y += s.vy;
@@ -207,8 +210,10 @@ export class GachaScene implements Scene {
             this.flipNext();
             this.flipT = delay;
           }
-        } else if (this.t > 0 && (inp.menu('ok') || hot.mouse.click)) {
+        } else if (this.flipT > 0) this.flipT--;
+        else if (inp.menu('ok') || hot.mouse.click) {
           this.phase = 'summary';
+          this.flipT = 0;
           this.t = 0;
         }
         break;
@@ -235,6 +240,7 @@ export class GachaScene implements Scene {
 
   private toSummary(): void {
     this.phase = 'summary';
+    this.flipT = 0;
     this.flipped = this.results.length;
     this.t = 0;
     audio.play(`reveal_${this.maxR}`);
@@ -488,9 +494,9 @@ export class GachaScene implements Scene {
     this.results.forEach((r, i) => {
       const [x, y, w, h] = this.cardPos(i);
       const up = i < this.flipped;
-      const justFlipped = i === this.flipped - 1 && this.flipT > 6;
+      const justFlipped = i === this.flipped - 1 && this.flipAnim > 6 && this.phase === 'cards';
       if (justFlipped) {
-        const k = (this.flipT - 6) / 6;
+        const k = (this.flipAnim - 6) / 6;
         g.save();
         g.translate(x + w / 2, y + h / 2);
         g.scale(Math.max(0.05, 1 - k), 1);

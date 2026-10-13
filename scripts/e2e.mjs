@@ -74,11 +74,18 @@ try {
   await shot('03_gacha_menu');
   await press('Enter', 1700);
   await shot('04_gacha_beam');
-  await press('KeyX', 700);
-  for (let i = 0; i < 14; i++) await press('KeyX', 350);
+  const phase = () => page.evaluate(() => window.__app.scene.phase);
+  for (let i = 0; i < 20 && (await phase()) !== 'cards'; i++) await press('KeyX', 300);
+  await press('KeyX', 400);
+  await press('KeyX', 400);
   await shot('05_gacha_cards');
-  for (let i = 0; i < 6 && (await page.evaluate(() => window.__app.scene.phase)) !== 'summary'; i++) await press('KeyX', 500);
+  for (let i = 0; i < 60 && (await phase()) !== 'summary'; i++) {
+    if ((await phase()) === 'reveal') await shot('05b_gacha_reveal');
+    await press('KeyX', 450);
+  }
+  await wait(400);
   await shot('06_gacha_summary');
+  if ((await phase()) !== 'summary') throw new Error('가챠 결과 요약 화면에 도달하지 못함');
   const owned = await page.evaluate(() => Object.keys(window.__app.save.chars).length);
   if (owned < 2) throw new Error('첫 10연 후 보유 영웅이 2명 미만');
   await press('Enter', 500);

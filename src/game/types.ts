@@ -53,7 +53,8 @@ export type Trigger =
   | 'roomClear'
   | 'interval'
   | 'airHit'
-  | 'statusApplied';
+  | 'statusApplied'
+  | 'parry';
 
 export type CondKey = 'lowHp' | 'fullHp' | 'shielded' | 'airborne' | 'afterDash' | 'afterSwap' | 'comboHigh';
 
@@ -233,7 +234,7 @@ export interface Look {
   boots: string;
   cape?: string;
   eye: string;
-  weapon: 'sword' | 'greatsword' | 'daggers' | 'bow' | 'scythe' | 'flask' | 'mace' | 'staff' | 'fists' | 'spear' | 'clock' | 'rapier' | 'lance' | 'orb';
+  weapon: 'sword' | 'greatsword' | 'daggers' | 'bow' | 'scythe' | 'flask' | 'mace' | 'staff' | 'fists' | 'spear' | 'clock' | 'rapier' | 'lance' | 'orb' | 'shovel' | 'hammer' | 'none';
   wcol: string;
   wcol2: string;
   shield?: string;

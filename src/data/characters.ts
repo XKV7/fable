@@ -320,7 +320,7 @@ export const CHARACTERS: CharDef[] = [
       { name: '저주 낙인', desc: '추적하는 저주의 칼날 여섯 자루와 저주의 장을 펼친다.', cd: 9, act: { dur: 28, pose: [[0, 'castUp'], [10, 'cast']], ev: [{ t: 10, k: 'sfx', s: 'cast' }, { t: 10, k: 'proj', p: { spr: 'blade', spd: 4, life: 100, w: 12, h: 6, col: '#ff80d0', home: 0.3, el: 'shadow', st: 'bleed' }, m: 0.75, n: 6, spread: 25, ang: -60 }, { t: 10, k: 'field', f: { vis: 'blood', w: 80, h: 20, life: 180, tick: 15, m: 0.3, st: 'bleed', el: 'shadow' }, dx: 30, ground: true }] } },
     ],
     swap: { name: '교대: 몰락한 왕관', desc: '가장 가까운 적에게 순간이동해 X자로 베고 저주를 폭발시킨다.', act: { dur: 28, pose: [[0, 'dash'], [6, 'slashDown'], [14, 'slashUp']], inv: [0, 18], ev: [{ t: 0, k: 'tp', dx: 20, toEnemy: true }, { t: 6, k: 'hit', box: [-10, -18, 40, 30], m: 1.6, hs: 6, el: 'shadow', fx: { arc: 'x', r: 26, col: '#ff80d0' } }, { t: 14, k: 'nova', r: 46, m: 1.8, el: 'shadow', st: 'bleed', up: -3 }, { t: 14, k: 'sfx', s: 'explode' }] } },
-    passive: { name: '저주의 왕관', desc: '반격 성공 시 5초간 모든 피해 +30%. 피격 시 저주 파동(공격력 120%)', effects: [{ flags: { hurtWave: 1.2 } }] },
+    passive: { name: '저주의 왕관', desc: '반격 성공 시 5초간 모든 피해 +30%. 피격 시 저주 파동(공격력 120%)', effects: [{ flags: { hurtWave: 1.2 } }, { on: 'parry', do: [{ k: 'buff', id: 'seres_p', stats: { allDmg: 0.3 }, dur: 5 }] }] },
     awaken: [
       { desc: '패리 반격 피해 +40%', mods: [{ target: 'skill1', dmg: 0.4 }] },
       { desc: '저주 낙인 칼날 +4', mods: [{ target: 'skill2', count: 4 }] },

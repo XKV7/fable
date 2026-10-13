@@ -117,9 +117,9 @@ export class App {
   private update(): void {
     this.frame++;
     this.input.poll();
-    if (this.input.raw('F3')) {
+    if (this.input.raw('Backquote')) {
       this.debug = !this.debug;
-      this.toast(this.debug ? '디버그 모드 ON (F4 무적 · F5 재화 · F6 방 클리어 · F7 보스방 · F8 회복)' : '디버그 모드 OFF', '#80ffa0');
+      this.toast(this.debug ? '디버그 모드 ON (1 무적 · 2 재화 · 3 방 클리어 · 4 보스방 · 5 회복)' : '디버그 모드 OFF', '#80ffa0');
     }
     if (this.fadeDir === 1) {
       this.fade += 0.08;

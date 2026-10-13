@@ -135,7 +135,7 @@ export class Input {
 
   constructor(target: HTMLElement) {
     window.addEventListener('keydown', (e) => {
-      if (['Tab', 'Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'F3'].includes(e.code)) e.preventDefault();
+      if (['Tab', 'Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Backquote'].includes(e.code)) e.preventDefault();
       this.lastDevice = 'kb';
       if (this.captureHandler) {
         e.preventDefault();

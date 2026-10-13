@@ -115,9 +115,9 @@ try {
   await press('Tab', 300);
 
   step('디버그 치트로 보스방 이동');
-  await press('F3', 200);
-  await press('F4', 200);
-  await press('F7', 3000);
+  await press('Backquote', 200);
+  await press('Digit1', 200);
+  await press('Digit4', 3000);
   await shot('12_boss_intro');
   await wait(2000);
   for (let i = 0; i < 10; i++) await press(i % 3 === 2 ? 'KeyA' : 'KeyX', 150);

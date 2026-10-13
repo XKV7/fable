@@ -166,7 +166,7 @@ export class Hud {
       this.bossGhost += (f - this.bossGhost) * 0.04;
       if (this.bossGhost < f) this.bossGhost = f;
       const bx = 180;
-      const bw = 182;
+      const bw = 164;
       g.fillStyle = 'rgba(10,4,12,0.75)';
       g.fillRect(bx - 4, 3, bw + 8, 26);
       text(g, `${boss.bd.name}`, bx + bw / 2, 4, { size: 8, align: 'center', color: '#ffd0e0', bold: true });

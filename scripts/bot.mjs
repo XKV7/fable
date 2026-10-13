@@ -49,12 +49,13 @@ await p.evaluate(async ([chars, lv]) => {
       const below = room.world.solidPx(ahead, P.b.y + P.b.h + 4) || room.world.get(Math.floor(ahead / 16), Math.floor((P.b.y + P.b.h + 4) / 16)) === 2;
       if ((P.b.hitWall || (!below && P.b.onGround) || (e && e.cy < P.cy - 30)) && st.jc <= 0) { inp.jumpP = true; st.jc = 20; }
       if (!P.b.onGround && P.b.vy > 0 && st.jc < 10 && st.jc > 0) inp.jumpP = true;
-      inp.jumpH = true;
+      if (e && e.cy > P.cy + 30 && P.b.onGround && room.world.onOneWay(P.b)) { inp.down = true; inp.jumpP = true; }
+      inp.jumpH = !inp.down;
       if (e && Math.abs(dx) < want + 24 && Math.abs(e.cy - P.cy) < 40) {
         inp.atkP = room.time % 3 === 0;
         if (P.skillCd[0] <= 0 && Math.random() < 0.05) inp.s1P = true;
         if (P.skillCd[1] <= 0 && Math.random() < 0.04) inp.s2P = true;
-        if (e.state === 'wind' && e.st < 10 && Math.random() < 0.3) inp.dashP = true;
+        if ((e.state === 'wind' || e.state === 'skill') && e.st < 12 && Math.random() < 0.5) inp.dashP = true;
       }
       if (--st.sw <= 0 && P.canSwap() && e) { inp.swapP = true; st.sw = 400; }
     }
@@ -91,13 +92,14 @@ while (Date.now() - t0 < 600000) {
   await p.waitForTimeout(3000);
   const st = await p.evaluate(() => {
     const s = window.__app.scene;
-    if (!s.run) return { done: true, log: window.__log };
-    return { ch: s.run.chapter, node: s.run.node.type, layer: s.run.node.layer, hp: Math.round(s.run.hp), en: s.room.allEnemies().filter((e) => !e.dead).length, t: Math.round(s.room.time / 60) };
+    if (!s.room || !s.run) return { done: true, log: window.__log, cause: s.run?.stats?.cause };
+    const P = s.room.player;
+    return { ch: s.run.chapter, node: s.run.node.type, layer: s.run.node.layer, hp: Math.round(s.run.hp), t: Math.round(s.room.time / 60), px: Math.round(P.cx), py: Math.round(P.cy), cleared: s.room.cleared, waves: s.room.waves.length, en: s.room.allEnemies().filter((e) => !e.dead).map((e) => `${e.def.id}:${e.state}:${Math.round(e.cx)},${Math.round(e.cy)}:${e.hp}`) };
   });
-  if (st.done) { console.log('END', JSON.stringify(st.log)); break; }
+  if (st.done) { console.log('END', st.cause, JSON.stringify(st.log)); break; }
   const k = `${st.ch}-${st.layer}-${st.node}`;
   if (k !== last) { console.log(k, 'hp', st.hp); last = k; }
-  else if (st.t > 90) { console.log('STUCK', JSON.stringify(st)); }
+  else if (st.t > 60 && st.t % 30 < 4) { console.log('STUCK', JSON.stringify(st)); await p.screenshot({ path: `/tmp/claude-0/bot_stuck_${st.ch}_${st.layer}.png` }); }
 }
 const res = await p.evaluate(() => { const s = window.__app.scene; return s.run ? null : { cause: s.run?.stats?.cause }; });
 console.log('result', JSON.stringify(res));

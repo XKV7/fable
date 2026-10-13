@@ -28,10 +28,10 @@ export interface EnemyDef {
 /** 일반 적 16종 (챕터별 4종). 모든 공격은 windup 프레임 동안 예고 동작(번쩍임 + 느낌표)을 보인다. */
 export const ENEMIES: EnemyDef[] = [
   // ── 1장: 무너진 묘소 ──
-  { id: 'skeleton', name: '해골 병사', chapter: 1, ai: 'melee', hp: 70, atk: 9, speed: 0.75, w: 12, h: 22, range: 26, windup: 28, cd: 60, kbRes: 0, gold: 4, col: '#e8e0c8', eliteSkill: 'shockwave', weight: 4 },
-  { id: 'bone_archer', name: '해골 궁수', chapter: 1, ai: 'archer', hp: 50, atk: 8, speed: 0.6, w: 12, h: 22, range: 170, windup: 40, cd: 100, kbRes: 0, gold: 5, col: '#d8d0b0', eliteSkill: 'volley', weight: 3, proj: { spr: 'arrow', spd: 3.4, life: 120, w: 10, h: 4, col: '#d8d0b0' } },
-  { id: 'wraith', name: '방황하는 망령', chapter: 1, ai: 'flyer', hp: 55, atk: 9, speed: 0.9, w: 14, h: 16, range: 90, windup: 34, cd: 90, flying: true, kbRes: 0.2, gold: 5, col: '#80e0ff', eliteSkill: 'blink', weight: 3 },
-  { id: 'bone_shield', name: '뼈 방패병', chapter: 1, ai: 'shield', hp: 110, atk: 11, speed: 0.55, w: 14, h: 22, def: 0.1, range: 28, windup: 34, cd: 70, kbRes: 0.5, gold: 7, col: '#c8c0a0', eliteSkill: 'enrage', weight: 2 },
+  { id: 'skeleton', name: '해골 병사', chapter: 1, ai: 'melee', hp: 70, atk: 7, speed: 0.75, w: 12, h: 22, range: 26, windup: 32, cd: 60, kbRes: 0, gold: 4, col: '#e8e0c8', eliteSkill: 'shockwave', weight: 4 },
+  { id: 'bone_archer', name: '해골 궁수', chapter: 1, ai: 'archer', hp: 50, atk: 6, speed: 0.6, w: 12, h: 22, range: 170, windup: 40, cd: 100, kbRes: 0, gold: 5, col: '#d8d0b0', eliteSkill: 'volley', weight: 3, proj: { spr: 'arrow', spd: 3.4, life: 120, w: 10, h: 4, col: '#d8d0b0' } },
+  { id: 'wraith', name: '방황하는 망령', chapter: 1, ai: 'flyer', hp: 55, atk: 7, speed: 0.9, w: 14, h: 16, range: 90, windup: 34, cd: 90, flying: true, kbRes: 0.2, gold: 5, col: '#80e0ff', eliteSkill: 'blink', weight: 3 },
+  { id: 'bone_shield', name: '뼈 방패병', chapter: 1, ai: 'shield', hp: 110, atk: 9, speed: 0.55, w: 14, h: 22, def: 0.1, range: 28, windup: 34, cd: 70, kbRes: 0.5, gold: 7, col: '#c8c0a0', eliteSkill: 'enrage', weight: 2 },
   // ── 2장: 독버섯 지하수로 ──
   { id: 'slime', name: '부패 슬라임', chapter: 2, ai: 'jumper', hp: 90, atk: 12, speed: 1.4, w: 16, h: 12, range: 110, windup: 26, cd: 70, kbRes: 0.1, gold: 6, col: '#8bdc3a', eliteSkill: 'summon', weight: 4 },
   { id: 'venom_bug', name: '독충', chapter: 2, ai: 'charger', hp: 80, atk: 13, speed: 0.7, w: 18, h: 10, range: 140, windup: 34, cd: 80, kbRes: 0.2, gold: 6, col: '#a0c040', eliteSkill: 'enrage', weight: 3 },

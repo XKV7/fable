@@ -35,7 +35,7 @@ for (let r = 0; r < runs; r++) {
   while (guard++ < 400) {
     const st = await Promise.race([p.evaluate(() => {
       const s = window.__app.scene;
-      if (!s.run) return { done: true };
+      if (!s.run || !s.room) return { done: true };
       return { done: s.run.finished, ch: s.run.chapter, node: s.run.node.type, layer: s.run.node.layer, cleared: s.room.cleared, overlay: !!s.overlay, trans: s.trans };
     }), new Promise((res) => setTimeout(() => res({ hung: true }), 8000))]);
     if (st.hung) { console.log('HUNG at guard', guard, last); process.exit(2); }
@@ -59,6 +59,7 @@ for (let r = 0; r < runs; r++) {
     await p.evaluate(async () => {
       const s = window.__app.scene;
       const room = s.room;
+      if (!room) return;
       room.god = true;
       for (const e of room.allEnemies()) if (!e.dead && e.def.ai !== 'dummy' && e.state !== 'spawn') { e.hp = 1; room.damageEnemy(e, { m: 99, kind: 'proc', kb: 0, up: 0, hs: 0, dir: 0, proc: true }); }
       room.waves = room.waves.length > 1 ? room.waves.slice(1) : room.waves;
@@ -67,6 +68,7 @@ for (let r = 0; r < runs; r++) {
     const next = await p.evaluate(() => {
       const s = window.__app.scene;
       const room = s.room;
+      if (!room) return 'ended';
       if (!room.cleared) return 'fight';
       for (const pk of room.pickups) room.collect(pk);
       for (const pr of room.props) {

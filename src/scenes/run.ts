@@ -97,6 +97,7 @@ export class RunScene implements Scene {
       const gold = Math.round((14 + run.chapter * 8 + node.layer * 2) * (1 + (room.stats.gold ?? 0)));
       room.dropReward('gold', p.cx, p.cy - 30, gold, 8);
       room.dropReward('stone', p.cx, p.cy - 30, 8, 2);
+      if (run.rng.chance(0.35)) room.dropReward('heal', p.cx, p.cy - 30, 1, 1);
       app.toast('방 정화 완료', '#c0b0ff');
     } else if (node.type === 'elite') {
       const e = room.enemies.find((x) => x.elite) ?? room.enemies[0];

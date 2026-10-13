@@ -1,6 +1,7 @@
 import type { SlashFx } from './types';
 import { FONT } from '../gfx/renderer';
 import { rgba } from '../gfx/pixel';
+import { tinted } from '../gfx/sprites';
 
 export interface Particle {
   x: number;
@@ -180,8 +181,8 @@ export class Fx {
     for (const gh of this.ghosts) {
       const a = 1 - gh.life / gh.max;
       g.save();
-      g.globalAlpha = a * 0.55;
-      const img = gh.img;
+      g.globalAlpha = a * 0.6;
+      const img = tinted(gh.img, gh.col);
       const x = Math.round(gh.x - cx);
       const y = Math.round(gh.y - cy);
       if (gh.flip) {

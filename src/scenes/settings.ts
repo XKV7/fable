@@ -160,7 +160,7 @@ export class SettingsScene implements Scene {
       <div style="font-size:12px;margin-bottom:6px;color:#a8a0c0">아래 JSON을 복사해 보관하거나, 다른 데이터를 붙여넣고 [가져오기]를 누르세요.</div>
       <textarea id="savejson" style="width:100%;height:180px;background:#0a0612;color:#c8f0c8;border:1px solid #4a3a6a;font-size:11px"></textarea>
       <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
-        <button id="sv-copy">복사</button><button id="sv-dl">파일로 저장</button><button id="sv-imp">가져오기</button><button id="sv-close">닫기</button>
+        <button id="sv-copy">복사</button><button id="sv-imp">가져오기</button><button id="sv-close">닫기</button>
       </div><div id="sv-msg" style="font-size:12px;margin-top:6px;color:#ffe080"></div>`;
     document.body.appendChild(d);
     this.dom = d;
@@ -175,14 +175,6 @@ export class SettingsScene implements Scene {
         /* 클립보드 미지원 */
       }
       msg.textContent = '복사했습니다';
-    };
-    (d.querySelector('#sv-dl') as HTMLButtonElement).onclick = () => {
-      const blob = new Blob([ta.value], { type: 'application/json' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'pact_of_the_fallen_save.json';
-      a.click();
-      URL.revokeObjectURL(a.href);
     };
     (d.querySelector('#sv-imp') as HTMLButtonElement).onclick = () => {
       try {

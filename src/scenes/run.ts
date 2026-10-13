@@ -289,44 +289,25 @@ export class RunScene implements Scene {
     } else this.enterNode(t);
   }
 
-  private cheats(): void {
-    const inp = app.input;
-    const room = this.room;
-    if (inp.raw('Digit1')) {
-      room.god = !room.god;
-      app.toast(`무적 ${room.god ? 'ON' : 'OFF'}`, '#80ffa0');
+  /** 디버그 치트(4): 보스방 이동 — App의 공용 치트 처리에서 호출 */
+  debugBoss(): boolean {
+    if (this.trans > 0 || this.ended) return false;
+    const last = this.run.layers[this.run.layers.length - 1][0];
+    if (this.run.cur === last) {
+      app.toast('이미 보스방이다', '#80ffa0');
+      return true;
     }
-    if (inp.raw('Digit2')) {
-      app.save.stones += 1600;
-      app.save.crystals += 1000;
-      app.persist();
-      app.toast('영혼석 +1600, 영혼 결정 +1000', '#80ffa0');
-    }
-    if (inp.raw('Digit3')) {
-      for (const e of room.allEnemies()) if (!e.dead && e.def.ai !== 'dummy') {
-        e.hp = 1;
-        room.damageEnemy(e, { m: 99, kind: 'proc', kb: 0, up: 0, hs: 0, dir: 0, proc: true });
-      }
-      room.waves = [];
-    }
-    if (inp.raw('Digit4')) {
-      const last = this.run.layers[this.run.layers.length - 1][0];
-      app.toast('보스방으로 이동', '#80ffa0');
-      this.transTarget = last;
-      this.trans = 1;
-    }
-    if (inp.raw('Digit5')) {
-      room.heal(room.maxHp());
-      room.player.skillCd = [0, 0];
-      room.player.swapCd = 0;
-    }
+    this.overlay = null;
+    this.transTarget = last;
+    this.trans = 1;
+    app.toast('보스방으로 이동', '#80ffa0');
+    return true;
   }
 
   update(): void {
     const room = this.room;
     room.showHitboxes = app.debug;
     room.debug = app.debug;
-    if (app.debug) this.cheats();
     if (this.card.t > 0) this.card.t--;
     if (this.bossCard > 0) this.bossCard--;
     if (this.trans > 0) {

@@ -121,6 +121,7 @@ export class App {
       this.debug = !this.debug;
       this.toast(this.debug ? '디버그 모드 ON (1 무적 · 2 재화 · 3 방 클리어 · 4 보스방 · 5 회복)' : '디버그 모드 OFF', '#80ffa0');
     }
+    if (this.debug) this.cheats();
     if (this.fadeDir === 1) {
       this.fade += 0.08;
       if (this.fade >= 1) {
@@ -145,6 +146,53 @@ export class App {
     hot.mouse.click = false;
     hot.mouse.moved = false;
     if (this.scene.room) audio.intensity = this.scene.room.intensity;
+  }
+
+  /** 디버그 모드 전용 치트: 숫자 1~5 (상단 숫자열·숫자 패드 모두) */
+  private cheats(): void {
+    const key = (n: number): boolean => this.input.raw(`Digit${n}`) || this.input.raw(`Numpad${n}`);
+    const room = this.scene.room;
+    const needRoom = (): boolean => {
+      if (!room) this.toast('전투 공간(거점·런)에서만 사용할 수 있다', '#ff9090');
+      return !!room;
+    };
+    if (key(1) && needRoom()) {
+      room!.god = !room!.god;
+      this.toast(`무적 ${room!.god ? 'ON' : 'OFF'}`, '#80ffa0');
+    }
+    if (key(2)) {
+      this.save.stones += 1600;
+      this.save.crystals += 1000;
+      this.persist();
+      this.toast('영혼석 +1600, 영혼 결정 +1000', '#80ffa0');
+    }
+    if (key(3) && needRoom()) {
+      let n = 0;
+      for (const e of room!.allEnemies()) {
+        if (e.dead || e.def.ai === 'dummy') continue;
+        if ('intro' in e) {
+          const b = e as unknown as { intro: number; phaseT: number };
+          b.intro = 0;
+          b.phaseT = 0;
+        }
+        e.hp = 1;
+        room!.damageEnemy(e, { m: 99, kind: 'proc', kb: 0, up: 0, hs: 0, dir: 0, proc: true });
+        if (!e.dead) room!.killEnemy(e);
+        n++;
+      }
+      room!.waves = [];
+      this.toast(n ? `적 ${n}마리 처치` : '처치할 적이 없다', '#80ffa0');
+    }
+    if (key(4)) {
+      const s = this.scene as Scene & { debugBoss?: () => boolean };
+      if (!s.debugBoss?.()) this.toast('보스방 이동은 런 중에만 사용할 수 있다', '#ff9090');
+    }
+    if (key(5) && needRoom()) {
+      room!.heal(room!.maxHp());
+      room!.player.skillCd = [0, 0];
+      room!.player.swapCd = 0;
+      this.toast('체력·쿨타임 회복', '#80ffa0');
+    }
   }
 
   private render(): void {

@@ -873,7 +873,6 @@ export class Room {
     e.dead = true;
     e.deadT = 0;
     e.hp = 0;
-    const p = this.player;
     this.fx.burst(e.cx, e.cy, e.def.col, e.isBoss ? 60 : 18, e.isBoss ? 4 : 2.5);
     this.fx.souls(e.cx, e.cy, this.soulTarget, e.isBoss ? 30 : 5);
     this.fx.ring(e.cx, e.cy, e.def.col, 26);

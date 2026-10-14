@@ -18,7 +18,7 @@ export const PICKUPS: { five: string; four: [string, string] }[] = [
 ];
 
 export function currentPickup(save: SaveData): { five: string; four: [string, string] } {
-  return PICKUPS[save.pickupIndex % PICKUPS.length];
+  return save.pickupOverride ?? PICKUPS[save.pickupIndex % PICKUPS.length];
 }
 
 export function bannerPool(kind: BannerKind, save: SaveData): BannerPool {

@@ -1,7 +1,7 @@
 import { cloneBindings, DEFAULT_BINDINGS, type Bindings } from '../core/input';
 import { newPity, type PityState } from './gacha';
 import type { BannerKind } from '../data/gacha';
-import { STARTER_CHAR, STARTER_WEAPON } from '../data/characters';
+import { CHAR_MAP, STARTER_CHAR, STARTER_WEAPON } from '../data/characters';
 
 export interface Settings {
   music: number;
@@ -38,6 +38,8 @@ export interface SaveData {
   curseMax: number;
   loadout: { chars: [string, string]; weapon: string };
   pickupIndex: number;
+  /** 디버그: 직접 지정한 픽업 (null이면 자동 로테이션) */
+  pickupOverride: { five: string; four: [string, string] } | null;
   runsSinceRotation: number;
   tutorialDone: boolean;
   introSeen: boolean;
@@ -70,6 +72,7 @@ export function newSave(): SaveData {
     curseMax: 0,
     loadout: { chars: [STARTER_CHAR, ''], weapon: STARTER_WEAPON },
     pickupIndex: 0,
+    pickupOverride: null,
     runsSinceRotation: 0,
     tutorialDone: false,
     introSeen: false,
@@ -77,6 +80,13 @@ export function newSave(): SaveData {
     settings: defaultSettings(),
     newChars: [],
   };
+}
+
+function validOverride(o: unknown): SaveData['pickupOverride'] {
+  const v = o as SaveData['pickupOverride'];
+  if (!v || typeof v.five !== 'string' || !Array.isArray(v.four) || v.four.length !== 2) return null;
+  if (CHAR_MAP[v.five]?.rarity !== 5 || v.four.some((id) => CHAR_MAP[id]?.rarity !== 4) || v.four[0] === v.four[1]) return null;
+  return { five: v.five, four: [v.four[0], v.four[1]] };
 }
 
 /** 누락 필드 보정 (구버전/손상 데이터 대비) */
@@ -95,6 +105,7 @@ export function sanitize(raw: unknown): SaveData {
     weapons: { ...base.weapons, ...(r.weapons ?? {}) },
     loadout: r.loadout && Array.isArray(r.loadout.chars) ? { chars: [r.loadout.chars[0] ?? STARTER_CHAR, r.loadout.chars[1] ?? ''], weapon: r.loadout.weapon ?? STARTER_WEAPON } : base.loadout,
     newChars: Array.isArray(r.newChars) ? r.newChars : [],
+    pickupOverride: validOverride(r.pickupOverride),
   };
   for (const k of ['stones', 'crystals', 'curse', 'curseMax', 'pickupIndex', 'runsSinceRotation'] as const) {
     if (typeof out[k] !== 'number' || !Number.isFinite(out[k])) out[k] = base[k];

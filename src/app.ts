@@ -119,7 +119,7 @@ export class App {
     this.input.poll();
     if (this.input.raw('Backquote')) {
       this.debug = !this.debug;
-      this.toast(this.debug ? '디버그 모드 ON (1 무적 · 2 재화 · 3 방 클리어 · 4 보스방 · 5 회복)' : '디버그 모드 OFF', '#80ffa0');
+      this.toast(this.debug ? '디버그 모드 ON (1 무적 · 2 재화 · 3 방 클리어 · 4 보스방 · 5 회복 · 제단에서 P 픽업 선택)' : '디버그 모드 OFF', '#80ffa0');
     }
     if (this.debug) this.cheats();
     if (this.fadeDir === 1) {

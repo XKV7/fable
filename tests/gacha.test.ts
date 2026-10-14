@@ -135,3 +135,19 @@ describe('첫 무료 10연', () => {
     expect(res.filter((r) => r.rarity >= 4).length).toBeGreaterThanOrEqual(1);
   });
 });
+
+describe('디버그 픽업 지정', () => {
+  it('지정한 픽업이 픽업 배너 풀에 반영되고, 잘못된 값은 저장 보정에서 제거', async () => {
+    const { newSave, sanitize } = await import('../src/game/save');
+    const { bannerPool, currentPickup } = await import('../src/game/meta');
+    const s = newSave();
+    s.pickupOverride = { five: 'ignia', four: ['seira', 'freya'] };
+    expect(currentPickup(s).five).toBe('ignia');
+    const pool = bannerPool('pickup', s);
+    expect(pool.pickup5).toEqual(['ignia']);
+    expect(pool.pickup4).toEqual(['seira', 'freya']);
+    expect(sanitize(JSON.parse(JSON.stringify(s))).pickupOverride).toEqual(s.pickupOverride);
+    expect(sanitize({ ...s, pickupOverride: { five: 'kael', four: ['seira', 'freya'] } }).pickupOverride).toBeNull();
+    expect(sanitize({ ...s, pickupOverride: { five: 'ignia', four: ['seira', 'seira'] } }).pickupOverride).toBeNull();
+  });
+});

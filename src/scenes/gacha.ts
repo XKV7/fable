@@ -25,6 +25,8 @@ interface Spark {
 }
 
 const BANNERS: BannerKind[] = ['pickup', 'char', 'weapon'];
+const PICK5 = (): typeof CHARACTERS => CHARACTERS.filter((c) => c.rarity === 5);
+const PICK4 = (): typeof CHARACTERS => CHARACTERS.filter((c) => c.rarity === 4);
 
 export class GachaScene implements Scene {
   banner = 0;
@@ -41,6 +43,8 @@ export class GachaScene implements Scene {
   shakeT = 0;
   maxR: 3 | 4 | 5 = 3;
   stoneAnim = 0;
+  /** 디버그 픽업 선택 창 */
+  picker: { row: number; col: number; five: string; four: string[] } | null = null;
 
   constructor(public back: Scene) {}
 
@@ -144,6 +148,14 @@ export class GachaScene implements Scene {
     const skip = inp.menu('back');
     switch (this.phase) {
       case 'menu': {
+        if (this.picker) {
+          this.updatePicker();
+          break;
+        }
+        if (app.debug && this.kind === 'pickup' && (inp.raw('KeyP') || (hot.hover() === 'pkopen' && hot.mouse.click))) {
+          this.openPicker();
+          break;
+        }
         if (inp.menu('back')) {
           app.go(this.back);
           return;
@@ -320,6 +332,98 @@ export class GachaScene implements Scene {
     }
   }
 
+  private openPicker(): void {
+    const p = currentPickup(app.save);
+    this.picker = { row: 0, col: Math.max(0, PICK5().findIndex((c) => c.id === p.five)), five: p.five, four: [...p.four] };
+    audio.play('select');
+  }
+
+  private updatePicker(): void {
+    const pk = this.picker!;
+    const inp = app.input;
+    if (!app.debug || inp.menu('back')) {
+      this.picker = null;
+      return;
+    }
+    const rowLen = (r: number): number => (r === 0 ? PICK5().length : r === 1 ? PICK4().length : 3);
+    const prevRow = pk.row;
+    if (inp.menu('mup')) pk.row = (pk.row + 2) % 3;
+    if (inp.menu('mdown')) pk.row = (pk.row + 1) % 3;
+    if (pk.row !== prevRow) pk.col = pk.row === 2 ? 0 : Math.min(pk.col, rowLen(pk.row) - 1);
+    if (inp.menu('mleft')) pk.col--;
+    if (inp.menu('mright')) pk.col++;
+    pk.col = (pk.col + rowLen(pk.row)) % rowLen(pk.row);
+    const h = hot.hover();
+    let click = false;
+    const m = h?.match(/^pk([54b]):(\d+)$/);
+    if (m) {
+      if (hot.mouse.moved || hot.mouse.click) {
+        pk.row = m[1] === '5' ? 0 : m[1] === '4' ? 1 : 2;
+        pk.col = Number(m[2]);
+      }
+      if (hot.mouse.click) click = true;
+    }
+    if (!(inp.menu('ok') || click)) return;
+    if (pk.row === 0) {
+      pk.five = PICK5()[pk.col].id;
+      audio.play('select');
+    } else if (pk.row === 1) {
+      const id = PICK4()[pk.col].id;
+      if (pk.four.includes(id)) pk.four = pk.four.filter((x) => x !== id);
+      else {
+        pk.four.push(id);
+        if (pk.four.length > 2) pk.four.shift();
+      }
+      audio.play('select');
+    } else if (pk.col === 0) {
+      if (pk.four.length !== 2) {
+        audio.play('error');
+        app.toast('★4 픽업은 2명을 골라야 한다', '#ff8080');
+        return;
+      }
+      app.save.pickupOverride = { five: pk.five, four: [pk.four[0], pk.four[1]] };
+      app.persist();
+      audio.play('confirm');
+      app.toast(`[디버그] 픽업 지정: ${CHAR_MAP[pk.five].name} / ${pk.four.map((id) => CHAR_MAP[id].name).join(' · ')}`, '#80ffa0');
+      this.picker = null;
+    } else if (pk.col === 1) {
+      app.save.pickupOverride = null;
+      app.persist();
+      audio.play('confirm');
+      app.toast('[디버그] 자동 로테이션 픽업으로 복귀', '#80ffa0');
+      this.picker = null;
+    } else this.picker = null;
+  }
+
+  private renderPicker(g: CanvasRenderingContext2D): void {
+    const pk = this.picker!;
+    g.fillStyle = 'rgba(4,2,10,0.95)';
+    g.fillRect(0, 0, 480, 270);
+    panel(g, 36, 18, 408, 230, { border: '#80ffa0' });
+    text(g, '[디버그] 픽업 직접 선택', 46, 24, { size: 10, color: '#80ffa0', bold: true });
+    text(g, app.save.pickupOverride ? '현재: 직접 지정' : '현재: 자동 로테이션', 434, 27, { size: 6, align: 'right', color: '#a8a0c0' });
+    const cell = (c: { id: string; name: string; rarity: 3 | 4 | 5 }, x: number, y: number, w: number, on: boolean, cur: boolean, hid: string): void => {
+      g.fillStyle = on ? rgba(RARITY_COL[c.rarity], 0.4) : 'rgba(255,255,255,0.05)';
+      g.fillRect(x, y, w, 46);
+      g.strokeStyle = cur ? '#ffffff' : on ? RARITY_COL[c.rarity] : '#3a3048';
+      g.strokeRect(x + 0.5, y + 0.5, w - 1, 45);
+      g.drawImage(charFrame(c.id, on ? 'castUp' : 'idle0'), x + w / 2 - 22, y - 8, 44, 44);
+      text(g, c.name, x + w / 2, y + 36, { size: 6, align: 'center', color: on ? '#ffe080' : '#ffffff', maxW: w - 2 });
+      if (on) text(g, '✔', x + w - 3, y + 2, { size: 6, align: 'right', color: '#80ffa0', bold: true });
+      hot.add(hid, x, y, w, 46);
+    };
+    text(g, '★5 픽업 (1명)', 46, 42, { size: 7, color: RARITY_COL[5] });
+    PICK5().forEach((c, i) => cell(c, 46 + i * 52, 54, 48, pk.five === c.id, pk.row === 0 && pk.col === i, `pk5:${i}`));
+    text(g, `★4 픽업 (2명) — ${pk.four.length}/2`, 46, 108, { size: 7, color: RARITY_COL[4] });
+    PICK4().forEach((c, i) => cell(c, 46 + i * 43, 120, 41, pk.four.includes(c.id), pk.row === 1 && pk.col === i, `pk4:${i}`));
+    ['적용', '자동 로테이션 복귀', '취소'].forEach((l, i) => {
+      button(g, 70 + i * 116, 184, 108, 22, l, pk.row === 2 && pk.col === i, { col: i === 0 ? '#80ffa0' : '#9ef0ff' });
+      hot.add(`pkb:${i}`, 70 + i * 116, 184, 108, 22);
+    });
+    text(g, '천장·픽업 보장 상태는 그대로 유지된다', 240, 214, { size: 6, align: 'center', color: '#8a8098' });
+    keyHint(g, [['방향키', '이동'], [app.input.label('attack'), '선택'], ['Esc', '취소']]);
+  }
+
   ui(g: CanvasRenderingContext2D): void {
     if (this.phase === 'menu') this.renderMenu(g);
     else if (this.phase === 'throw') {
@@ -348,6 +452,7 @@ export class GachaScene implements Scene {
         keyHint(g, [[app.input.label('attack'), '확인']]);
       } else keyHint(g, [[app.input.label('attack'), '뒤집기'], ['Esc', '건너뛰기']]);
     } else if (this.phase === 'reveal') this.renderReveal(g);
+    if (this.picker) this.renderPicker(g);
     // 파티클
     g.save();
     g.globalCompositeOperation = 'lighter';
@@ -398,7 +503,16 @@ export class GachaScene implements Scene {
         text(g, CHAR_MAP[id].name, 262 + i * 36, 146, { size: 6, align: 'center', color: '#c080ff' });
       });
       text(g, '★4 픽업', 298, 156, { size: 6, align: 'center', color: '#c080ff' });
-      text(g, `런 ${GACHA.rotationRuns - save.runsSinceRotation}회 후 교체`, 336, 182, { size: 6, align: 'right', color: '#a8a0c0' });
+      text(g, save.pickupOverride ? '[디버그] 직접 지정한 픽업' : `런 ${GACHA.rotationRuns - save.runsSinceRotation}회 후 교체`, 336, 182, { size: 6, align: 'right', color: save.pickupOverride ? '#80ffa0' : '#a8a0c0' });
+      if (app.debug) {
+        const hov = hot.hover() === 'pkopen';
+        g.fillStyle = hov ? 'rgba(128,255,160,0.3)' : 'rgba(128,255,160,0.12)';
+        g.fillRect(262, 50, 76, 13);
+        g.strokeStyle = '#80ffa0';
+        g.strokeRect(262.5, 50.5, 75, 12);
+        text(g, '픽업 선택 (P)', 300, 53, { size: 6, align: 'center', color: '#80ffa0' });
+        hot.add('pkopen', 262, 50, 76, 13);
+      }
     } else if (k === 'char') {
       const show = CHARACTERS.filter((c) => c.rarity === 5);
       show.forEach((c, i) => {

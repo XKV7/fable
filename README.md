@@ -20,9 +20,14 @@ npm install && npm run dev     # http://localhost:5173
 |---|---|
 | `npm run dev` | 개발 서버 |
 | `npm run build` | 타입 체크(`tsc --noEmit`) + 프로덕션 빌드 (`dist/`) |
+| `npm run build:pages` | GitHub Pages용 빌드 (`docs/`, 상대 경로) |
 | `npm run typecheck` | 타입 체크만 |
 | `npm test` | Vitest — 가챠 확률/천장(10만 회 시뮬레이션), 문장 세트 판정, 데미지 계산 |
 | `npm run e2e` | Playwright 헤드리스 E2E (아래 참고). 스크린샷은 `screenshots/` |
+
+### 웹 배포 (GitHub Pages)
+
+`npm run build:pages`로 `docs/`를 다시 만들고 커밋하면, 저장소 **Settings → Pages**에서 *Deploy from a branch* · 이 브랜치 · `/docs` 폴더로 지정된 사이트가 자동 갱신됩니다. 주소: https://xkv7.github.io/fable/
 
 ## 조작법
 

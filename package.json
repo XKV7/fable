@@ -8,6 +8,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
+    "build:pages": "tsc --noEmit && vite build --base ./ --outDir docs --emptyOutDir && node -e \"require('fs').writeFileSync('docs/.nojekyll', '')\"",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "e2e": "node scripts/e2e.mjs"

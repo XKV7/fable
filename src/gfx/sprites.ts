@@ -56,6 +56,14 @@ export const ENEMY_LOOKS: Record<string, Look> = {
   shade: { skin: '#2a1a3a', hair: '#1a1028', hairStyle: 'hood', body: '#1a1028', trim: '#6a4aaa', legs: '#140c20', boots: '#0c0814', eye: '#c0a0ff', weapon: 'daggers', wcol: '#6a5a9a', wcol2: '#2a1a3a', build: 'slim', cape: '#1a1028', glow: '#c0a0ff', extra: 'scarf' },
   shadow_mage: { skin: '#3a2a4a', hair: '#2a1a4a', hairStyle: 'hood', body: '#2a1a4a', trim: '#a080ff', legs: '#1a1030', boots: '#100820', eye: '#c0a0ff', weapon: 'staff', wcol: '#a080ff', wcol2: '#3a2a4a', build: 'slim', cape: '#20103a', glow: '#c0a0ff' },
   royal_lancer: { skin: '#a0a0b0', hair: '#8a7a50', hairStyle: 'helm', body: '#8a7a50', trim: '#e0c070', legs: '#5a4a30', boots: '#2a2018', eye: '#ffe060', weapon: 'spear', wcol: '#d0d0e0', wcol2: '#5a4030', build: 'normal', cape: '#6a1a1a' },
+  drowned: { skin: '#8ab0a0', hair: '#3a5a6a', hairStyle: 'short', body: '#4a6a7a', trim: '#c0a060', legs: '#3a4a5a', boots: '#2a3038', eye: '#e0ffe0', weapon: 'sword', wcol: '#a0b0b0', wcol2: '#5a4a3a', build: 'normal', extra: 'scarf' },
+  harpooner: { skin: '#8ab0a0', hair: '#c0c8c8', hairStyle: 'bald', body: '#5a4a3a', trim: '#80c0e0', legs: '#3a3a42', boots: '#2a2a30', eye: '#e0ffe0', weapon: 'spear', wcol: '#c0d0d8', wcol2: '#6a5030', build: 'big' },
+  frost_librarian: { skin: '#c0d8f0', hair: '#e0f0ff', hairStyle: 'hood', body: '#3a5a8a', trim: '#a8e4ff', legs: '#2a3a5a', boots: '#1a2438', eye: '#a8e4ff', weapon: 'staff', wcol: '#a8e4ff', wcol2: '#4a5a7a', build: 'big', cape: '#2a4a7a', glow: '#a8e4ff' },
+  ink_shade: { skin: '#1a2040', hair: '#101830', hairStyle: 'hood', body: '#14203a', trim: '#4a6aff', legs: '#0c1428', boots: '#080c18', eye: '#80a0ff', weapon: 'daggers', wcol: '#4a6aff', wcol2: '#1a2040', build: 'slim', cape: '#14203a', glow: '#80a0ff', extra: 'scarf' },
+  void_knight: { skin: '#2a1a3a', hair: '#3a2a5a', hairStyle: 'helm', body: '#3a2a5a', trim: '#ff80d0', legs: '#24183a', boots: '#140c24', eye: '#ff80d0', weapon: 'mace', wcol: '#c0a0ff', wcol2: '#2a1a3a', shield: '#6a4aa0', build: 'big', cape: '#2a1030' },
+  morten: { skin: '#8ab0a0', hair: '#1a2028', hairStyle: 'witch', body: '#1a3048', trim: '#e0c060', legs: '#14202e', boots: '#0c141c', eye: '#80ffe0', weapon: 'hammer', wcol: '#6a7a80', wcol2: '#4a3a2a', build: 'big', cape: '#3a1a1a', glow: '#80ffe0', extra: 'chains' },
+  libra: { skin: '#e8f0ff', hair: '#c0e8ff', hairStyle: 'long', body: '#2a4a7a', trim: '#a8e4ff', legs: '#1a2a4a', boots: '#10182c', eye: '#a8e4ff', weapon: 'clock', wcol: '#e0f4ff', wcol2: '#5a6a9a', build: 'slim', cape: '#4a6aa0', glow: '#a8e4ff', extra: 'halo' },
+  oblivion: { skin: '#2a1028', hair: '#ff80d0', hairStyle: 'crown', body: '#14081c', trim: '#ff80d0', legs: '#0c0412', boots: '#06020a', eye: '#ffffff', weapon: 'greatsword', wcol: '#ff80d0', wcol2: '#3a1a3a', build: 'big', glow: '#ff80d0', cape: '#3a0a2a', extra: 'wings' },
   graven: { skin: bone, hair: bone, hairStyle: 'skull', body: '#3a3448', trim: '#80e0ff', legs: '#2a2438', boots: '#1a1828', eye: '#80e0ff', weapon: 'shovel', wcol: '#8a8a7a', wcol2: '#4a3a2a', build: 'big', glow: '#80e0ff', cape: '#2a2438', extra: 'chains' },
   king: { skin: '#c8b8d0', hair: '#e0e0f0', hairStyle: 'crown', body: '#2a1a3a', trim: '#e0b040', legs: '#1a1028', boots: '#100818', eye: '#ff4ab0', weapon: 'greatsword', wcol: '#c8a8ff', wcol2: '#e0b040', build: 'big', glow: '#c8a8ff', cape: '#6a0a2a' },
 };
@@ -192,6 +200,95 @@ const DRAW: Record<string, Drawer> = {
     p.line(14, 34, 9, 30 - run, '#ff6a1a');
     p.px(38, 36, '#e0e0e0');
   },
+  gull(p, anim, f) {
+    const flap = f % 2 === 0 ? -5 : 2;
+    const c = '#d0e0f0';
+    p.ellipse(24, 30, 6, 3, c);
+    p.line(22, 29, 13, 25 + flap, c);
+    p.line(26, 29, 35, 25 + flap, c);
+    p.line(21, 30, 15, 27 + flap, shade(c, -0.2));
+    p.line(27, 30, 33, 27 + flap, shade(c, -0.2));
+    p.rect(29, 28, 3, 2, '#e0a040');
+    p.px(28, 28, anim === 'wind' ? '#ff3030' : '#203040');
+    p.rect(17, 30, 3, 2, shade(c, -0.3));
+    for (let i = 0; i < 3; i++) p.px(18 + i * 4, 34 + ((f + i) % 2), '#a0c0e0');
+  },
+  crab(p, anim, f) {
+    const c = '#d05a3a';
+    const up = anim === 'wind' ? -4 : anim === 'atk' ? 2 : 0;
+    p.ellipse(24, 38, 9, 5, c);
+    p.ellipse(24, 36, 7, 2, shade(c, 0.2));
+    p.px(21, 33, '#101010');
+    p.px(27, 33, '#101010');
+    p.line(21, 34, 20, 31, c);
+    p.line(27, 34, 28, 31, c);
+    p.rect(32, 30 + up, 7, 9, shade(c, 0.1));
+    p.rect(33, 31 + up, 5, 7, '#e0a080');
+    p.rect(9, 32, 6, 7, c);
+    for (let i = 0; i < 3; i++) {
+      const k = (f + i) % 2;
+      p.line(17 + i * 3, 41, 15 + i * 3 - k, 44, shade(c, -0.3));
+      p.line(29 + i * 2, 41, 31 + i * 2 + k, 44, shade(c, -0.3));
+    }
+  },
+  tome(p, anim, f) {
+    const cy = 30 + Math.round(Math.sin(f * 1.4));
+    const open = anim === 'wind' ? 6 : 3;
+    p.rect(16, cy - 5, 8, 10, '#3a5a8a');
+    p.rect(24, cy - 5, 8, 10, '#3a5a8a');
+    p.rect(17, cy - 4 - open / 3, 7, 8, '#e8f0ff');
+    p.rect(24, cy - 4 - open / 3, 7, 8, '#e8f0ff');
+    for (let i = 0; i < 3; i++) {
+      p.rect(18, cy - 2 + i * 2, 5, 1, '#8aa0c0');
+      p.rect(25, cy - 2 + i * 2, 5, 1, '#8aa0c0');
+    }
+    p.rect(23, cy - 5, 2, 11, '#a8e4ff');
+    if (anim === 'wind') for (let i = 0; i < 4; i++) p.px(20 + i * 3, cy - 10 - (f % 3), '#a8e4ff');
+  },
+  mimic(p, anim, f) {
+    const jaw = anim === 'wind' ? 5 : anim === 'atk' ? 3 + (f % 2) * 2 : 1;
+    const c = '#7a4a2a';
+    p.rect(13, 28, 22, 16, c);
+    p.rect(13, 28 - jaw, 22, 4, shade(c, 0.15));
+    for (let i = 0; i < 4; i++) p.rect(15 + i * 5, 33, 4, 9, ['#a03030', '#305090', '#a08030', '#307040'][i]);
+    for (let i = 0; i < 5; i++) {
+      p.px(15 + i * 4, 32 - jaw + 3, '#f0f0e0');
+      p.px(15 + i * 4, 32, '#f0f0e0');
+    }
+    p.px(18, 26 - jaw, '#ff3030');
+    p.px(29, 26 - jaw, '#ff3030');
+    p.rect(14, 44, 3, 2 - (f % 2), c);
+    p.rect(31, 44, 3, 2 - ((f + 1) % 2), c);
+  },
+  void_eye(p, anim, f) {
+    const cy = 30 + Math.round(Math.sin(f * 1.3));
+    p.disc(24, cy, 8, '#3a1a4a');
+    p.disc(24, cy, 6, '#f0e0f0');
+    p.disc(24 + (anim === 'wind' ? 0 : 1), cy, 3, anim === 'wind' ? '#ff3030' : '#ff80d0');
+    p.disc(24 + (anim === 'wind' ? 0 : 1), cy, 1, '#100010');
+    for (let i = 0; i < 5; i++) p.line(24, cy + 6, 18 + i * 3 + ((f + i) % 2), cy + 14, '#6a3a8a');
+  },
+  devourer(p, anim, f) {
+    const sq = anim === 'wind' ? 3 : anim === 'atk' ? -3 : Math.round(Math.sin(f * 1.5));
+    const rx = 10 + sq;
+    const ry = 8 - sq;
+    const cy = 44 - ry;
+    p.ellipse(24, cy, rx, ry, '#7a2a7a');
+    p.ellipse(24, cy + 1, rx - 2, ry - 2, '#a040a0');
+    p.rect(17, cy, 14, 3, '#200010');
+    for (let i = 0; i < 6; i++) p.px(18 + i * 2, cy, '#f0e0f0');
+    p.px(19, cy - 4, '#ff80d0');
+    p.px(29, cy - 4, '#ff80d0');
+    p.px(24, cy - 5, '#ff80d0');
+  },
+  lost_soul(p, anim, f) {
+    const cy = 30 + Math.round(Math.sin(f * 1.5));
+    p.ellipse(24, cy - 2, 5, 6, '#e0c0ff');
+    for (let i = 0; i < 6; i++) p.rect(20 + Math.sin(f + i) * 1.5, cy + 3 + i, 8 - i, 1, i % 2 ? '#c0a0ff' : '#e0c0ff');
+    p.rect(22, cy - 3, 1, 2, anim === 'wind' ? '#ff3030' : '#4a2a6a');
+    p.rect(26, cy - 3, 1, 2, anim === 'wind' ? '#ff3030' : '#4a2a6a');
+    p.rect(23, cy + 1, 3, 1, '#4a2a6a');
+  },
   dummy(p, anim, f) {
     const tilt = anim === 'hurt' ? 2 : 0;
     p.rect(23, 26, 2, 18, '#7a5a3a');
@@ -213,6 +310,10 @@ const HUMANOID_ANIM: Record<string, Record<string, PoseName>> = {
   shadow_mage: { wind: 'castUp', atk: 'cast', hurt: 'hurt' },
   royal_lancer: { wind: 'thrustWind', atk: 'thrust', hurt: 'hurt' },
   royal_guard: { wind: 'windHigh', atk: 'slashDown', hurt: 'hurt', block: 'guard' },
+  harpooner: { wind: 'windHigh', atk: 'throw', hurt: 'hurt' },
+  frost_librarian: { wind: 'slamWind', atk: 'slam', hurt: 'hurt' },
+  ink_shade: { wind: 'thrustWind', atk: 'thrust', hurt: 'hurt' },
+  void_knight: { wind: 'windHigh', atk: 'slashDown', hurt: 'hurt', block: 'guard' },
   bone_shield: { wind: 'windHigh', atk: 'slashDown', hurt: 'hurt', block: 'guard' },
   shade: { wind: 'thrustWind', atk: 'thrust', hurt: 'hurt' },
 };

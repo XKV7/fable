@@ -74,7 +74,7 @@ export class Player {
   landT = 0;
   wasGround = true;
   swapHitDone = false;
-  dot = { burn: 0, poison: 0 };
+  dot = { burn: 0, poison: 0, chill: 0 };
   hitThisAct = false;
   armorNow = false;
   fallStart = 0;
@@ -159,6 +159,10 @@ export class Player {
       this.dot.burn--;
       if (this.dot.burn % 40 === 0) r.selfDot(0.02, '#ff7a2a', '화상');
     }
+    if (this.dot.chill > 0) {
+      this.dot.chill--;
+      if (this.dot.chill % 10 === 0) r.fx.parts.push({ x: this.cx + (Math.random() - 0.5) * 8, y: this.cy, vx: 0, vy: 0.3, life: 0, max: 20, col: '#d0f4ff', size: 1, grav: 0, kind: 'px', drag: 1 });
+    }
     if (this.dot.poison > 0) {
       this.dot.poison--;
       if (this.dot.poison % 45 === 0) r.selfDot(0.015, '#8bdc3a', '독');
@@ -234,7 +238,7 @@ export class Player {
   }
 
   private moveSpeed(): number {
-    return this.def.speed * (1 + (this.room.stats.mspd ?? 0));
+    return this.def.speed * (1 + (this.room.stats.mspd ?? 0)) * (this.dot.chill > 0 ? 0.6 : 1);
   }
 
   private updateNormal(inp: PlayerInput): void {
@@ -242,7 +246,7 @@ export class Player {
     const dir = (inp.right ? 1 : 0) - (inp.left ? 1 : 0);
     const spd = this.moveSpeed();
     if (dir) this.facing = dir;
-    const accel = this.b.onGround ? 0.55 : 0.4;
+    const accel = this.b.onGround ? (r.ch.slippery ? 0.13 : 0.55) : 0.4;
     const target = dir * spd;
     if (this.b.vx < target) this.b.vx = Math.min(target, this.b.vx + accel);
     else if (this.b.vx > target) this.b.vx = Math.max(target, this.b.vx - accel);
@@ -449,7 +453,7 @@ export class Player {
     } else {
       const grav = act.grav ?? 1;
       this.b.vy = Math.min(MAX_FALL, this.b.vy + GRAV * grav);
-      if (this.b.onGround && !act.move) this.b.vx *= 0.75;
+      if (this.b.onGround && !act.move) this.b.vx *= this.room.ch.slippery ? 0.95 : 0.75;
     }
     if (act.landEnd && this.b.onGround && this.actF > 6 && !this.plunge) {
       this.endAct();

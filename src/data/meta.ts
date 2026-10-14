@@ -41,25 +41,38 @@ export const ITEMS: ItemDef[] = [
 export const ITEM_MAP: Record<string, ItemDef> = Object.fromEntries(ITEMS.map((i) => [i.id, i]));
 
 export interface ChapterDef {
-  n: number;
+  n: number; // 테마 id (적·보스·배경이 이 값으로 묶임)
   name: string;
-  sub: string;
   boss: string;
   bg: [string, string, string]; // 하늘/먼 배경/가까운 배경
   tile: [string, string, string]; // 타일 본색/밝은/어두운
   ambient: string; // 어둠 색
   dark: number; // 어둠 강도
   light: string; // 광원 색
-  music: 'ch1' | 'ch2' | 'ch3' | 'ch4';
-  particles: 'dust' | 'spore' | 'ember' | 'shadow';
+  music: 'ch1' | 'ch2' | 'ch3' | 'ch4' | 'ch5' | 'ch6' | 'ch7';
+  particles: 'dust' | 'spore' | 'ember' | 'shadow' | 'rain' | 'snow' | 'void';
+  hazard?: 'lava' | 'void'; // 바닥 구덩이 가시를 대체
+  slippery?: boolean; // 미끄러운 바닥
+  desc: string; // 분기 문 위 설명
 }
 
+/** 테마별 챕터. 진행 순서는 ROUTE가 정한다. */
 export const CHAPTERS: ChapterDef[] = [
-  { n: 1, name: '무너진 묘소', sub: '제1장', boss: 'graven', bg: ['#14121c', '#221e2e', '#2e2838'], tile: ['#4a4458', '#6a6478', '#2a2636'], ambient: '#08060e', dark: 0.55, light: '#ffb060', music: 'ch1', particles: 'dust' },
-  { n: 2, name: '독버섯 지하수로', sub: '제2장', boss: 'mycora', bg: ['#0c1a14', '#14281e', '#1e3626'], tile: ['#3a5040', '#507060', '#20302a'], ambient: '#040a06', dark: 0.5, light: '#a0ff80', music: 'ch2', particles: 'spore' },
-  { n: 3, name: '불타는 왕실 대장간', sub: '제3장', boss: 'ignis', bg: ['#2a0c08', '#3a1a10', '#4a2414'], tile: ['#5a3a30', '#7a5040', '#2a1a14'], ambient: '#100402', dark: 0.38, light: '#ff8a3a', music: 'ch3', particles: 'ember' },
-  { n: 4, name: '끝없는 왕좌', sub: '제4장', boss: 'king', bg: ['#0e0a1a', '#1a1430', '#261e40'], tile: ['#3a3450', '#5a5078', '#1e1a2e'], ambient: '#040210', dark: 0.6, light: '#c0a0ff', music: 'ch4', particles: 'shadow' },
+  { n: 1, name: '무너진 묘소', boss: 'graven', bg: ['#14121c', '#221e2e', '#2e2838'], tile: ['#4a4458', '#6a6478', '#2a2636'], ambient: '#08060e', dark: 0.55, light: '#ffb060', music: 'ch1', particles: 'dust', desc: '해골과 망령' },
+  { n: 2, name: '독버섯 지하수로', boss: 'mycora', bg: ['#0c1a14', '#14281e', '#1e3626'], tile: ['#3a5040', '#507060', '#20302a'], ambient: '#040a06', dark: 0.5, light: '#a0ff80', music: 'ch2', particles: 'spore', desc: '독과 슬라임' },
+  { n: 5, name: '침몰한 항구', boss: 'morten', bg: ['#0a1622', '#12263a', '#1a3450'], tile: ['#3a4a58', '#5a7488', '#1e2a36'], ambient: '#02060c', dark: 0.5, light: '#80d0ff', music: 'ch5', particles: 'rain', desc: '익사자와 폭풍' },
+  { n: 3, name: '불타는 왕실 대장간', boss: 'ignis', bg: ['#2a0c08', '#3a1a10', '#4a2414'], tile: ['#5a3a30', '#7a5040', '#2a1a14'], ambient: '#100402', dark: 0.38, light: '#ff8a3a', music: 'ch3', particles: 'ember', hazard: 'lava', desc: '불꽃과 골렘' },
+  { n: 6, name: '얼어붙은 왕립 도서관', boss: 'libra', bg: ['#0e1626', '#1a2a40', '#28405a'], tile: ['#4a5a70', '#a8d0ec', '#24304a'], ambient: '#040814', dark: 0.45, light: '#a8e4ff', music: 'ch6', particles: 'snow', slippery: true, desc: '서리와 금서' },
+  { n: 4, name: '끝없는 왕좌', boss: 'king', bg: ['#0e0a1a', '#1a1430', '#261e40'], tile: ['#3a3450', '#5a5078', '#1e1a2e'], ambient: '#040210', dark: 0.6, light: '#c0a0ff', music: 'ch4', particles: 'shadow', desc: '끝없는 왕' },
+  { n: 7, name: '망각의 심연', boss: 'oblivion', bg: ['#04020a', '#0c0618', '#160c28'], tile: ['#2a2040', '#6a4aa0', '#120a20'], ambient: '#000000', dark: 0.62, light: '#ff80d0', music: 'ch7', particles: 'void', hazard: 'void', desc: '진엔딩 · 왕이 삼킨 혼들의 끝' },
 ];
+
+export const chapterDef = (n: number): ChapterDef => CHAPTERS.find((c) => c.n === n) ?? CHAPTERS[0];
+
+/** 진행 경로: 단계별로 고를 수 있는 테마. 2장은 분기, 6장은 왕 처치 후 선택(진엔딩) */
+export const ROUTE: number[][] = [[1], [2, 5], [3], [6], [4], [7]];
+export const FINAL_STAGE = 5; // 끝없는 왕
+export const TRUE_STAGE = 6; // 망각의 심연
 
 export interface AchievementDef {
   id: string;
@@ -74,6 +87,9 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'clear2', name: '정화', desc: '부패의 어미 미코라를 쓰러뜨린다', reward: 400 },
   { id: 'clear3', name: '꺼진 용광로', desc: '용광로 거신 이그니스를 쓰러뜨린다', reward: 480 },
   { id: 'clear4', name: '끝의 끝', desc: '끝없는 왕을 쓰러뜨린다', reward: 1000 },
+  { id: 'clear_morten', name: '닻을 내리다', desc: '익사한 제독 모르텐을 쓰러뜨린다', reward: 400 },
+  { id: 'clear_libra', name: '해동', desc: '금서의 수호자 리브라를 쓰러뜨린다', reward: 560 },
+  { id: 'clear_oblivion', name: '기억하는 자', desc: '망각을 쓰러뜨리고 진엔딩을 본다', reward: 1600 },
   { id: 'kills100', name: '백인참', desc: '누적 처치 100', reward: 160 },
   { id: 'kills1000', name: '망자의 군주', desc: '누적 처치 1000', reward: 480 },
   { id: 'combo50', name: '멈추지 않는 칼날', desc: '콤보 50 달성', reward: 160 },
@@ -82,7 +98,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'crest6', name: '완성된 문장', desc: '한 문장을 6단계까지 모은다', reward: 320 },
   { id: 'relic10', name: '수집가', desc: '한 런에서 유물 10개 보유', reward: 240 },
   { id: 'chars5', name: '다섯 개의 계약', desc: '영웅 5명 보유', reward: 160 },
-  { id: 'chars14', name: '모든 혼의 주인', desc: '모든 영웅 보유', reward: 1600 },
+  { id: 'chars14', name: '모든 혼의 주인', desc: '모든 영웅 보유', reward: 2400 },
   { id: 'star5', name: '별이 내린 날', desc: '★5를 처음 획득한다', reward: 160 },
   { id: 'awaken5', name: '완전한 각성', desc: '영웅 하나를 5각성시킨다', reward: 480 },
   { id: 'level20', name: '극의', desc: '영웅 하나를 20레벨로 육성한다', reward: 320 },

@@ -41,6 +41,7 @@ export class World {
   cache: HTMLCanvasElement | null = null;
   dirty = true;
   deco: { x: number; y: number; kind: number }[] = [];
+  openBottom = false; // 심연: 바닥 아래가 허공
 
   constructor(w: number, h: number) {
     this.w = w;
@@ -53,7 +54,7 @@ export class World {
   get(tx: number, ty: number): Tile {
     if (tx < 0 || tx >= this.w) return Tile.Solid;
     if (ty < 0) return Tile.Empty;
-    if (ty >= this.h) return Tile.Solid;
+    if (ty >= this.h) return this.openBottom ? Tile.Empty : Tile.Solid;
     return this.t[ty * this.w + tx] as Tile;
   }
   set(tx: number, ty: number, v: Tile): void {

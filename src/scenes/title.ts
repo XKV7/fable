@@ -44,8 +44,9 @@ export class TitleScene implements Scene {
     demoSave.loadout.chars = [pool[0].id, pool[1].id];
     for (const p of pool) demoSave.chars[p.id] = { lv: 10, aw: 2, count: 1 };
     const run = new RunState(demoSave);
-    const ch = CHAPTERS[Math.floor(Math.random() * 4)];
-    run.chapter = ch.n;
+    const ch = CHAPTERS[Math.floor(Math.random() * CHAPTERS.length)];
+    run.theme = ch.n;
+    run.chapter = 2;
     this.room = new Room({ template: ROOMS.find((r) => r.id === 'c_arena')!, chapter: ch, mode: 'title', type: 'combat', next: [], depth: 2 }, run, demoSave);
     this.room.god = true;
     this.room.demo = true;

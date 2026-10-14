@@ -100,7 +100,10 @@ export function generateChapter(rng: Rng, chapter: number, tutorial: boolean): {
 
 export class RunState {
   rng: Rng;
-  chapter = 1;
+  chapter = 1; // 진행 단계 (1~6)
+  theme = 1; // 현재 챕터 테마 (ChapterDef.n)
+  kingDown = false; // 끝없는 왕 처치 (이후 심연에서 쓰러져도 클리어로 인정)
+  trueEnd = false;
   nodes: MapNode[] = [];
   layers: number[][] = [];
   cur = 0;
@@ -134,12 +137,13 @@ export class RunState {
     if (save.upgrades.potion) this.items.push('potion');
     this.curse = save.curse;
     this.tutorial = !save.tutorialDone;
-    this.newChapter(1);
+    this.newChapter(1, 1);
   }
 
-  newChapter(n: number): void {
-    this.chapter = n;
-    const m = generateChapter(this.rng, n, n === 1 && this.tutorial);
+  newChapter(stage: number, theme: number): void {
+    this.chapter = stage;
+    this.theme = theme;
+    const m = generateChapter(this.rng, stage, stage === 1 && this.tutorial);
     this.nodes = m.nodes;
     this.layers = m.layers;
     this.cur = 0;

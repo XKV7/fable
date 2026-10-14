@@ -1,6 +1,6 @@
 import { CHAR_MAP } from '../data/characters';
 import { CREST_MAP } from '../data/crests';
-import { ITEM_MAP, ROOM_TYPES } from '../data/meta';
+import { chapterDef, ITEM_MAP, ROOM_TYPES } from '../data/meta';
 import { TUTORIAL_SIGNS } from '../data/rooms';
 import type { Input } from '../core/input';
 import { charFrame } from '../gfx/sprites';
@@ -251,7 +251,7 @@ export class Hud {
       const x = Math.round(pr.x - cx);
       const y = Math.round(pr.y - cy);
       if (pr.kind === 'door' && pr.nodeId !== undefined) {
-        const label = pr.nodeId === -1 ? { name: '다음 장으로', col: '#ffe080', icon: 'door' } : pr.nodeId === -2 ? { name: '계약 완수', col: '#ffe080', icon: 'crown' } : ROOM_TYPES[run.nodes[pr.nodeId]?.type ?? 'combat'];
+        const label = pr.nodeId === -1 ? { name: chapterDef(pr.nextCh ?? 1).name, col: pr.nextCh === 7 ? '#ff80d0' : '#ffe080', icon: pr.nextCh === 7 ? 'eye' : 'door' } : pr.nodeId === -2 ? { name: '계약 완수', col: '#ffe080', icon: 'crown' } : ROOM_TYPES[run.nodes[pr.nodeId]?.type ?? 'combat'];
         const a = pr.open ? 1 : 0.4;
         g.save();
         g.globalAlpha = a;
@@ -262,6 +262,7 @@ export class Hud {
         drawIcon(g, pr.open ? label.icon : 'lock', x - 6, y - 51, 12, pr.open ? label.col : '#8a8098');
         g.restore();
         text(g, label.name, x, y - 64, { size: 6, align: 'center', color: label.col, alpha: a });
+        if (pr.nodeId === -1 && pr.nextCh) text(g, chapterDef(pr.nextCh).desc, x, y - 73, { size: 5, align: 'center', color: '#a8a0c0', alpha: a });
       }
     }
     // 상호작용 안내

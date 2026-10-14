@@ -305,6 +305,9 @@ export class Field {
         }
       }
     } else {
+      if (this.def.pull && room.player.overlaps({ x: rect.x - 40, y: rect.y, w: rect.w + 80, h: rect.h })) {
+        room.player.b.vx += Math.sign(this.x + this.def.w / 2 - room.player.cx) * this.def.pull * 0.35;
+      }
       if (this.t % this.def.tick === 0 && room.player.overlaps(rect)) {
         room.damagePlayer(this.mult, this.x + this.def.w / 2, '장판', { st: this.def.st, kb: 0.5 });
       }
@@ -564,6 +567,7 @@ export interface Prop {
   h: number;
   used: boolean;
   nodeId?: number; // 문: 다음 노드 (-1: 다음 장, -2: 런 클리어)
+  nextCh?: number; // -1일 때 이동할 챕터 테마
   open?: boolean;
   hidden?: boolean;
   text?: string;

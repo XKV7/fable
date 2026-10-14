@@ -273,7 +273,7 @@ export class Enemy {
       const off = (i - (n - 1) / 2) * spread;
       room.addProj('enemy', { ...p, spd: p.spd * speedMul }, this.cx + this.facing * 6, this.cy - 4, a + off, this.atk, 'normal');
     }
-    audio.play(this.def.id === 'bone_archer' ? 'arrow' : 'enemy_shot');
+    audio.play(this.def.id === 'bone_archer' || this.def.id === 'harpooner' ? 'arrow' : 'enemy_shot');
   }
 
   protected contact(room: Room, dmg: number): void {
@@ -403,7 +403,7 @@ export class Enemy {
           if (d.ai !== 'lancer' && t === 3) {
             if (d.ai === 'golem') {
               this.attackBox(room, 40, 34, this.atk);
-              for (const dir of [-1, 1]) room.addProj('enemy', { spr: 'wave', spd: 3, life: 60, w: 12, h: 16, col: '#ff6a1a', ground: true, pierce: 99, st: 'burn' }, this.cx, this.b.y + this.b.h - 8, dir > 0 ? 0 : Math.PI, Math.round(this.atk * 0.7), 'normal');
+              for (const dir of [-1, 1]) room.addProj('enemy', { spr: 'wave', spd: 3, life: 60, w: 12, h: 16, col: d.elem ? d.col : '#ff6a1a', ground: true, pierce: 99, st: d.elem ? d.elem.st : 'burn' }, this.cx, this.b.y + this.b.h - 8, dir > 0 ? 0 : Math.PI, Math.round(this.atk * 0.7), 'normal');
               room.cam.shake(4);
               audio.play('hit_power', 0.5);
               room.fx.dust(this.cx + this.facing * 20, this.b.y + this.b.h, 10);
@@ -511,7 +511,7 @@ export class Enemy {
             this.st = 24;
             this.cd = d.cd;
             room.fx.dust(this.cx, this.b.y + this.b.h, 6);
-            if (this.elite) room.addField('enemy', { vis: 'poison', w: 40, h: 14, life: 120, tick: 30, m: 1, st: 'poison' }, this.cx - 20, this.b.y + this.b.h - 14, Math.round(this.atk * 0.3), 'normal');
+            if (this.elite) room.addField('enemy', { vis: d.elem?.vis ?? 'poison', w: 40, h: 14, life: 120, tick: 30, m: 1, st: d.elem ? d.elem.st : 'poison' }, this.cx - 20, this.b.y + this.b.h - 14, Math.round(this.atk * 0.3), 'normal');
           }
           return;
         }
@@ -629,8 +629,8 @@ export class Enemy {
           this.b.vy *= 0.85;
           if (this.st <= 0) {
             const gy = room.world.groundBelow(this.cx, this.cy);
-            room.addField('enemy', { vis: 'poison', w: 44, h: 22, life: 200, tick: 30, m: 1, st: 'poison' }, this.cx - 22, gy - 22, Math.round(this.atk * 0.5), 'normal');
-            room.fx.burst(this.cx, this.cy + 6, '#c0f060', 14, 1.5);
+            room.addField('enemy', { vis: d.elem?.vis ?? 'poison', w: 44, h: 22, life: 200, tick: 30, m: 1, st: d.elem ? d.elem.st : 'poison' }, this.cx - 22, gy - 22, Math.round(this.atk * 0.5), 'normal');
+            room.fx.burst(this.cx, this.cy + 6, d.elem ? d.col : '#c0f060', 14, 1.5);
             audio.play('poison');
             this.state = 'recover';
             this.st = 24;

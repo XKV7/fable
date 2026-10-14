@@ -95,7 +95,7 @@ export class Boss extends Enemy {
       room.cam.shake(7, 50);
       room.flash('#ffffff', 0.7);
       room.bossPhaseBanner(this.phase);
-      if (this.bd.id === 'king' && this.phase === 2) room.darkBoost = 0.25;
+      if ((this.bd.id === 'king' || this.bd.id === 'oblivion') && this.phase === 2) room.darkBoost = 0.25;
       return;
     }
     if (!this.pattern) {
@@ -103,9 +103,9 @@ export class Boss extends Enemy {
       this.pose = 'idle0';
       this.face(room);
       const dx = room.player.cx - this.cx;
-      if (this.bd.id === 'graven' || this.bd.id === 'king' || this.bd.id === 'ignis') {
+      if (this.bd.id !== 'mycora') {
         if (Math.abs(dx) > 50 && this.b.onGround) {
-          this.b.vx = Math.sign(dx) * (this.bd.id === 'ignis' ? 0.5 : 0.9);
+          this.b.vx = Math.sign(dx) * (this.bd.id === 'ignis' ? 0.5 : this.bd.id === 'libra' ? 0.7 : 0.9);
           this.anim = 'move';
         } else this.b.vx = 0;
       }
@@ -146,20 +146,20 @@ export class Boss extends Enemy {
     for (const dir of dirs) room.addProj('enemy', { spr: 'wave', spd, life: 120, w: 12, h, col, ground: true, pierce: 99, st }, this.cx + dir * 10, this.b.y + this.b.h - h / 2, dir > 0 ? 0 : Math.PI, Math.round(this.atk * 0.8), 'normal');
   }
 
-  private skyDrop(room: Room, x: number, delay: number, spr: 'bone' | 'blade' | 'fireball', col: string, dmgMul = 0.7, st?: 'burn'): void {
+  private skyDrop(room: Room, x: number, delay: number, spr: 'bone' | 'blade' | 'fireball' | 'rock' | 'shard' | 'spear', col: string, dmgMul = 0.7, st?: 'burn' | 'chill'): void {
     const gy = room.world.groundBelow(x, 40);
     room.marker(x - 6, gy - 4, 12, 4, delay, '#ff3030');
     room.later(delay - 22, () => {
-      room.addProj('enemy', { spr, spd: 6, life: 80, w: 8, h: 12, col, st }, x, 24, Math.PI / 2, Math.round(this.atk * dmgMul), 'normal');
+      room.addProj('enemy', { spr, spd: 6, life: 80, w: spr === 'rock' ? 14 : 8, h: spr === 'rock' ? 14 : 12, col, st }, x, 24, Math.PI / 2, Math.round(this.atk * dmgMul), 'normal');
     });
   }
 
-  private pillar(room: Room, x: number, delay: number, vis: 'fire' | 'holy' | 'void' | 'poison', w = 22, h = 110, st?: 'burn' | 'poison'): void {
+  private pillar(room: Room, x: number, delay: number, vis: 'fire' | 'holy' | 'void' | 'poison' | 'ice', w = 22, h = 110, st?: 'burn' | 'poison' | 'chill'): void {
     const gy = room.world.groundBelow(x, 60);
     room.marker(x - w / 2, gy - h, w, h, delay, '#ff3030', true);
     room.later(delay, () => {
       room.addField('enemy', { vis, w, h, life: 34, tick: 12, m: 1, st }, x - w / 2, gy - h, Math.round(this.atk * 0.9), 'normal');
-      room.fx.burst(x, gy - 4, vis === 'fire' ? '#ff8a2a' : vis === 'holy' ? '#ffe080' : vis === 'poison' ? '#8bdc3a' : '#9a6bff', 14, 3);
+      room.fx.burst(x, gy - 4, vis === 'fire' ? '#ff8a2a' : vis === 'holy' ? '#ffe080' : vis === 'poison' ? '#8bdc3a' : vis === 'ice' ? '#d0f4ff' : '#9a6bff', 14, 3);
       audio.play(vis === 'fire' ? 'burn' : 'cast', 0.7);
     });
   }
@@ -584,11 +584,174 @@ export class Boss extends Enemy {
         if (this.phase >= 2 && t === 75) this.wave(room, [-1, 1], '#9a6bff', 3.8, 30);
         return t > 95;
       }
+      // ─────────── 모르텐 ───────────
+      case 'harpoonVolley': {
+        const n = p2 ? 5 : 3;
+        this.pose = 'throw';
+        this.anim = 'wind';
+        if (t === 1) audio.play('warn');
+        if (t >= 20 && (t - 20) % 14 === 0 && (t - 20) / 14 < n) {
+          this.face(room);
+          const a = Math.atan2(p.cy - (this.b.y + 16), p.cx - this.cx);
+          room.addProj('enemy', { spr: 'spear', spd: 5.5, life: 100, w: 18, h: 4, col: '#c0d8e0' }, this.cx + this.facing * 14, this.b.y + 16, a, Math.round(this.atk * 0.8), 'normal');
+          audio.play('arrow', 0.7);
+        }
+        return t > 20 + n * 14 + 20;
+      }
+      case 'tidalWave': {
+        this.pose = t < 36 ? 'slamWind' : 'slam';
+        this.anim = t < 36 ? 'wind' : 'atk';
+        if (t === 1) {
+          audio.play('warn');
+          room.bossShout('파도가 덮쳐온다! 뛰어넘어라!', '#80d0ff');
+        }
+        if (t === 36) {
+          this.wave(room, [-1, 1], '#80d0ff', 3.2, 34);
+          room.cam.shake(6);
+          audio.play('explode', 0.7);
+        }
+        if (p2 && t === 70) this.wave(room, [-1, 1], '#80d0ff', 4, 24);
+        return t > 95;
+      }
+      case 'summonCrew': {
+        this.pose = 'castUp';
+        this.anim = 'wind';
+        if (t === 20) room.spawnMinions(this, p2 ? 3 : 2, Math.random() < 0.6 ? 'drowned' : 'harpooner');
+        return t > 50;
+      }
+      case 'cannonBarrage': {
+        this.pose = 'castUp';
+        this.anim = 'wind';
+        if (t === 1) room.bossShout('포격 개시!', '#ffb060');
+        const n = p2 ? 14 : 9;
+        if (t <= n * 6 && t % 6 === 0) this.skyDrop(room, t % 18 === 0 ? p.cx : 30 + Math.random() * (room.world.pxW - 60), 44, 'fireball', '#ff9a4a', 0.8, 'burn');
+        return t > n * 6 + 50;
+      }
+      case 'whirlpool': {
+        this.anim = 'wind';
+        this.pose = 'castUp';
+        if (t === 1) {
+          audio.play('warn');
+          const x = p.cx;
+          const gy = room.world.groundBelow(x, p.b.y);
+          room.marker(x - 50, gy - 30, 100, 30, 40, '#80d0ff', true);
+          room.later(40, () => room.addField('enemy', { vis: 'ice', w: 100, h: 30, life: 180, tick: 24, m: 1, pull: 1.4 }, x - 50, gy - 30, Math.round(this.atk * 0.5), 'normal'));
+        }
+        return t > 80;
+      }
+      // ─────────── 리브라 ───────────
+      case 'iceSpears': {
+        this.pose = 'castUp';
+        this.anim = 'wind';
+        const n = p2 ? 9 : 6;
+        if (t === 1) {
+          audio.play('freeze', 0.7);
+          for (let i = 0; i < n; i++) {
+            const bx = this.cx + (i - (n - 1) / 2) * 22;
+            const by = this.b.y - 26 - Math.abs(i - (n - 1) / 2) * 5;
+            room.marker(bx - 3, by - 3, 6, 6, 36 + i * 5, '#a8e4ff');
+            room.later(36 + i * 5, () => {
+              const a = Math.atan2(room.player.cy - by, room.player.cx - bx);
+              room.addProj('enemy', { spr: 'shard', spd: 5, life: 90, w: 10, h: 6, col: '#d0f4ff', st: 'chill' }, bx, by, a, Math.round(this.atk * 0.65), 'normal');
+            });
+          }
+        }
+        return t > 36 + n * 5 + 20;
+      }
+      case 'pageStorm': {
+        this.pose = 'cast';
+        this.anim = 'wind';
+        if (t % 16 === 8 && t < 70) {
+          for (let i = 0; i < 3; i++) room.addProj('enemy', { spr: 'blade', spd: 1.8, life: 220, w: 8, h: 6, col: '#e8f0ff', home: 0.03 }, this.cx, this.b.y + 8, -Math.PI / 2 + (i - 1) * 0.9, Math.round(this.atk * 0.55), 'normal');
+          audio.play('flip', 0.8);
+        }
+        return t > 90;
+      }
+      case 'frostNova': {
+        this.pose = t < 40 ? 'castUp' : 'cast';
+        this.anim = t < 40 ? 'wind' : 'atk';
+        if (t === 1) {
+          audio.play('warn');
+          room.marker(this.cx - 75, this.cy - 75, 150, 150, 40, '#a8e4ff', true);
+        }
+        if (t === 40) {
+          room.enemyExplode(this.cx, this.cy, 75, this.atk * 1.1, 'chill');
+          room.fx.burst(this.cx, this.cy, '#d0f4ff', 40, 4);
+          room.cam.shake(5);
+          audio.play('freeze');
+        }
+        return t > 70;
+      }
+      case 'shelfCollapse': {
+        this.anim = 'wind';
+        this.pose = 'castUp';
+        if (t === 1) {
+          audio.play('crumble');
+          room.bossShout('서가가 무너진다!', '#c0d8f0');
+          const n = p2 ? 6 : 4;
+          for (let i = 0; i < n; i++) this.skyDrop(room, i === 0 ? p.cx : 30 + Math.random() * (room.world.pxW - 60), 50 + i * 8, 'rock', '#6a5a4a', 1);
+        }
+        return t > 110;
+      }
+      case 'summonTomes': {
+        this.pose = 'castUp';
+        this.anim = 'wind';
+        if (t === 20) room.spawnFlyers(this, p2 ? 3 : 2, 'tome');
+        return t > 50;
+      }
+      case 'blizzard': {
+        this.pose = 'castUp';
+        this.anim = 'wind';
+        if (t === 1) room.bossShout('눈보라가 휘몰아친다!', '#d0f4ff');
+        if (t <= 90 && t % 4 === 0) this.skyDrop(room, 30 + Math.random() * (room.world.pxW - 60), 36, 'shard', '#d0f4ff', 0.5, 'chill');
+        return t > 140;
+      }
+      // ─────────── 망각 ───────────
+      case 'voidPillars': {
+        this.pose = 'castUp';
+        this.anim = 'wind';
+        if (t === 1) {
+          audio.play('warn');
+          const n = 3 + this.phase * 2;
+          for (let i = 0; i < n; i++) this.pillar(room, i === 0 ? p.cx : 30 + Math.random() * (room.world.pxW - 60), 44 + i * 6, 'void', 26, 240);
+        }
+        return t > 100;
+      }
+      case 'voidBeam': {
+        if (t === 1) {
+          this.face(room);
+          audio.play('warn');
+          room.bossShout('모든 것을 잊어라…', '#ff80d0');
+        }
+        const gy = this.ground(room);
+        const y = gy - 16;
+        const x0 = this.facing > 0 ? this.cx : 16;
+        const w = this.facing > 0 ? room.world.pxW - 16 - this.cx : this.cx - 16;
+        if (t === 2) room.marker(x0, y, w, 12, 50, '#ff80d0', true);
+        if (t < 52) {
+          this.anim = 'wind';
+          this.pose = 'thrustWind';
+          return false;
+        }
+        this.anim = 'atk';
+        this.pose = 'thrust';
+        if (t === 52) {
+          room.addField('enemy', { vis: 'void', w, h: 12, life: 36, tick: 8, m: 1 }, x0, y, Math.round(this.atk * 0.8), 'normal');
+          room.cam.shake(5, 30);
+          audio.play('explode', 1.3);
+          room.flash('#ff80d0', 0.3);
+        }
+        if (this.phase >= 1 && t === 80) {
+          room.marker(16, gy - 46, room.world.pxW - 32, 12, 30, '#ff80d0', true);
+          room.later(30, () => room.addField('enemy', { vis: 'void', w: room.world.pxW - 32, h: 12, life: 30, tick: 8, m: 1 }, 16, gy - 46, Math.round(this.atk * 0.7), 'normal'));
+        }
+        return t > 120;
+      }
       case 'pactShadows': {
         this.pose = 'castUp';
         this.anim = 'wind';
         if (t === 1) {
-          room.bossShout('계약자여, 네가 부린 혼들도 결국 나의 것이다!', '#c8a8ff');
+          room.bossShout(this.bd.id === 'oblivion' ? '네가 계약한 혼들… 모두 내가 기억하고 있다.' : '계약자여, 네가 부린 혼들도 결국 나의 것이다!', '#c8a8ff');
           audio.play('boss_roar', 0.8);
           const pool = room.pactPool();
           this.shadows = pool.slice(0, 4).map((id, i) => {
@@ -652,7 +815,7 @@ export class Boss extends Enemy {
     g.save();
     if (this.dead) g.globalAlpha = 1 - this.deadT / 60;
     if (this.intro > 0) g.globalAlpha = Math.min(1, (100 - this.intro) / 40);
-    const flip = this.facing < 0 && (this.bd.id === 'graven' || this.bd.id === 'king' || this.bd.id === 'ignis');
+    const flip = this.facing < 0 && this.bd.id !== 'mycora';
     const draw = (im: HTMLCanvasElement, ox = 0, oy = 0): void => {
       if (flip) {
         g.save();

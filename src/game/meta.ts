@@ -119,7 +119,8 @@ export function checkAchievements(save: SaveData): string[] {
   m('combo150', save.stats.maxCombo >= 150);
   m('swap50', save.stats.swapHits >= 50);
   m('first_run', save.stats.runs >= 1);
-  for (let i = 0; i < 4; i++) m(`clear${i + 1}`, (save.stats.bossKills[BOSSES[i].id] ?? 0) > 0);
+  const clearAch: Record<string, string> = { graven: 'clear1', mycora: 'clear2', ignis: 'clear3', king: 'clear4', morten: 'clear_morten', libra: 'clear_libra', oblivion: 'clear_oblivion' };
+  for (const b of BOSSES) m(clearAch[b.id], (save.stats.bossKills[b.id] ?? 0) > 0);
   return got;
 }
 

@@ -1,4 +1,4 @@
-import type { ProjDef } from '../game/types';
+import type { FieldVis, ProjDef, StatusId } from '../game/types';
 
 export type EnemyAI = 'boss' | 'melee' | 'archer' | 'flyer' | 'jumper' | 'charger' | 'turret' | 'shield' | 'teleporter' | 'caster' | 'bomber' | 'lancer' | 'golem' | 'dummy';
 
@@ -23,9 +23,10 @@ export interface EnemyDef {
   col: string; // 대표 색 (파티클)
   eliteSkill: 'shockwave' | 'volley' | 'summon' | 'blink' | 'enrage' | 'nova';
   weight: number; // 출현 가중치
+  elem?: { vis: FieldVis; st?: StatusId }; // 충격파/장판 속성 (기본: 화염/독)
 }
 
-/** 일반 적 16종 (챕터별 4종). 모든 공격은 windup 프레임 동안 예고 동작(번쩍임 + 느낌표)을 보인다. */
+/** 일반 적 28종 (챕터별 4종). 모든 공격은 windup 프레임 동안 예고 동작(번쩍임 + 느낌표)을 보인다. */
 export const ENEMIES: EnemyDef[] = [
   // ── 1장: 무너진 묘소 ──
   { id: 'skeleton', name: '해골 병사', chapter: 1, ai: 'melee', hp: 70, atk: 7, speed: 0.75, w: 12, h: 22, range: 26, windup: 32, cd: 60, kbRes: 0, gold: 4, col: '#e8e0c8', eliteSkill: 'shockwave', weight: 4 },
@@ -47,12 +48,27 @@ export const ENEMIES: EnemyDef[] = [
   { id: 'shade', name: '그림자', chapter: 4, ai: 'teleporter', hp: 150, atk: 18, speed: 1.0, w: 12, h: 22, range: 28, windup: 26, cd: 80, kbRes: 0.1, gold: 11, col: '#9a6bff', eliteSkill: 'blink', weight: 3 },
   { id: 'shadow_mage', name: '그림자 마도사', chapter: 4, ai: 'caster', hp: 140, atk: 17, speed: 0.6, w: 12, h: 22, range: 170, windup: 40, cd: 110, kbRes: 0.1, gold: 12, col: '#7a4aff', eliteSkill: 'summon', weight: 2, proj: { spr: 'orb', spd: 2.6, life: 160, w: 10, h: 10, col: '#a080ff', home: 0.04 } },
   { id: 'royal_lancer', name: '왕실 창병', chapter: 4, ai: 'lancer', hp: 180, atk: 21, speed: 0.75, w: 14, h: 24, def: 0.1, range: 70, windup: 32, cd: 70, kbRes: 0.4, gold: 12, col: '#c0a060', eliteSkill: 'shockwave', weight: 3 },
+  // ── 침몰한 항구 (2장 분기) ──
+  { id: 'drowned', name: '익사한 선원', chapter: 5, ai: 'melee', hp: 95, atk: 12, speed: 0.8, w: 12, h: 22, range: 28, windup: 28, cd: 60, kbRes: 0, gold: 6, col: '#70b0a0', eliteSkill: 'shockwave', weight: 4 },
+  { id: 'harpooner', name: '작살잡이', chapter: 5, ai: 'archer', hp: 70, atk: 11, speed: 0.6, w: 12, h: 22, range: 180, windup: 38, cd: 100, kbRes: 0, gold: 6, col: '#c0d0d8', eliteSkill: 'volley', weight: 3, proj: { spr: 'spear', spd: 4, life: 110, w: 18, h: 4, col: '#c0d0d8' } },
+  { id: 'gull', name: '망령 갈매기', chapter: 5, ai: 'flyer', hp: 60, atk: 10, speed: 1.1, w: 14, h: 12, range: 100, windup: 30, cd: 80, flying: true, kbRes: 0.2, gold: 6, col: '#d0e0f0', eliteSkill: 'blink', weight: 3 },
+  { id: 'crab', name: '갑각 게 병사', chapter: 5, ai: 'shield', hp: 130, atk: 13, speed: 0.6, w: 18, h: 14, def: 0.15, range: 30, windup: 32, cd: 70, kbRes: 0.5, gold: 8, col: '#e06040', eliteSkill: 'enrage', weight: 2 },
+  // ── 얼어붙은 왕립 도서관 (4장) ──
+  { id: 'tome', name: '떠도는 마도서', chapter: 6, ai: 'caster', hp: 95, atk: 14, speed: 0.9, w: 14, h: 12, range: 170, windup: 34, cd: 100, flying: true, kbRes: 0.2, gold: 9, col: '#a8e4ff', eliteSkill: 'volley', weight: 3, proj: { spr: 'shard', spd: 3.4, life: 120, w: 10, h: 6, col: '#a8e4ff', st: 'chill' } },
+  { id: 'frost_librarian', name: '서리 사서', chapter: 6, ai: 'golem', hp: 210, atk: 18, speed: 0.5, w: 16, h: 24, def: 0.1, range: 42, windup: 42, cd: 90, kbRes: 0.7, gold: 12, col: '#a8e4ff', eliteSkill: 'shockwave', weight: 2, elem: { vis: 'ice', st: 'chill' } },
+  { id: 'mimic', name: '서가 미믹', chapter: 6, ai: 'charger', hp: 140, atk: 16, speed: 0.6, w: 20, h: 18, range: 150, windup: 30, cd: 70, kbRes: 0.4, gold: 11, col: '#8a5a3a', eliteSkill: 'enrage', weight: 3 },
+  { id: 'ink_shade', name: '잉크 그림자', chapter: 6, ai: 'teleporter', hp: 130, atk: 16, speed: 0.9, w: 12, h: 22, range: 28, windup: 26, cd: 80, kbRes: 0.1, gold: 10, col: '#3a4a8a', eliteSkill: 'blink', weight: 3 },
+  // ── 망각의 심연 (6장, 진엔딩) ──
+  { id: 'void_eye', name: '망각의 눈', chapter: 7, ai: 'caster', hp: 120, atk: 17, speed: 0.8, w: 14, h: 14, range: 180, windup: 34, cd: 95, flying: true, kbRes: 0.2, gold: 13, col: '#ff80d0', eliteSkill: 'volley', weight: 3, proj: { spr: 'orb', spd: 2.8, life: 160, w: 10, h: 10, col: '#ff80d0', home: 0.04 } },
+  { id: 'void_knight', name: '공허 기사', chapter: 7, ai: 'shield', hp: 230, atk: 20, speed: 0.65, w: 16, h: 24, def: 0.2, range: 32, windup: 28, cd: 60, kbRes: 0.6, gold: 14, col: '#9a6bff', eliteSkill: 'enrage', weight: 3 },
+  { id: 'devourer', name: '기억 포식자', chapter: 7, ai: 'jumper', hp: 170, atk: 20, speed: 1.5, w: 18, h: 14, range: 120, windup: 24, cd: 65, kbRes: 0.2, gold: 13, col: '#c050c0', eliteSkill: 'summon', weight: 3, elem: { vis: 'void' } },
+  { id: 'lost_soul', name: '잊힌 혼', chapter: 7, ai: 'bomber', hp: 90, atk: 16, speed: 1.1, w: 14, h: 14, range: 30, windup: 28, cd: 85, flying: true, kbRes: 0.2, gold: 12, col: '#e0c0ff', eliteSkill: 'nova', weight: 2, elem: { vis: 'void' } },
   // 훈련용
   { id: 'dummy', name: '훈련용 허수아비', chapter: 0, ai: 'dummy', hp: 999999, atk: 0, speed: 0, w: 14, h: 24, range: 0, windup: 0, cd: 0, kbRes: 1, gold: 0, col: '#c0a060', eliteSkill: 'enrage', weight: 0 },
 ];
 
 export const ENEMY_MAP: Record<string, EnemyDef> = Object.fromEntries(ENEMIES.map((e) => [e.id, e]));
 
-/** 챕터별 체력/공격 배율 (보스·정예 포함) */
-export const CHAPTER_SCALE = [1, 1, 1.35, 1.8, 2.3];
+/** 진행 단계(1~6장)별 체력/공격 배율 (보스·정예 제외 일반 적) */
+export const CHAPTER_SCALE = [1, 1, 1.35, 1.75, 2.1, 2.45, 2.9];
 export const ELITE_MULT = { hp: 3.2, atk: 1.4, size: 1.3 };

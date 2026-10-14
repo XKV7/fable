@@ -164,7 +164,7 @@ export class Room {
             this.world.set(x, y, Tile.OneWay);
             break;
           case '^':
-            this.world.set(x, y, this.ch.n === 3 && y >= h - 3 ? Tile.Lava : Tile.Spike);
+            this.world.set(x, y, this.ch.hazard === 'lava' && y >= h - 3 ? Tile.Lava : this.ch.hazard === 'void' && y >= h - 3 ? Tile.Empty : Tile.Spike);
             break;
           case 'L':
             this.world.set(x, y, Tile.Lava);
@@ -210,6 +210,11 @@ export class Room {
             break;
         }
       }
+    }
+    if (this.ch.hazard === 'void') {
+      // 구덩이 바닥을 뚫어 허공으로 — 떨어지면 피해를 입고 마지막 안전 지점으로 돌아온다
+      this.world.openBottom = true;
+      for (let x = 0; x < w; x++) if (rows[h - 2]?.[x] === '^') for (let y = h - 2; y < h; y++) this.world.set(x, y, Tile.Empty);
     }
     this.player = new Player(this, px, py);
     this.light = makeCanvas(W, H);
@@ -322,7 +327,7 @@ export class Room {
   }
 
   private makeEnemy(def: EnemyDef, x: number, y: number, elite: boolean): Enemy {
-    return new Enemy(def, x, y, elite, this.ch.n, this.run.curseEnemy, this.run.node?.layer ?? 0);
+    return new Enemy(def, x, y, elite, this.run.chapter, this.run.curseEnemy, this.run.node?.layer ?? 0);
   }
 
   private planWaves(init: RoomInit): void {
@@ -330,7 +335,7 @@ export class Room {
     const pool = enemyPool(this.ch.n);
     const rng = this.run.rng;
     const depth = init.depth;
-    let count = Math.min(10, Math.round(3 + depth * 0.6 + this.ch.n * 0.4 + this.run.curse * 0.3));
+    let count = Math.min(10, Math.round(3 + depth * 0.6 + this.run.chapter * 0.4 + this.run.curse * 0.3));
     if (init.type === 'start') count = Math.max(3, count - 1);
     const flyers = pool.filter((d) => d.flying);
     const grounds = pool.filter((d) => !d.flying);
@@ -508,7 +513,7 @@ export class Room {
     if (this.prompt && this.input.interactP && this.player.state !== 'dead') this.interact(this.prompt);
     if (this.input.itemP) this.useItemRequest();
     // 환경 파티클
-    if (this.time % 8 === 0) this.ambient();
+    if (this.time % (this.ch.particles === 'rain' ? 2 : 8) === 0) this.ambient();
     // 카메라
     const look = this.player.facing * 20;
     this.cam.follow(this.player.cx + look, this.player.cy, this.world.pxW, this.world.pxH, W, H);
@@ -522,8 +527,13 @@ export class Room {
     const k = this.ch.particles;
     const x = this.cam.x + Math.random() * W;
     const y = this.cam.y + Math.random() * H;
-    const col = k === 'ember' ? '#ff8a3a' : k === 'spore' ? '#a0ff80' : k === 'shadow' ? '#9a6bff' : '#c0b8d0';
-    this.fx.parts.push({ x, y, vx: (Math.random() - 0.5) * 0.3, vy: k === 'ember' ? -0.4 : k === 'dust' ? 0.1 : -0.15, life: 0, max: 160, col, size: 1, grav: 0, kind: 'px', drag: 1 });
+    const col = k === 'ember' ? '#ff8a3a' : k === 'spore' ? '#a0ff80' : k === 'shadow' ? '#9a6bff' : k === 'rain' ? '#80b0e0' : k === 'snow' ? '#e8f4ff' : k === 'void' ? '#ff80d0' : '#c0b8d0';
+    if (k === 'rain') {
+      for (let i = 0; i < 4; i++) this.fx.parts.push({ x: this.cam.x + Math.random() * W, y: this.cam.y - 10, vx: -0.8, vy: 5, life: 0, max: 60, col, size: 1, grav: 0, kind: 'spark', drag: 1 });
+      return;
+    }
+    const vy = k === 'ember' ? -0.4 : k === 'dust' ? 0.1 : k === 'snow' ? 0.35 : -0.15;
+    this.fx.parts.push({ x, y, vx: (Math.random() - 0.5) * (k === 'snow' ? 0.6 : 0.3), vy, life: 0, max: 160, col, size: k === 'snow' ? 2 : 1, grav: 0, kind: 'px', drag: 1 });
   }
 
   private roomCleared(): void {
@@ -547,10 +557,14 @@ export class Room {
     if (any && withSound) audio.play('door');
   }
 
-  addExitDoor(nodeId: number): void {
+  /** 보스 처치 후 출구 문들 (nodeId -1 + nextCh: 다음 장 테마, -2: 런 클리어) */
+  addExitDoors(doors: { nodeId: number; nextCh?: number }[]): void {
     const d = this.bossDoor ?? { x: this.world.pxW - 40, y: 14 * TS };
-    this.props.push({ kind: 'door', x: d.x, y: d.y, w: 28, h: 36, used: false, nodeId, open: true });
-    this.fx.burst(d.x, d.y - 18, '#ffe080', 20, 2.5);
+    doors.forEach((o, i) => {
+      const x = d.x - i * 90;
+      this.props.push({ kind: 'door', x, y: d.y, w: 28, h: 36, used: false, nodeId: o.nodeId, nextCh: o.nextCh, open: true });
+      this.fx.burst(x, d.y - 18, '#ffe080', 20, 2.5);
+    });
     audio.play('door');
   }
 
@@ -893,7 +907,7 @@ export class Room {
     // 드롭
     if (this.init.mode === 'run' && !e.isBoss) {
       const goldMul = 1 + (this.stats.gold ?? 0);
-      const g = Math.round((e.minion ? 1 : e.def.gold) * (e.elite ? 4 : 1) * goldMul * (1 + this.ch.n * 0.15));
+      const g = Math.round((e.minion ? 1 : e.def.gold) * (e.elite ? 4 : 1) * goldMul * (1 + this.run.chapter * 0.15));
       const coins = Math.min(10, Math.max(1, Math.ceil(g / 3)));
       for (let i = 0; i < coins; i++) this.pickups.push(new Pickup('gold', e.cx, e.cy, Math.max(1, Math.round(g / coins))));
       const cr = e.elite ? 6 : Math.random() < 0.5 ? 2 : 1;
@@ -1017,6 +1031,7 @@ export class Room {
     this.fx.burst(p.cx, p.cy, '#ff3040', 10, 2.5);
     if (o.st === 'burn') p.dot.burn = 120;
     if (o.st === 'poison') p.dot.poison = 180;
+    if (o.st === 'chill' || o.st === 'freeze') p.dot.chill = 120;
     this.combo = 0;
     this.build.fire('hurt', {}, Math.random);
     const hw = this.build.flag('hurtWave');
@@ -1159,7 +1174,20 @@ export class Room {
       const def = id ? ENEMY_MAP[id] : pool[Math.floor(Math.random() * pool.length)];
       const x = Math.max(30, Math.min(this.world.pxW - 30, src.cx + (i % 2 ? 1 : -1) * (30 + i * 16)));
       const gy = this.world.groundBelow(x, src.b.y);
-      const e = new Enemy(def, x, gy, false, this.ch.n, this.run.curseEnemy, 0);
+      const e = new Enemy(def, x, gy, false, this.run.chapter, this.run.curseEnemy, 0);
+      e.minion = true;
+      e.maxHp = e.hp = Math.round(e.maxHp * 0.6);
+      e.st = 40;
+      this.enemies.push(e);
+    }
+    audio.play('cast', 0.5);
+  }
+
+  /** 공중형 하수인 소환 (보스 패턴용) */
+  spawnFlyers(src: Enemy, n: number, id: string): void {
+    const alive = this.enemies.filter((e) => !e.dead && e.minion).length;
+    for (let i = 0; i < n && alive + i < 4; i++) {
+      const e = new Enemy(ENEMY_MAP[id], src.cx + (i % 2 ? 1 : -1) * (30 + i * 20), src.b.y - 10, false, this.run.chapter, this.run.curseEnemy, 0);
       e.minion = true;
       e.maxHp = e.hp = Math.round(e.maxHp * 0.6);
       e.st = 40;
@@ -1456,7 +1484,7 @@ export class Room {
     if (this.boss && !this.boss.dead) hole(this.boss.cx - cx, this.boss.cy - cy, 90, 0.7);
     for (const e of this.enemies) if (!e.dead && (e.def.id === 'fire_sprite' || e.def.id === 'magma_golem' || e.def.id === 'forge_hound')) hole(e.cx - cx, e.cy - cy, 50, 0.7);
     // 용암 빛
-    if (this.ch.n === 3) for (let x = 0; x < W; x += 40) hole(x + 20, H - 10 + (this.world.pxH - H - cy), 60, 0.3);
+    if (this.ch.hazard === 'lava') for (let x = 0; x < W; x += 40) hole(x + 20, H - 10 + (this.world.pxH - H - cy), 60, 0.3);
     g.drawImage(this.light, 0, 0);
     // 광원 가산 글로우
     g.save();

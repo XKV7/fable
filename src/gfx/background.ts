@@ -60,9 +60,39 @@ function layer(ch: ChapterDef | 'hub', depth: number): HTMLCanvasElement {
       } else if (kind === 3) {
         g.fillRect(x, LH - h, 18, h);
         g.fillRect(x + 4, LH - h - 20, 8, 20);
+      } else if (kind === 5) {
+        // 돛대와 기울어진 난파선
+        g.fillRect(x + 6, LH - h - 30, 3, h + 30);
+        g.fillRect(x - 6, LH - h - 10, 28, 2);
+        g.beginPath();
+        g.moveTo(x - 20, LH - 30);
+        g.lineTo(x + 40, LH - 50);
+        g.lineTo(x + 34, LH);
+        g.lineTo(x - 14, LH);
+        g.fill();
+      } else if (kind === 6) {
+        // 높은 서가
+        g.fillRect(x, LH - h - 20, 24, h + 20);
+        g.fillStyle = shade(bg[1], 0.12);
+        for (let yy = LH - h - 14; yy < LH; yy += 12) g.fillRect(x + 2, yy, 20, 2);
+        g.fillStyle = bg[1];
+      } else if (kind === 7) {
+        // 떠 있는 바위섬
+        const y = 40 + r() * 140;
+        g.beginPath();
+        g.moveTo(x - 10, y);
+        g.lineTo(x + 30, y);
+        g.lineTo(x + 14, y + 20 + r() * 20);
+        g.fill();
       } else {
         g.fillRect(x, LH - h - 40, 10, h + 40);
         g.fillRect(x - 4, LH - h - 44, 18, 6);
+      }
+    }
+    if (kind === 7) {
+      for (let i = 0; i < 90; i++) {
+        g.fillStyle = `rgba(255,${120 + Math.floor(r() * 120)},230,${0.2 + r() * 0.6})`;
+        g.fillRect(Math.floor(r() * LW), Math.floor(r() * LH), 1, 1);
       }
     }
   } else {
@@ -81,6 +111,32 @@ function layer(ch: ChapterDef | 'hub', depth: number): HTMLCanvasElement {
           g.fill();
           g.fillStyle = shade(col, 0.15);
           g.fillRect(x + 4, LH - h - 6, 3, 2);
+          g.fillStyle = col;
+        } else if (kind === 5) {
+          // 부두 기둥과 그물
+          const h = 70 + r() * 50;
+          g.fillRect(x, LH - h, 8, h);
+          g.fillRect(x + 40, LH - h + 10, 8, h - 10);
+          g.fillRect(x - 6, LH - h, 60, 4);
+          g.globalAlpha = alpha * 0.5;
+          for (let k = 0; k < 6; k++) g.fillRect(x + 8 + k * 6, LH - h + 4, 1, 30);
+          g.globalAlpha = alpha;
+        } else if (kind === 6) {
+          // 얼어붙은 서가와 고드름
+          const h = 130 + r() * 60;
+          g.fillRect(x, LH - h, 50, h);
+          g.fillStyle = shade(col, 0.2);
+          for (let yy = LH - h + 8; yy < LH; yy += 16) g.fillRect(x + 3, yy, 44, 3);
+          for (let k = 0; k < 5; k++) g.fillRect(x + 4 + k * 10, LH - h, 2, 6 + r() * 8);
+          g.fillStyle = col;
+        } else if (kind === 7) {
+          // 금이 간 허공의 기둥 조각
+          const y = 60 + r() * 120;
+          g.fillRect(x, y, 14, 40 + r() * 40);
+          g.fillStyle = '#ff80d0';
+          g.globalAlpha = 0.3;
+          g.fillRect(x + 6, y + 4, 1, 30);
+          g.globalAlpha = alpha;
           g.fillStyle = col;
         } else if (kind === 3) {
           // 굴뚝과 체인

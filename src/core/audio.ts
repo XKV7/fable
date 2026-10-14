@@ -2,7 +2,7 @@
 
 type Wave = OscillatorType;
 
-export type MusicTheme = 'title' | 'hub' | 'ch1' | 'ch2' | 'ch3' | 'ch4' | 'boss' | 'finalboss' | 'gacha' | 'none';
+export type MusicTheme = 'title' | 'hub' | 'ch1' | 'ch2' | 'ch3' | 'ch4' | 'ch5' | 'ch6' | 'ch7' | 'boss' | 'finalboss' | 'gacha' | 'none';
 
 interface ThemeDef {
   bpm: number;
@@ -30,6 +30,9 @@ const THEMES: Record<Exclude<MusicTheme, 'none'>, ThemeDef> = {
   ch2: { bpm: 96, root: 43, scale: DORIAN, prog: [0, 2, 3, 6], lead: 'triangle', bass: 'square', pad: 'sine', drums: 0.5, swing: 0.12 },
   ch3: { bpm: 122, root: 40, scale: PHRYG, prog: [0, 1, 0, 6], lead: 'sawtooth', bass: 'sawtooth', pad: 'square', drums: 0.7 },
   ch4: { bpm: 112, root: 42, scale: HARM, prog: [0, 3, 4, 5], lead: 'square', bass: 'triangle', pad: 'sawtooth', drums: 0.6 },
+  ch5: { bpm: 100, root: 41, scale: DORIAN, prog: [0, 4, 5, 3], lead: 'triangle', bass: 'sawtooth', pad: 'sine', drums: 0.55, swing: 0.08 },
+  ch6: { bpm: 92, root: 47, scale: HARM, prog: [0, 5, 2, 4], lead: 'sine', bass: 'triangle', pad: 'triangle', drums: 0.4 },
+  ch7: { bpm: 118, root: 37, scale: LOCRIAN, prog: [0, 6, 1, 4], lead: 'square', bass: 'sawtooth', pad: 'sine', drums: 0.65 },
   boss: { bpm: 140, root: 40, scale: PHRYG, prog: [0, 1, 5, 4], lead: 'sawtooth', bass: 'square', pad: 'sawtooth', drums: 1 },
   finalboss: { bpm: 150, root: 38, scale: LOCRIAN, prog: [0, 1, 4, 2], lead: 'square', bass: 'sawtooth', pad: 'sawtooth', drums: 1 },
 };

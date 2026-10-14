@@ -36,6 +36,7 @@ export class App {
   private fadeDir = 0;
   toasts: Toast[] = [];
   debug = false;
+  private debugCombo = false;
   frame = 0;
   saveFailed = false;
 
@@ -118,8 +119,11 @@ export class App {
     this.frame++;
     this.input.poll();
     const held = (a: string, b: string): boolean => this.input.rawHeld(a) || this.input.rawHeld(b);
-    // 디버그 토글: Ctrl + Shift + ` (실수로 켜지지 않도록 조합키)
-    if (this.input.raw('Backquote') && held('ControlLeft', 'ControlRight') && held('ShiftLeft', 'ShiftRight')) {
+    // 디버그 토글: Ctrl + Shift + ` + Space 동시 입력 (누르는 순서 무관, 네 키가 모두 눌린 순간 1회)
+    const combo = held('ControlLeft', 'ControlRight') && held('ShiftLeft', 'ShiftRight') && this.input.rawHeld('Backquote') && this.input.rawHeld('Space');
+    const toggle = combo && !this.debugCombo;
+    this.debugCombo = combo;
+    if (toggle) {
       this.debug = !this.debug;
       this.toast(this.debug ? '디버그 모드 ON (1 무적 · 2 재화 · 3 방 클리어 · 4 보스방 · 5 회복 · 제단에서 P 픽업 선택)' : '디버그 모드 OFF', '#80ffa0');
     }

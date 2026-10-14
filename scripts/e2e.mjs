@@ -118,7 +118,12 @@ try {
   await press('Backquote', 200);
   if (await page.evaluate(() => window.__app.debug)) throw new Error('` 단독으로 디버그가 켜지면 안 됨');
   await press('Control+Shift+Backquote', 200);
-  if (!(await page.evaluate(() => window.__app.debug))) throw new Error('Ctrl+Shift+` 로 디버그가 켜져야 함');
+  if (await page.evaluate(() => window.__app.debug)) throw new Error('Ctrl+Shift+` 만으로 디버그가 켜지면 안 됨');
+  for (const k of ['Control', 'Shift', 'Backquote', 'Space']) { await page.keyboard.down(k); await wait(40); }
+  await wait(100);
+  for (const k of ['Space', 'Backquote', 'Shift', 'Control']) await page.keyboard.up(k);
+  await wait(200);
+  if (!(await page.evaluate(() => window.__app.debug))) throw new Error('Ctrl+Shift+`+Space 로 디버그가 켜져야 함');
   await press('Digit1', 200);
   await press('Digit4', 3000);
   await shot('12_boss_intro');

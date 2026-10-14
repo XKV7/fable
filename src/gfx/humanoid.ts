@@ -195,6 +195,41 @@ function drawWeapon(p: Pix, L: Look, hx: number, hy: number, deg: number, back: 
       p.line(sx1, sy1, sx2, sy2, '#f0f0e0');
       break;
     }
+    case 'axe': {
+      p.bar(hx, hy, a + Math.PI, 3, 2, c2);
+      p.bar(hx, hy, a, 11, 2, c2);
+      const tx = hx + Math.cos(a) * 9;
+      const ty = hy + Math.sin(a) * 9;
+      for (let k = 0; k < 6; k++) p.bar(tx + Math.cos(a) * k * 0.5, ty + Math.sin(a) * k * 0.5, a - Math.PI / 2, 5 - Math.abs(k - 2.5) * 0.6, 1, k < 2 ? hi : c, 0);
+      break;
+    }
+    case 'cannon':
+      p.bar(hx, hy, a + Math.PI, 5, 5, lo);
+      p.bar(hx, hy, a, 12, 5, c);
+      p.bar(hx, hy, a, 12, 1, hi);
+      p.bar(hx + Math.cos(a) * 12, hy + Math.sin(a) * 12, a, 2, 6, c2);
+      break;
+    case 'lute':
+      p.ellipse(hx + Math.cos(a) * 2, hy + Math.sin(a) * 2 + 1, 3, 3, c);
+      p.px(hx + Math.cos(a) * 2, hy + Math.sin(a) * 2 + 1, lo);
+      p.bar(hx, hy, a - 0.6, 8, 1, c2, 3);
+      break;
+    case 'claws':
+      for (let k = -1; k <= 1; k++) p.bar(hx, hy, a + k * 0.35, 5, 1, k === 0 ? hi : c, 1);
+      p.rect(hx - 1, hy - 1, 3, 3, c2);
+      break;
+    case 'strings': {
+      const tx = hx + Math.cos(a) * 3;
+      const ty = hy + Math.sin(a) * 3;
+      p.bar(tx, ty, a + Math.PI / 2, 4, 1, c2, -4);
+      for (let k = -1; k <= 1; k++) p.line(tx + Math.cos(a + Math.PI / 2) * k * 3, ty + Math.sin(a + Math.PI / 2) * k * 3, tx + Math.cos(a + Math.PI / 2) * k * 3, ty + 9, c);
+      break;
+    }
+    case 'talisman':
+      p.rect(hx - 1, hy - 4, 3, 6, c);
+      p.px(hx, hy - 3, c2);
+      p.px(hx, hy - 1, c2);
+      break;
     case 'none':
       break;
   }

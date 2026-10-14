@@ -18,7 +18,7 @@ import { Fx, Camera } from './fx';
 import { NO_INPUT, Player, type ActKind, type PlayerInput } from './player';
 import type { PartyMember, RunState } from './run';
 import type { SaveData } from './save';
-import type { ActEvent, CondKey, EffectDo, Element, FieldDef, ProjDef, Stats, StatusId, SummonDef } from './types';
+import type { ActEvent, CondKey, Look, EffectDo, Element, FieldDef, ProjDef, Stats, StatusId, SummonDef } from './types';
 import { Tile, TS, World } from './world';
 import { makeCanvas } from '../gfx/pixel';
 
@@ -77,6 +77,7 @@ interface WorldText {
   t: number;
 }
 
+const PUPPET_LOOK: Look = { skin: '#f0e0d0', hair: '#ff80c0', hairStyle: 'bun', body: '#8a2a5a', trim: '#ffd0e8', legs: '#4a1a3a', boots: '#2a0a20', eye: '#202020', weapon: 'rapier', wcol: '#e0e0f0', wcol2: '#c0a040', build: 'slim', extra: 'chains' };
 const ELEM_COL: Record<string, string> = { fire: '#ff8a3a', thunder: '#bff0ff', poison: '#a0e040', frost: '#c0f0ff', shadow: '#c0a0ff', holy: '#fff0a0', blood: '#ff4060', phys: '#ffffff' };
 
 /** 하나의 방(전투 공간): 월드·엔티티·전투 판정·연출을 모두 소유 */
@@ -979,8 +980,8 @@ export class Room {
     const sy = this.cam.y - 20;
     const gy = this.world.groundBelow(x, Math.max(10, this.player.b.y - 60));
     const ang = Math.atan2(gy - sy, x - sx);
-    if (spr === 'arrow') {
-      this.addProj('player', { spr: 'arrow', spd: 8, life: 70, w: 10, h: 4, col: '#e8d8a0', kb: 0.5 }, x - 20, sy, Math.atan2(gy - sy, 20), m, kind);
+    if (spr === 'arrow' || spr === 'spear') {
+      this.addProj('player', { spr, spd: 8, life: 70, w: spr === 'spear' ? 16 : 10, h: 4, col: spr === 'spear' ? '#d0c0a0' : '#e8d8a0', kb: 0.5, pierce: spr === 'spear' ? 2 : 0 }, x - 20, sy, Math.atan2(gy - sy, 20), m, kind);
       return;
     }
     const r = big ? 70 : 24;
@@ -1160,10 +1161,10 @@ export class Room {
     for (let i = 0; i < n; i++) {
       const same = this.summons.filter((x) => x.def.kind === s.kind);
       if (same.length >= max) same[0].life = 0;
-      const x = this.player.cx + (i - (n - 1) / 2) * 16 - this.player.facing * 10;
+      const x = this.player.cx + (i - (n - 1) / 2) * 16 + this.player.facing * (s.kind === 'turret' ? 16 : -10);
       const sm = new Summon(s, x, this.player.b.y + this.player.b.h, s.m * dm, this.summons.length + i);
       this.summons.push(sm);
-      this.fx.burst(sm.cx, sm.cy, s.kind === 'skeleton' ? '#b0ff90' : '#ffe680', 12, 2);
+      this.fx.burst(sm.cx, sm.cy, s.kind === 'skeleton' ? '#b0ff90' : s.kind === 'puppet' ? '#ff80c0' : s.kind === 'turret' ? '#80e0ff' : '#ffe680', 12, 2);
     }
   }
 
@@ -1402,7 +1403,11 @@ export class Room {
     for (const p of this.pickups) p.render(g, cx, cy, t);
     const skelLook = ENEMY_LOOKS.skeleton;
     for (const s of this.summons)
-      s.render(g, cx, cy, t, (pose) => lookFrame('summon_skel', { ...skelLook, glow: '#7aff6a', eye: '#7aff6a', trim: '#7aff6a' }, pose < 0 ? 'idle0' : (['run0', 'run1', 'run2', 'run3', 'run4', 'run5'] as const)[pose]));
+      s.render(g, cx, cy, t, (pose, kind) =>
+        kind === 'puppet'
+          ? lookFrame('summon_puppet', PUPPET_LOOK, pose < 0 ? 'idle0' : (['run0', 'run1', 'run2', 'run3', 'run4', 'run5'] as const)[pose])
+          : lookFrame('summon_skel', { ...skelLook, glow: '#7aff6a', eye: '#7aff6a', trim: '#7aff6a' }, pose < 0 ? 'idle0' : (['run0', 'run1', 'run2', 'run3', 'run4', 'run5'] as const)[pose]),
+      );
     for (const e of this.enemies) e.render(g, cx, cy, t);
     this.boss?.render(g, cx, cy, t);
     this.fx.renderBack(g, cx, cy);

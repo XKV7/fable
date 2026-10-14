@@ -168,7 +168,7 @@ export interface FieldDef {
   oneShot?: boolean; // 트랩: 적이 닿으면 폭발
 }
 
-export type SummonKind = 'skeleton' | 'wisp' | 'clone' | 'star';
+export type SummonKind = 'skeleton' | 'wisp' | 'clone' | 'star' | 'puppet' | 'turret';
 
 export interface SummonDef {
   kind: SummonKind;
@@ -234,7 +234,7 @@ export interface Look {
   boots: string;
   cape?: string;
   eye: string;
-  weapon: 'sword' | 'greatsword' | 'daggers' | 'bow' | 'scythe' | 'flask' | 'mace' | 'staff' | 'fists' | 'spear' | 'clock' | 'rapier' | 'lance' | 'orb' | 'shovel' | 'hammer' | 'none';
+  weapon: 'sword' | 'greatsword' | 'daggers' | 'bow' | 'scythe' | 'flask' | 'mace' | 'staff' | 'fists' | 'spear' | 'clock' | 'rapier' | 'lance' | 'orb' | 'shovel' | 'hammer' | 'axe' | 'cannon' | 'lute' | 'claws' | 'strings' | 'talisman' | 'none';
   wcol: string;
   wcol2: string;
   shield?: string;

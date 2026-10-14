@@ -37,7 +37,7 @@ export class LoadoutScene implements Scene {
     const lo = app.save.loadout;
     if (this.picking) {
       const list = this.picking === 'char' ? this.ownedChars() : this.ownedWeapons();
-      const cols = 6;
+      const cols = 8;
       if (inp.menu('mleft')) this.pick = Math.max(0, this.pick - 1);
       if (inp.menu('mright')) this.pick = Math.min(list.length - 1, this.pick + 1);
       if (inp.menu('mup')) this.pick = Math.max(0, this.pick - cols);
@@ -198,28 +198,28 @@ export class LoadoutScene implements Scene {
       panel(g, 40, 24, 400, 220);
       text(g, this.picking === 'char' ? '영웅 선택' : '무기 선택', 50, 30, { size: 10, color: '#e0d0ff', bold: true });
       list.forEach((id, i) => {
-        const x = 50 + (i % 6) * 64;
-        const y = 48 + Math.floor(i / 6) * 50;
+        const x = 48 + (i % 8) * 48;
+        const y = 46 + Math.floor(i / 8) * 44;
         const sel = i === this.pick;
         if (this.picking === 'char') {
           const c = CHAR_MAP[id];
           g.fillStyle = sel ? rgba(RARITY_COL[c.rarity], 0.4) : 'rgba(255,255,255,0.05)';
-          g.fillRect(x, y, 60, 46);
+          g.fillRect(x, y, 46, 42);
           g.strokeStyle = RARITY_COL[c.rarity];
-          g.strokeRect(x + 0.5, y + 0.5, 59, 45);
-          g.drawImage(charFrame(id, sel ? 'castUp' : 'idle0'), x + 30 - 24, y - 8, 48, 48);
-          text(g, c.name, x + 30, y + 36, { size: 6, align: 'center', color: lo.chars.includes(id) ? '#ffe080' : '#ffffff' });
+          g.strokeRect(x + 0.5, y + 0.5, 45, 41);
+          g.drawImage(charFrame(id, sel ? 'castUp' : 'idle0'), x + 23 - 22, y - 9, 44, 44);
+          text(g, c.name, x + 23, y + 33, { size: 6, align: 'center', color: lo.chars.includes(id) ? '#ffe080' : '#ffffff', maxW: 44 });
         } else {
           const wd = WEAPON_MAP[id];
           g.fillStyle = sel ? rgba(RARITY_COL[wd.rarity], 0.4) : 'rgba(255,255,255,0.05)';
-          g.fillRect(x, y, 60, 46);
+          g.fillRect(x, y, 46, 42);
           g.strokeStyle = RARITY_COL[wd.rarity];
-          g.strokeRect(x + 0.5, y + 0.5, 59, 45);
-          drawIcon(g, wd.icon, x + 18, y + 4, 24, wd.col);
-          text(g, wd.name.replace(/「.*」/, '').trim(), x + 30, y + 32, { size: 5, align: 'center', color: '#ffffff', maxW: 58 });
-          text(g, `재련${save.weapons[id].rf}`, x + 30, y + 39, { size: 5, align: 'center', color: '#a8a0c0' });
+          g.strokeRect(x + 0.5, y + 0.5, 45, 41);
+          drawIcon(g, wd.icon, x + 13, y + 3, 20, wd.col);
+          text(g, wd.name.replace(/「.*」/, '').trim(), x + 23, y + 26, { size: 5, align: 'center', color: '#ffffff', maxW: 44 });
+          text(g, `재련${save.weapons[id].rf}`, x + 23, y + 34, { size: 5, align: 'center', color: '#a8a0c0' });
         }
-        hot.add(`lp:${i}`, x, y, 60, 46);
+        hot.add(`lp:${i}`, x, y, 46, 42);
       });
       const cur = list[this.pick];
       if (cur && this.picking === 'weapon') text(g, weaponDesc(WEAPON_MAP[cur], save.weapons[cur].rf), 240, 232, { size: 7, align: 'center', color: '#ffe8c0', maxW: 390 });

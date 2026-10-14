@@ -1,8 +1,9 @@
 import type { CharDef } from '../game/types';
 import { melee, multi, P, shot } from './actionKit';
+import { CHARACTERS_EX } from './characters2';
 
 /**
- * 영웅 14명 (★3 6 / ★4 5 / ★5 3). 히트박스 box = [x, y, w, h] — 캐릭터 중심 기준, 오른쪽을 볼 때.
+ * 영웅 26명 (★3 12 / ★4 9 / ★5 5) — 확장 12명은 characters2.ts. 히트박스 box = [x, y, w, h] — 캐릭터 중심 기준, 오른쪽을 볼 때.
  * 이동 move = [프레임, 앞방향 속도, 수직 속도?]. 모든 수치는 여기서 밸런싱.
  */
 export const CHARACTERS: CharDef[] = [
@@ -383,6 +384,8 @@ export const CHARACTERS: CharDef[] = [
     ],
   },
 ];
+
+CHARACTERS.push(...CHARACTERS_EX);
 
 export const CHAR_MAP: Record<string, CharDef> = Object.fromEntries(CHARACTERS.map((c) => [c.id, c]));
 export const STARTER_CHAR = 'kael';

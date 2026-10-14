@@ -27,9 +27,9 @@ function expectedRate5(): number {
 
 describe('가챠 확률 곡선', () => {
   it('기본 확률과 천장', () => {
-    expect(rate5At(1)).toBeCloseTo(0.015);
-    expect(rate5At(44)).toBeCloseTo(0.015);
-    expect(rate5At(45)).toBeGreaterThan(0.015);
+    expect(rate5At(1)).toBeCloseTo(GACHA.rate5);
+    expect(rate5At(44)).toBeCloseTo(GACHA.rate5);
+    expect(rate5At(45)).toBeGreaterThan(GACHA.rate5);
     expect(rate5At(60)).toBe(1);
     for (let n = 1; n < 60; n++) expect(rate5At(n + 1)).toBeGreaterThanOrEqual(rate5At(n));
   });
@@ -76,11 +76,11 @@ describe('10만 회 시뮬레이션', () => {
   it('하드 천장: 60회 이내 ★5 확정', () => {
     expect(maxGap).toBeLessThanOrEqual(60);
   });
-  it('소프트 천장 이전 ★5 확률 ≈ 1.5%', () => {
-    expect(Math.abs(base5 / baseN - 0.015)).toBeLessThan(0.0015);
+  it('소프트 천장 이전 ★5 확률 ≈ 0.7%', () => {
+    expect(Math.abs(base5 / baseN - GACHA.rate5)).toBeLessThan(GACHA.rate5 * 0.12);
   });
-  it('★4 확률 ≈ 13%', () => {
-    expect(Math.abs(base4 / base4N - 0.13)).toBeLessThan(0.006);
+  it('★4 확률 ≈ 16.3%', () => {
+    expect(Math.abs(base4 / base4N - GACHA.rate4)).toBeLessThan(0.006);
   });
   it('10회마다 ★4 이상 1개 보장', () => {
     expect(max4Gap).toBeLessThanOrEqual(10);

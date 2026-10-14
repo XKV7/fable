@@ -402,10 +402,10 @@ export class GachaScene implements Scene {
     } else if (k === 'char') {
       const show = CHARACTERS.filter((c) => c.rarity === 5);
       show.forEach((c, i) => {
-        const x = 150 + i * 68;
-        g.drawImage(tinted(charFrame(c.id, 'idle0'), save.chars[c.id] ? RARITY_COL[5] : '#1a1028'), x - 37, 64, 96, 96);
-        g.drawImage(charFrame(c.id, i === Math.floor(this.t / 60) % 3 ? 'castUp' : 'idle0'), x - 36, 64, 96, 96);
-        text(g, c.name, x + 12, 162, { size: 7, align: 'center', color: '#ffe080' });
+        const x = 118 + i * 46;
+        g.drawImage(tinted(charFrame(c.id, 'idle0'), save.chars[c.id] ? RARITY_COL[5] : '#1a1028'), x - 29, 80, 76, 76);
+        g.drawImage(charFrame(c.id, i === Math.floor(this.t / 60) % show.length ? 'castUp' : 'idle0'), x - 28, 80, 76, 76);
+        text(g, c.name, x + 10, i % 2 ? 168 : 160, { size: 7, align: 'center', color: '#ffe080' });
       });
       text(g, `영웅 ${CHARACTERS.length}명 · 보유 ${Object.keys(save.chars).length}명`, 116, 180, { size: 7, color: '#c8c0d8' });
     } else {

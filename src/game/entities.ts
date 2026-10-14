@@ -392,12 +392,26 @@ export class Summon {
     this.t++;
     if (--this.life <= 0) {
       this.dead = true;
-      room.fx.burst(this.cx, this.cy, this.def.kind === 'skeleton' ? '#e8e0c8' : '#ffe680', 8, 1.5);
+      room.fx.burst(this.cx, this.cy, this.def.kind === 'skeleton' ? '#e8e0c8' : this.def.kind === 'puppet' ? '#ff80c0' : this.def.kind === 'turret' ? '#80e0ff' : '#ffe680', 8, 1.5);
       return;
     }
     if (this.atkCd > 0) this.atkCd--;
     const tgt = room.nearestEnemy(this.cx, this.cy, 260);
-    if (this.def.kind === 'skeleton') {
+    if (this.def.kind === 'turret') {
+      this.b.vy = Math.min(6, this.b.vy + 0.28);
+      room.world.move(this.b);
+      if (tgt) {
+        this.facing = Math.sign(tgt.cx - this.cx) || 1;
+        if (this.atkCd <= 0) {
+          this.atkCd = 40;
+          const a = Math.atan2(tgt.cy - (this.cy - 4), tgt.cx - this.cx);
+          room.addProj('player', { spr: 'bolt', spd: 6, life: 60, w: 8, h: 6, col: '#80e0ff', el: 'thunder', st: 'shock' }, this.cx, this.cy - 4, a, this.mult, 'proc');
+          audio.play('proj', 1.4);
+        }
+      }
+      return;
+    }
+    if (this.def.kind === 'skeleton' || this.def.kind === 'puppet') {
       this.b.vy = Math.min(6, this.b.vy + 0.28);
       if (tgt) {
         const dx = tgt.cx - this.cx;
@@ -407,8 +421,9 @@ export class Summon {
           this.b.vx = 0;
           if (this.atkCd <= 0) {
             this.atkCd = 45;
-            room.hitEnemiesBox({ x: this.cx + (this.facing > 0 ? 0 : -24), y: this.cy - 12, w: 24, h: 22 }, { m: this.mult, kind: 'proc', kb: 1.5, up: 0, hs: 1, dir: this.facing, el: 'shadow', proc: true });
-            room.fx.slash(this.cx, this.cy, this.facing, { arc: 'h', r: 12 }, '#b0ff90');
+            const pup = this.def.kind === 'puppet';
+            room.hitEnemiesBox({ x: this.cx + (this.facing > 0 ? 0 : -24), y: this.cy - 12, w: 24, h: 22 }, { m: this.mult, kind: 'proc', kb: 1.5, up: 0, hs: 1, dir: this.facing, el: 'shadow', st: pup ? 'bleed' : undefined, proc: true });
+            room.fx.slash(this.cx, this.cy, this.facing, { arc: pup ? 'x' : 'h', r: 12 }, pup ? '#ff80c0' : '#b0ff90');
             audio.play('swing', 1.3);
           }
         }
@@ -431,9 +446,34 @@ export class Summon {
       }
     }
   }
-  render(g: CanvasRenderingContext2D, cx: number, cy: number, time: number, skelFrame: (pose: number) => HTMLCanvasElement): void {
-    if (this.def.kind === 'skeleton') {
-      const img = skelFrame(Math.abs(this.b.vx) > 0.1 ? Math.floor(time / 5) % 6 : -1);
+  render(g: CanvasRenderingContext2D, cx: number, cy: number, time: number, skelFrame: (pose: number, kind: string) => HTMLCanvasElement): void {
+    if (this.def.kind === 'turret') {
+      const x = Math.round(this.cx - cx);
+      const y = Math.round(this.b.y + this.b.h - cy);
+      // 삼각대 + 포신 + 전기 코어
+      g.fillStyle = '#3a4048';
+      g.fillRect(x - 8, y - 2, 4, 2);
+      g.fillRect(x + 4, y - 2, 4, 2);
+      g.fillRect(x - 6, y - 5, 2, 3);
+      g.fillRect(x + 4, y - 5, 2, 3);
+      g.fillStyle = '#4a5058';
+      g.fillRect(x - 5, y - 7, 10, 3);
+      g.fillStyle = '#7a8088';
+      g.fillRect(x - 5, y - 15, 10, 8);
+      g.fillStyle = '#ffb040';
+      g.fillRect(x - 5, y - 9, 10, 1);
+      g.fillStyle = (time >> 3) % 2 ? '#80e0ff' : '#c0f4ff';
+      g.fillRect(x - 2, y - 13, 4, 3);
+      g.fillStyle = '#5a6068';
+      g.fillRect(this.facing > 0 ? x + 5 : x - 11, y - 13, 6, 3);
+      if (this.life < 60 && (time >> 2) % 2) {
+        g.fillStyle = 'rgba(255,255,255,0.4)';
+        g.fillRect(x - 5, y - 15, 10, 15);
+      }
+      return;
+    }
+    if (this.def.kind === 'skeleton' || this.def.kind === 'puppet') {
+      const img = skelFrame(Math.abs(this.b.vx) > 0.1 ? Math.floor(time / 5) % 6 : -1, this.def.kind);
       const x = Math.round(this.cx - 24 - cx);
       const y = Math.round(this.b.y + this.b.h - 44 - cy);
       g.save();

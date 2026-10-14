@@ -75,9 +75,14 @@ export class GrowthScene implements Scene {
     drawIcon(g, 'shard', 360, 9, 10, '#40d0e0');
     text(g, `영혼 결정 ${save.crystals}`, 374, 10, { size: 8, color: '#a0f0ff' });
     panel(g, 8, 28, 130, 228);
+    const VIS = 14;
+    const off = Math.max(0, Math.min(list.length - VIS, this.sel - Math.floor(VIS / 2)));
+    if (off > 0) text(g, '▲', 73, 29, { size: 5, align: 'center', color: '#a8a0c0' });
+    if (off + VIS < list.length) text(g, '▼', 73, 250, { size: 5, align: 'center', color: '#a8a0c0' });
     list.forEach((id, i) => {
+      if (i < off || i >= off + VIS) return;
       const c = CHAR_MAP[id];
-      const y = 32 + i * 16;
+      const y = 34 + (i - off) * 15.5;
       g.fillStyle = i === this.sel ? rgba(RARITY_COL[c.rarity], 0.35) : 'transparent';
       g.fillRect(12, y, 122, 15);
       hot.add(`gr:${i}`, 12, y, 122, 15);

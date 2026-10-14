@@ -116,6 +116,9 @@ try {
 
   step('디버그 치트로 보스방 이동');
   await press('Backquote', 200);
+  if (await page.evaluate(() => window.__app.debug)) throw new Error('` 단독으로 디버그가 켜지면 안 됨');
+  await press('Control+Shift+Backquote', 200);
+  if (!(await page.evaluate(() => window.__app.debug))) throw new Error('Ctrl+Shift+` 로 디버그가 켜져야 함');
   await press('Digit1', 200);
   await press('Digit4', 3000);
   await shot('12_boss_intro');

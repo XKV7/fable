@@ -500,13 +500,14 @@ export class Room {
     this.intensity += (target - this.intensity) * 0.02;
     // 상호작용
     this.prompt = null;
-    let best = 30;
+    // 범위 안의 가장 가까운 대상. 거점 시설은 건물이 커서 앞에 서기만 하면 되도록 넓게
+    let best = Infinity;
     for (const p of this.props) {
       if (p.kind === 'chest' && p.used) continue;
       if (p.kind === 'door' && !p.open) continue;
       const d = Math.abs(p.x - this.player.cx) + Math.abs(p.y - 10 - (this.player.b.y + this.player.b.h - 10)) * 0.5;
-      const range = p.kind === 'hub' ? 26 : p.kind === 'sign' ? 40 : 22;
-      if (d < range && d < best + range) {
+      const range = p.kind === 'hub' ? 44 : p.kind === 'sign' ? 40 : 22;
+      if (d < range && d < best) {
         best = d;
         this.prompt = p;
       }

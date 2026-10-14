@@ -19,6 +19,8 @@ type Focus = 0 | 1 | 2 | 3 | 4; // 슬롯1, 슬롯2, 무기, 저주, 출정
 /** 편성: 영웅 2명 + 무기 1개 + 저주 단계 선택 후 출정 */
 export class LoadoutScene implements Scene {
   focus: Focus = 4;
+  /** 무기 칸에서 위로 갈 때 돌아갈 영웅 칸 */
+  lastSlot: 0 | 1 = 0;
   picking: 'char' | 'weapon' | null = null;
   pick = 0;
   t = 0;
@@ -38,10 +40,13 @@ export class LoadoutScene implements Scene {
     if (this.picking) {
       const list = this.picking === 'char' ? this.ownedChars() : this.ownedWeapons();
       const cols = 8;
-      if (inp.menu('mleft')) this.pick = Math.max(0, this.pick - 1);
-      if (inp.menu('mright')) this.pick = Math.min(list.length - 1, this.pick + 1);
-      if (inp.menu('mup')) this.pick = Math.max(0, this.pick - cols);
+      const before = this.pick;
+      // 좌우는 끝에서 반대쪽으로 순환, 상하는 같은 열 유지
+      if (inp.menu('mleft')) this.pick = (this.pick - 1 + list.length) % list.length;
+      if (inp.menu('mright')) this.pick = (this.pick + 1) % list.length;
+      if (inp.menu('mup') && this.pick - cols >= 0) this.pick -= cols;
       if (inp.menu('mdown')) this.pick = Math.min(list.length - 1, this.pick + cols);
+      if (this.pick !== before) audio.play('select');
       const h = hot.hover();
       let click = false;
       if (h?.startsWith('lp:')) {
@@ -72,18 +77,7 @@ export class LoadoutScene implements Scene {
       app.go(this.back);
       return;
     }
-    if (inp.menu('mup')) {
-      this.focus = Math.max(0, this.focus - 1) as Focus;
-      audio.play('select');
-    }
-    if (inp.menu('mdown')) {
-      this.focus = Math.min(4, this.focus + 1) as Focus;
-      audio.play('select');
-    }
-    if (this.focus === 3) {
-      if (inp.menu('mleft')) app.save.curse = Math.max(0, app.save.curse - 1);
-      if (inp.menu('mright')) app.save.curse = Math.min(app.save.curseMax, app.save.curse + 1);
-    }
+    this.navigate();
     const h = hot.hover();
     let click = false;
     if (h?.startsWith('lf:')) {
@@ -102,9 +96,62 @@ export class LoadoutScene implements Scene {
         this.picking = 'weapon';
         this.pick = Math.max(0, this.ownedWeapons().indexOf(lo.weapon));
       } else if (this.focus === 3) {
-        app.save.curse = app.save.curse >= app.save.curseMax ? 0 : app.save.curse + 1;
+        if (!this.curseLocked()) app.save.curse = app.save.curse >= app.save.curseMax ? 0 : app.save.curse + 1;
       } else this.depart();
     }
+  }
+
+  /** 저주 단계가 아직 해금되지 않았으면 안내하고 true */
+  private curseLocked(): boolean {
+    if (app.save.curseMax > 0) return false;
+    audio.play('error');
+    app.toast('저주 단계는 끝없는 왕을 쓰러뜨리면 해금된다', '#ff9090');
+    return true;
+  }
+
+  /**
+   * 화면 배치대로 2차원 이동:
+   *   [0 선봉] [1 교대]
+   *   [2 무기          ]
+   *   [3 저주] [4 출정!]
+   * 저주 칸에서 A/D는 단계 변경, 최고 단계에서 D를 누르면 출정으로.
+   */
+  private navigate(): void {
+    const inp = app.input;
+    const f = this.focus;
+    let n: Focus = f;
+    if (inp.menu('mleft')) {
+      if (f === 1) n = 0;
+      else if (f === 0) n = 1;
+      else if (f === 4) n = 3;
+      else if (f === 3 && app.save.curse > 0) {
+        app.save.curse--;
+        audio.play('select');
+      } else if (f === 3) this.curseLocked();
+    }
+    if (inp.menu('mright')) {
+      if (f === 0) n = 1;
+      else if (f === 1) n = 0;
+      else if (f === 2) n = 4;
+      else if (f === 3 && app.save.curse < app.save.curseMax) {
+        app.save.curse++;
+        audio.play('select');
+      } else if (f === 3) n = 4;
+    }
+    if (inp.menu('mup')) {
+      if (f === 2) n = this.lastSlot;
+      else if (f === 3 || f === 4) n = 2;
+    }
+    if (inp.menu('mdown')) {
+      if (f === 0 || f === 1) n = 2;
+      else if (f === 2) n = 3;
+      else if (f === 3) n = 4;
+    }
+    if (n !== f) {
+      this.focus = n;
+      audio.play('select');
+    }
+    if (this.focus === 0 || this.focus === 1) this.lastSlot = this.focus;
   }
 
   private depart(): void {
@@ -224,7 +271,7 @@ export class LoadoutScene implements Scene {
       const cur = list[this.pick];
       if (cur && this.picking === 'weapon') text(g, weaponDesc(WEAPON_MAP[cur], save.weapons[cur].rf), 240, 232, { size: 7, align: 'center', color: '#ffe8c0', maxW: 390 });
       if (cur && this.picking === 'char') text(g, `${CHAR_MAP[cur].passive.name}: ${CHAR_MAP[cur].passive.desc}`, 240, 232, { size: 7, align: 'center', color: '#ffe8c0', maxW: 390 });
-      keyHint(g, [['방향키', '선택'], [app.input.label('attack'), '결정'], ['Esc', '취소']]);
-    } else keyHint(g, [['↑↓', '항목'], [app.input.label('attack'), '변경/출정'], ['Esc', '나가기']], 258);
+      keyHint(g, [['WASD/방향키', '선택'], [`${app.input.label('attack')}/${app.input.label('interact')}`, '결정'], ['Esc', '취소']]);
+    } else keyHint(g, [['WASD/방향키', '항목'], [`${app.input.label('attack')}/${app.input.label('interact')}`, '변경/출정'], ['Esc', '나가기']], 258);
   }
 }

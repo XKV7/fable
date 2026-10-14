@@ -149,6 +149,7 @@ export interface ProjDef {
   ret?: boolean; // 부메랑
   hs?: number;
   ground?: boolean; // 지면을 따라 이동
+  landY?: number; // 낙하체(유성·창비): 벽·발판을 무시하고 이 높이에 닿으면 착탄
 }
 
 export type FieldVis = 'fire' | 'poison' | 'ice' | 'thunder' | 'void' | 'holy' | 'time' | 'blood' | 'trap' | 'star';

@@ -86,6 +86,8 @@ export class Projectile {
       this.y = gy - d.h / 2;
       if (room.world.solidPx(this.x + Math.sign(this.vx) * d.w * 0.5, this.y - 2)) this.die(room);
       if (this.t % 3 === 0) room.fx.dust(this.x, gy, 2);
+    } else if (d.landY !== undefined) {
+      if (this.y >= d.landY) this.die(room);
     } else if (!d.ret && room.world.solidPx(this.x, this.y)) {
       this.die(room);
     }

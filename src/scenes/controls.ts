@@ -41,7 +41,6 @@ export class ControlsScene implements Scene {
       text(g, k, 244, 56 + i * 30, { size: 7, color: '#ffe080', bold: true });
       text(g, v, 244, 67 + i * 30, { size: 6, color: '#c8c0d8', maxW: 214 });
     });
-    text(g, 'Ctrl + Shift + ` (백틱): 디버그 오버레이 (FPS·히트박스·치트)', 244, 240, { size: 6, color: '#80ffa0' });
     keyHint(g, [['Esc', '돌아가기']], 258);
   }
 }

@@ -100,7 +100,7 @@ try {
 
   step('이동/공격/점프/대시/교대');
   await page.keyboard.down('KeyD');
-  for (const k of ['KeyJ', 'KeyJ', 'KeyJ', 'KeyW', 'Space', 'KeyQ', 'KeyJ', 'KeyJ']) await press(k, 140);
+  for (const k of ['KeyJ', 'KeyJ', 'KeyJ', 'KeyW', 'Space', 'ShiftLeft', 'KeyJ', 'KeyJ']) await press(k, 140);
   await page.keyboard.up('KeyD');
   await shot('09_run_combat');
   await press('KeyG', 200);

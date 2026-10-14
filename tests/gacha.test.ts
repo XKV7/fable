@@ -151,3 +151,19 @@ describe('디버그 픽업 지정', () => {
     expect(sanitize({ ...s, pickupOverride: { five: 'ignia', four: ['seira', 'seira'] } }).pickupOverride).toBeNull();
   });
 });
+
+describe('키 설정 이전', () => {
+  it('v2 저장: 대시 Q → Shift, 다른 키는 유지 / 대시를 바꿨다면 유지 / 더 오래된 버전은 기본값', async () => {
+    const { sanitize } = await import('../src/game/save');
+    const { DEFAULT_BINDINGS, cloneBindings } = await import('../src/core/input');
+    const v2 = cloneBindings(DEFAULT_BINDINGS);
+    v2.dash.keys = ['KeyQ'];
+    v2.attack.keys = ['KeyL'];
+    const a = sanitize({ settings: { bindVer: 2, bindings: v2 } }).settings.bindings;
+    expect(a.dash.keys).toEqual(['ShiftLeft', 'ShiftRight']);
+    expect(a.attack.keys).toEqual(['KeyL']);
+    v2.dash.keys = ['KeyV'];
+    expect(sanitize({ settings: { bindVer: 2, bindings: v2 } }).settings.bindings.dash.keys).toEqual(['KeyV']);
+    expect(sanitize({ settings: { bindVer: 1, bindings: v2 } }).settings.bindings.attack.keys).toEqual(DEFAULT_BINDINGS.attack.keys);
+  });
+});

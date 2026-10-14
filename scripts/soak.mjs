@@ -12,7 +12,7 @@ p.on('pageerror', (e) => { errors.push(e.message); console.log('PAGEERR', e.mess
 await p.goto(url);
 await p.waitForTimeout(1500);
 await p.locator('canvas').click();
-const keys = ['KeyJ', 'KeyJ', 'KeyJ', 'KeyE', 'KeyR', 'KeyG', 'KeyW', 'KeyQ', 'KeyJ', 'KeyK'];
+const keys = ['KeyJ', 'KeyJ', 'KeyJ', 'KeyE', 'KeyR', 'KeyG', 'KeyW', 'ShiftLeft', 'KeyJ', 'KeyK'];
 for (let r = start; r < start + runs; r++) {
   await p.evaluate(async (r) => {
     const { RunScene } = await import('/src/scenes/run.ts');

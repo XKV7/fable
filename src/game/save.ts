@@ -50,7 +50,7 @@ export interface SaveData {
 
 export const SAVE_KEY = 'pact_save_v1';
 /** 기본 키 배치가 바뀌면 올린다 — 이전 버전의 저장된 키 설정은 새 기본값으로 교체 */
-export const BIND_VER = 2;
+export const BIND_VER = 3;
 
 export function defaultSettings(): Settings {
   return { music: 0.6, sfx: 0.8, shake: 1, dmgNumbers: true, bindings: cloneBindings(DEFAULT_BINDINGS), bindVer: BIND_VER };
@@ -89,6 +89,14 @@ function validOverride(o: unknown): SaveData['pickupOverride'] {
   return { five: v.five, four: [v.four[0], v.four[1]] };
 }
 
+/** 키 설정 이전: v2(WASD 배치)는 그대로 두고 대시만 Q → Shift (대시를 직접 바꾼 경우는 유지), 그보다 오래된 것은 새 기본값 */
+function migrateBindings(ver: number | undefined, b: Bindings | undefined): Bindings {
+  if (!b || (ver !== BIND_VER && ver !== 2)) return cloneBindings(DEFAULT_BINDINGS);
+  const out = cloneBindings(b);
+  if (ver === 2 && out.dash.keys.length === 1 && out.dash.keys[0] === 'KeyQ') out.dash.keys = [...DEFAULT_BINDINGS.dash.keys];
+  return out;
+}
+
 /** 누락 필드 보정 (구버전/손상 데이터 대비) */
 export function sanitize(raw: unknown): SaveData {
   const base = newSave();
@@ -100,7 +108,7 @@ export function sanitize(raw: unknown): SaveData {
     v: 1,
     pity: { ...base.pity, ...(r.pity ?? {}) },
     stats: { ...base.stats, ...(r.stats ?? {}), bossKills: { ...(r.stats?.bossKills ?? {}) } },
-    settings: { ...base.settings, ...(r.settings ?? {}), bindVer: BIND_VER, bindings: cloneBindings((r.settings?.bindVer === BIND_VER && r.settings?.bindings ? r.settings.bindings : DEFAULT_BINDINGS) as Bindings) },
+    settings: { ...base.settings, ...(r.settings ?? {}), bindVer: BIND_VER, bindings: migrateBindings(r.settings?.bindVer, r.settings?.bindings) },
     chars: { ...base.chars, ...(r.chars ?? {}) },
     weapons: { ...base.weapons, ...(r.weapons ?? {}) },
     loadout: r.loadout && Array.isArray(r.loadout.chars) ? { chars: [r.loadout.chars[0] ?? STARTER_CHAR, r.loadout.chars[1] ?? ''], weapon: r.loadout.weapon ?? STARTER_WEAPON } : base.loadout,

@@ -48,7 +48,7 @@ export const DEFAULT_BINDINGS: Bindings = {
   down: { keys: ['KeyS'], pad: [13] },
   jump: { keys: ['KeyW', 'Space'], pad: [0] },
   attack: { keys: ['KeyJ'], pad: [2] },
-  dash: { keys: ['KeyQ'], pad: [1, 7] },
+  dash: { keys: ['ShiftLeft', 'ShiftRight'], pad: [1, 7] },
   skill1: { keys: ['KeyE'], pad: [4] },
   skill2: { keys: ['KeyR'], pad: [5] },
   swap: { keys: ['KeyG'], pad: [3] },
@@ -84,7 +84,7 @@ export function cloneBindings(b: Bindings): Bindings {
 
 const KEY_NAMES: Record<string, string> = {
   ArrowLeft: '←', ArrowRight: '→', ArrowUp: '↑', ArrowDown: '↓', Space: 'Space', Escape: 'Esc', Tab: 'Tab', Enter: 'Enter',
-  ShiftLeft: 'L-Shift', ShiftRight: 'R-Shift', ControlLeft: 'L-Ctrl', ControlRight: 'R-Ctrl', AltLeft: 'L-Alt', AltRight: 'R-Alt',
+  ShiftLeft: 'Shift', ShiftRight: 'R-Shift', ControlLeft: 'L-Ctrl', ControlRight: 'R-Ctrl', AltLeft: 'L-Alt', AltRight: 'R-Alt',
   Backspace: 'Bksp', Comma: ',', Period: '.', Slash: '/', Semicolon: ';', Quote: "'", BracketLeft: '[', BracketRight: ']',
   Minus: '-', Equal: '=', Backquote: '`', Backslash: '\\',
 };
@@ -253,7 +253,8 @@ export class Input {
     }
     if (k === 'tabL') return this.bindHeld(this.bindings.skill1, prev);
     if (k === 'tabR') return this.bindHeld(this.bindings.skill2, prev);
-    if (k === 'back') return this.bindHeld(this.bindings.pause, prev) || this.bindHeld(this.bindings.dash, prev);
+    // 뒤로: 일시정지 키 + 패드의 대시 버튼(B). 키보드 대시(Shift)는 메뉴 뒤로로 쓰지 않음
+    if (k === 'back') return this.bindHeld(this.bindings.pause, prev) || this.bindHeld({ keys: [], pad: this.bindings.dash.pad }, prev);
     return false;
   }
 

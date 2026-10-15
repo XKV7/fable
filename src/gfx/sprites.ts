@@ -337,7 +337,7 @@ export function enemyFrame(id: string, anim: string, f: number): HTMLCanvasEleme
   if (!c) {
     const p = new Pix(48, 48);
     (DRAW[id] ?? DRAW.dummy)(p, anim, ff);
-    p.outline('#0a0810');
+    p.finish();
     c = p.c;
     cache.set(k, c);
   }
@@ -350,7 +350,7 @@ export function mycoraFrame(anim: string, f: number): HTMLCanvasElement {
   const k = `b:mycora|${anim}|${ff}`;
   let c = cache.get(k);
   if (c) return c;
-  const p = new Pix(96, 96);
+  const p = new Pix(48, 48, 0.5);
   const sq = anim === 'wind' ? 4 : anim === 'atk' ? -4 : Math.round(Math.sin(ff * 1.57) * 2);
   // 몸체 (슬라임)
   p.ellipse(48, 78 - sq / 2, 30 + sq, 14 - sq / 2, '#4a8a2a');
@@ -373,7 +373,7 @@ export function mycoraFrame(anim: string, f: number): HTMLCanvasElement {
   for (let i = 0; i < 6; i++) p.px(43 + i * 2, 66, '#e0e0c0');
   // 균사
   for (let i = 0; i < 6; i++) p.line(20 + i * 11, 88, 18 + i * 11 + ((ff + i) % 2) * 3, 94, '#6ab03a');
-  p.outline('#0a0810');
+  p.finish();
   c = p.c;
   cache.set(k, c);
   return c;
@@ -384,7 +384,7 @@ export function ignisFrame(anim: string, f: number, phase2: boolean): HTMLCanvas
   const k = `b:ignis|${anim}|${ff}|${phase2 ? 1 : 0}`;
   let c = cache.get(k);
   if (c) return c;
-  const p = new Pix(112, 112);
+  const p = new Pix(56, 56, 0.5);
   const arm = anim === 'wind' ? -18 : anim === 'atk' ? 10 : Math.round(Math.sin(ff * 1.57) * 2);
   const r = '#4a2a24';
   const rh = '#6a4034';
@@ -425,7 +425,7 @@ export function ignisFrame(anim: string, f: number, phase2: boolean): HTMLCanvas
   p.rect(100, 30 + arm, 6, 60, '#3a3030');
   p.rect(94, 20 + arm, 18, 16, '#5a5258');
   p.rect(94, 20 + arm, 18, 3, '#7a7278');
-  p.outline('#0a0408');
+  p.finish();
   c = p.c;
   cache.set(k, c);
   return c;
@@ -581,7 +581,7 @@ export function propSprite(kind: string, f = 0): HTMLCanvasElement {
       p = new Pix(8, 8);
       p.rect(0, 0, 8, 8, '#ff00ff');
   }
-  p.outline('#0a0810');
+  p.finish();
   c = p.c;
   cache.set(k, c);
   return c;

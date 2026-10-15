@@ -1,4 +1,4 @@
-import { shade } from '../gfx/pixel';
+import { shade, snapColor } from '../gfx/pixel';
 
 /**
  * 10×10 픽셀 아이콘 비트맵. '#' 본색, '+' 밝은색, '-' 어두운색, 'w' 흰색, 'k' 검정.
@@ -76,16 +76,21 @@ const ALIAS: Record<string, string> = { pouch: 'pouch', glovee: 'glove' };
 
 export function drawIcon(g: CanvasRenderingContext2D, key: string, x: number, y: number, size: number, col: string): void {
   const bmp = BMP[key] ?? BMP[ALIAS[key] ?? ''] ?? BMP.gem;
-  const s = size / 10;
-  const hi = shade(col, 0.45);
-  const lo = shade(col, -0.4);
+  // 스프라이트와 같은 규칙: 정수 배율(10px 이상) + 공용 팔레트
+  const s = size >= 10 ? Math.floor(size / 10) : size / 10;
+  const o = size >= 10 ? Math.floor((size - s * 10) / 2) : 0;
+  x = Math.round(x) + o;
+  y = Math.round(y) + o;
+  const base = snapColor(col);
+  const hi = snapColor(shade(col, 0.45));
+  const lo = snapColor(shade(col, -0.4));
   for (let r = 0; r < 10; r++) {
     const row = bmp[r];
     for (let c = 0; c < 10; c++) {
       const ch = row[c];
       if (ch === '.' || ch === undefined) continue;
-      g.fillStyle = ch === '#' ? col : ch === '+' ? hi : ch === '-' ? lo : ch === 'w' ? '#ffffff' : '#101018';
-      g.fillRect(x + c * s, y + r * s, s + 0.05, s + 0.05);
+      g.fillStyle = ch === '#' ? base : ch === '+' ? hi : ch === '-' ? lo : ch === 'w' ? '#ffffff' : '#101018';
+      g.fillRect(x + c * s, y + r * s, s >= 1 ? s : s + 0.05, s >= 1 ? s : s + 0.05);
     }
   }
 }

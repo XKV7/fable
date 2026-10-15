@@ -421,6 +421,6 @@ export function drawHumanoid(L: Look, poseName: PoseName): HTMLCanvasElement {
   p.px(sxF, shoulderY, L.trim);
   drawWeapon(p, L, fhx, fhy, P.w, false);
   if (L.weapon !== 'fists' && L.weapon !== 'bow') p.px(fhx, fhy, L.skin);
-  p.outline('#0a0810');
+  p.finish();
   return p.c;
 }

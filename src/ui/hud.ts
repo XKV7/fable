@@ -19,7 +19,9 @@ export function portrait(g: CanvasRenderingContext2D, id: string, x: number, y: 
   g.imageSmoothingEnabled = false;
   g.fillStyle = '#120c1c';
   g.fillRect(x, y, size, size);
-  g.drawImage(f, 13, 13, 22, 22, x, y, size, size);
+  // 1:1 픽셀로 잘라 그린다 (정수 배율 유지)
+  const cy = size >= 24 ? 27 : 24;
+  g.drawImage(f, 24 - size / 2, cy - size / 2, size, size, x, y, size, size);
   if (dim) {
     g.fillStyle = 'rgba(0,0,0,0.5)';
     g.fillRect(x, y, size, size);

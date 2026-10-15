@@ -254,7 +254,7 @@ export class LoadoutScene implements Scene {
           g.fillRect(x, y, 46, 42);
           g.strokeStyle = RARITY_COL[c.rarity];
           g.strokeRect(x + 0.5, y + 0.5, 45, 41);
-          g.drawImage(charFrame(id, sel ? 'castUp' : 'idle0'), x + 23 - 22, y - 9, 44, 44);
+          g.drawImage(charFrame(id, sel ? 'castUp' : 'idle0'), x + 23 - 24, y - 13, 48, 48);
           text(g, c.name, x + 23, y + 33, { size: 6, align: 'center', color: lo.chars.includes(id) ? '#ffe080' : '#ffffff', maxW: 44 });
         } else {
           const wd = WEAPON_MAP[id];

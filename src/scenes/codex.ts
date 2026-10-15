@@ -141,7 +141,7 @@ export class CodexScene implements Scene {
       g.strokeStyle = own ? RARITY_COL[c.rarity] : '#2a2238';
       g.strokeRect(x + 0.5, y + 0.5, 31, 31);
       const f = charFrame(c.id, 'idle0');
-      g.drawImage(own ? f : tinted(f, '#05030a'), 13, 12, 22, 22, x + 2, y + 2, 28, 28);
+      g.drawImage(own ? f : tinted(f, '#05030a'), 10, 14, 28, 28, x + 2, y + 2, 28, 28);
       if (own?.aw) text(g, `${own.aw}`, x + 29, y + 22, { size: 6, align: 'right', color: '#ffe080', bold: true });
       if (save.newChars.includes(c.id)) text(g, 'NEW', x + 2, y + 1, { size: 5, color: '#ff6080', bold: true });
       hot.add(`cx:${i}`, x, y, 32, 32);

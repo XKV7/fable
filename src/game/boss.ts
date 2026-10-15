@@ -794,11 +794,13 @@ export class Boss extends Enemy {
     switch (this.bd.id) {
       case 'mycora':
         img = mycoraFrame(this.anim, f);
-        footOff = 92;
+        sc = 2;
+        footOff = 46;
         break;
       case 'ignis':
         img = ignisFrame(this.anim, f, this.phase >= 1);
-        footOff = 108;
+        sc = 2;
+        footOff = 54;
         break;
       default: {
         sc = 2;

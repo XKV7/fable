@@ -407,7 +407,7 @@ export class GachaScene implements Scene {
       g.fillRect(x, y, w, 46);
       g.strokeStyle = cur ? '#ffffff' : on ? RARITY_COL[c.rarity] : '#3a3048';
       g.strokeRect(x + 0.5, y + 0.5, w - 1, 45);
-      g.drawImage(charFrame(c.id, on ? 'castUp' : 'idle0'), x + w / 2 - 22, y - 8, 44, 44);
+      g.drawImage(charFrame(c.id, on ? 'castUp' : 'idle0'), x + w / 2 - 24, y - 12, 48, 48);
       text(g, c.name, x + w / 2, y + 36, { size: 6, align: 'center', color: on ? '#ffe080' : '#ffffff', maxW: w - 2 });
       if (on) text(g, '✔', x + w - 3, y + 2, { size: 6, align: 'right', color: '#80ffa0', bold: true });
       hot.add(hid, x, y, w, 46);
@@ -499,7 +499,7 @@ export class GachaScene implements Scene {
       text(g, `${c5.title}`, 116, 172, { size: 7, color: '#ffe080' });
       text(g, c5.name, 116, 182, { size: 10, color: '#ffffff', bold: true });
       p.four.forEach((id, i) => {
-        g.drawImage(charFrame(id, 'idle0'), 262 + i * 36 - 36, 140 - 72, 72, 72);
+        g.drawImage(charFrame(id, 'idle0'), 262 + i * 36 - 48, 134 - 88, 96, 96);
         text(g, CHAR_MAP[id].name, 262 + i * 36, 146, { size: 6, align: 'center', color: '#c080ff' });
       });
       text(g, '★4 픽업', 298, 156, { size: 6, align: 'center', color: '#c080ff' });
@@ -517,8 +517,8 @@ export class GachaScene implements Scene {
       const show = CHARACTERS.filter((c) => c.rarity === 5);
       show.forEach((c, i) => {
         const x = 118 + i * 46;
-        g.drawImage(tinted(charFrame(c.id, 'idle0'), save.chars[c.id] ? RARITY_COL[5] : '#1a1028'), x - 29, 80, 76, 76);
-        g.drawImage(charFrame(c.id, i === Math.floor(this.t / 60) % show.length ? 'castUp' : 'idle0'), x - 28, 80, 76, 76);
+        g.drawImage(tinted(charFrame(c.id, 'idle0'), save.chars[c.id] ? RARITY_COL[5] : '#1a1028'), x - 39, 62, 96, 96);
+        g.drawImage(charFrame(c.id, i === Math.floor(this.t / 60) % show.length ? 'castUp' : 'idle0'), x - 38, 62, 96, 96);
         text(g, c.name, x + 10, i % 2 ? 168 : 160, { size: 7, align: 'center', color: '#ffe080' });
       });
       text(g, `영웅 ${CHARACTERS.length}명 · 보유 ${Object.keys(save.chars).length}명`, 116, 180, { size: 7, color: '#c8c0d8' });
@@ -592,7 +592,7 @@ export class GachaScene implements Scene {
     g.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
     g.lineWidth = 1;
     if (r.type === 'char') {
-      g.drawImage(charFrame(r.id, 'idle0'), x + w / 2 - 36, y - 16, 72, 72);
+      g.drawImage(charFrame(r.id, 'idle0'), x + w / 2 - 48, y - 38, 96, 96);
       text(g, CHAR_MAP[r.id].name, x + w / 2, y + h - 26, { size: 7, align: 'center', color: '#ffffff', bold: true });
     } else {
       const wd = WEAPON_MAP[r.id];

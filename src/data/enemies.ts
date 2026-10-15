@@ -29,9 +29,9 @@ export interface EnemyDef {
 
 /**
  * 난이도 조정 (전 적 공통). 원본 수치에 곱해진다.
- * hp·atk 2배, 공격 후 대기 20% 단축, 이동 12% 가속. 예고(windup)는 그대로 둬서 반응 시간은 유지.
+ * hp·atk 1.5배, 공격 후 대기 20% 단축, 이동 12% 가속. 예고(windup)는 그대로 둬서 반응 시간은 유지.
  */
-export const ENEMY_TUNE = { hp: 2, atk: 2, cd: 0.8, speed: 1.12 };
+export const ENEMY_TUNE = { hp: 1.5, atk: 1.5, cd: 0.8, speed: 1.12 };
 
 /** 일반 적 (챕터별 4종). 모든 공격은 windup 프레임 동안 예고 동작(번쩍임 + 느낌표)을 보인다. */
 const RAW_ENEMIES: EnemyDef[] = [

@@ -63,16 +63,16 @@ describe('스토리 구성', () => {
 });
 
 describe('난이도 배율', () => {
-  it('일반 적 체력·공격력 2배', async () => {
+  it('일반 적 체력·공격력 1.5배', async () => {
     const { ENEMY_MAP } = await import('../src/data/enemies');
-    expect(ENEMY_MAP.skeleton.hp).toBe(140);
-    expect(ENEMY_MAP.skeleton.atk).toBe(14);
+    expect(ENEMY_MAP.skeleton.hp).toBe(105);
+    expect(ENEMY_MAP.skeleton.atk).toBe(11);
     expect(ENEMY_MAP.dummy.hp).toBe(999999);
   });
-  it('보스 2배, 끝없는 왕 3배, 망각 4배', async () => {
+  it('일반 보스 1.5배, 끝없는 왕 3배, 망각 4배', async () => {
     const { bossHp, bossAtk } = await import('../src/data/bosses');
-    expect(bossHp(BOSS_MAP.graven)).toBe(4400);
-    expect(bossAtk(BOSS_MAP.graven)).toBe(28);
+    expect(bossHp(BOSS_MAP.graven)).toBe(3300);
+    expect(bossAtk(BOSS_MAP.graven)).toBe(21);
     expect(bossHp(BOSS_MAP.king)).toBe(6500 * 3);
     expect(bossAtk(BOSS_MAP.king)).toBe(26 * 3);
     expect(bossHp(BOSS_MAP.oblivion)).toBe(9000 * 4);

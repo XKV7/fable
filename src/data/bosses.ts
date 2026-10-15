@@ -29,7 +29,7 @@ export interface BossDef {
 }
 
 /** 보스 기본 체력·공격력 배율. 끝없는 왕 3배, 망각 4배는 각 정의의 mult로 지정. */
-export const BOSS_TUNE = 2;
+export const BOSS_TUNE = 1.5;
 
 /** 보스 7체. 패턴 구현은 src/game/boss.ts, 이름·체력·페이즈 구성은 여기서 조정. */
 export const BOSSES: BossDef[] = [

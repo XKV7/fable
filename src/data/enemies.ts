@@ -26,8 +26,14 @@ export interface EnemyDef {
   elem?: { vis: FieldVis; st?: StatusId }; // 충격파/장판 속성 (기본: 화염/독)
 }
 
-/** 일반 적 28종 (챕터별 4종). 모든 공격은 windup 프레임 동안 예고 동작(번쩍임 + 느낌표)을 보인다. */
-export const ENEMIES: EnemyDef[] = [
+/**
+ * 난이도 조정 (전 적 공통). 원본 수치에 곱해진다.
+ * hp·atk 2배, 공격 후 대기 20% 단축, 이동 12% 가속. 예고(windup)는 그대로 둬서 반응 시간은 유지.
+ */
+export const ENEMY_TUNE = { hp: 2, atk: 2, cd: 0.8, speed: 1.12 };
+
+/** 일반 적 (챕터별 4종). 모든 공격은 windup 프레임 동안 예고 동작(번쩍임 + 느낌표)을 보인다. */
+const RAW_ENEMIES: EnemyDef[] = [
   // ── 1장: 무너진 묘소 ──
   { id: 'skeleton', name: '해골 병사', chapter: 1, ai: 'melee', hp: 70, atk: 7, speed: 0.75, w: 12, h: 22, range: 26, windup: 32, cd: 60, kbRes: 0, gold: 4, col: '#e8e0c8', eliteSkill: 'shockwave', weight: 4 },
   { id: 'bone_archer', name: '해골 궁수', chapter: 1, ai: 'archer', hp: 50, atk: 6, speed: 0.6, w: 12, h: 22, range: 170, windup: 40, cd: 100, kbRes: 0, gold: 5, col: '#d8d0b0', eliteSkill: 'volley', weight: 3, proj: { spr: 'arrow', spd: 3.4, life: 120, w: 10, h: 4, col: '#d8d0b0' } },
@@ -66,6 +72,12 @@ export const ENEMIES: EnemyDef[] = [
   // 훈련용
   { id: 'dummy', name: '훈련용 허수아비', chapter: 0, ai: 'dummy', hp: 999999, atk: 0, speed: 0, w: 14, h: 24, range: 0, windup: 0, cd: 0, kbRes: 1, gold: 0, col: '#c0a060', eliteSkill: 'enrage', weight: 0 },
 ];
+
+export const ENEMIES: EnemyDef[] = RAW_ENEMIES.map((e) =>
+  e.ai === 'dummy'
+    ? e
+    : { ...e, hp: Math.round(e.hp * ENEMY_TUNE.hp), atk: Math.round(e.atk * ENEMY_TUNE.atk), cd: Math.round(e.cd * ENEMY_TUNE.cd), speed: e.speed * ENEMY_TUNE.speed },
+);
 
 export const ENEMY_MAP: Record<string, EnemyDef> = Object.fromEntries(ENEMIES.map((e) => [e.id, e]));
 

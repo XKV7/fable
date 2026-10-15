@@ -11,7 +11,11 @@ export interface BossDef {
   patterns: string[][]; // 페이즈별 사용 패턴
   col: string;
   soulStones: number; // 첫 처치 보상
+  mult?: number; // 체력·공격력 배율 (기본 BOSS_TUNE)
 }
+
+/** 보스 기본 체력·공격력 배율. 끝없는 왕 3배, 망각 4배는 각 정의의 mult로 지정. */
+export const BOSS_TUNE = 2;
 
 /** 보스 7체. 패턴 구현은 src/game/boss.ts, 이름·체력·페이즈 구성은 여기서 조정. */
 export const BOSSES: BossDef[] = [
@@ -47,10 +51,10 @@ export const BOSSES: BossDef[] = [
     phases: [0.66, 0.33],
     patterns: [
       ['swordCombo', 'shadowBlades', 'crownBeam', 'teleSlam', 'summonGuards'],
-      ['swordCombo', 'shadowBlades', 'crownBeam', 'teleSlam', 'swordRain', 'darkWave'],
-      ['swordCombo', 'shadowBlades', 'crownBeam', 'teleSlam', 'swordRain', 'darkWave', 'pactShadows'],
+      ['swordCombo', 'shadowBlades', 'crownBeam', 'teleSlam', 'swordRain', 'darkWave', 'royalExecution'],
+      ['swordCombo', 'shadowBlades', 'crownBeam', 'teleSlam', 'swordRain', 'darkWave', 'pactShadows', 'royalExecution'],
     ],
-    col: '#9a6bff', soulStones: 800,
+    col: '#9a6bff', soulStones: 800, mult: 3,
   },
   {
     id: 'morten', name: '익사한 제독 모르텐', title: '가라앉은 함대의 지휘관', chapter: 5, hp: 3300, atk: 18, w: 40, h: 56,
@@ -75,11 +79,15 @@ export const BOSSES: BossDef[] = [
     phases: [0.66, 0.33],
     patterns: [
       ['swordCombo', 'voidPillars', 'shadowBlades', 'teleSlam', 'voidBeam'],
-      ['swordCombo', 'voidPillars', 'shadowBlades', 'teleSlam', 'voidBeam', 'darkWave', 'swordRain'],
-      ['swordCombo', 'voidPillars', 'shadowBlades', 'teleSlam', 'voidBeam', 'darkWave', 'swordRain', 'pactShadows'],
+      ['swordCombo', 'voidPillars', 'shadowBlades', 'teleSlam', 'voidBeam', 'darkWave', 'swordRain', 'oblivionErase', 'royalExecution'],
+      ['swordCombo', 'voidPillars', 'shadowBlades', 'teleSlam', 'voidBeam', 'darkWave', 'swordRain', 'pactShadows', 'oblivionErase', 'royalExecution'],
     ],
-    col: '#ff80d0', soulStones: 1200,
+    col: '#ff80d0', soulStones: 1200, mult: 4,
   },
 ];
 
 export const BOSS_MAP: Record<string, BossDef> = Object.fromEntries(BOSSES.map((b) => [b.id, b]));
+
+/** 배율 적용 후 실제 체력·공격력 */
+export const bossHp = (b: BossDef): number => Math.round(b.hp * (b.mult ?? BOSS_TUNE));
+export const bossAtk = (b: BossDef): number => Math.round(b.atk * (b.mult ?? BOSS_TUNE));

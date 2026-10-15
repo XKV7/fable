@@ -1074,6 +1074,22 @@ export class Room {
 
   bossHit = false;
 
+  /** 즉사기: 체력·보호막·무적 시간을 무시하고 쓰러뜨린다 (부활 효과는 적용) */
+  instantKill(cause: string): void {
+    const p = this.player;
+    if (p.state === 'dead' || this.god) return;
+    this.run.shield = 0;
+    this.run.hp = 0;
+    this.flash('#ffffff', 1);
+    this.cam.shake(10, 30);
+    this.hitstop = Math.max(this.hitstop, 12);
+    this.fx.burst(p.cx, p.cy, '#ff2040', 30, 4);
+    this.fx.number(p.cx, p.b.y - 4, '즉사', '#ff2040', true, 10);
+    if (this.boss && !this.boss.dead) this.bossHit = true;
+    if (this.init.mode === 'run') this.run.stats.bossNoHit = false;
+    this.playerDown(cause);
+  }
+
   private playerDown(cause: string): void {
     const p = this.player;
     if (this.init.mode !== 'run') {
@@ -1371,8 +1387,11 @@ export class Room {
     this.flashCol = col;
     this.flashA = Math.max(this.flashA, a);
   }
-  marker(x: number, y: number, w: number, h: number, dur: number, col: string, fill = false): void {
-    this.markers.push({ x, y, w, h, t: 0, max: dur, col, fill });
+  /** 공격 예고 표시. dur 프레임 뒤 사라진다 — 판정 시점과 같게 맞출 것. 반환값의 end()로 일찍 끌 수 있다. */
+  marker(x: number, y: number, w: number, h: number, dur: number, col: string, fill = false): { end: () => void } {
+    const m: Marker = { x, y, w, h, t: 0, max: dur, col, fill };
+    this.markers.push(m);
+    return { end: () => (m.max = m.t) };
   }
   later(t: number, fn: () => void): void {
     this.timers.push({ t: Math.max(1, t), fn });

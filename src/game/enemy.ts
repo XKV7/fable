@@ -54,7 +54,7 @@ export class Enemy {
     curse: number,
     depth: number,
   ) {
-    const sc = (CHAPTER_SCALE[chapter] ?? 1) * (1 + curse) * (1 + depth * 0.035);
+    const sc = (CHAPTER_SCALE[chapter] ?? 1) * (1 + curse) * (1 + depth * 0.05);
     this.scale = elite ? ELITE_MULT.size : 1;
     const w = Math.round(def.w * this.scale);
     const h = Math.round(def.h * this.scale);

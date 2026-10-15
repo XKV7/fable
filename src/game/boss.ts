@@ -1,4 +1,4 @@
-import { BOSS_MAP, type BossDef } from '../data/bosses';
+import { BOSS_MAP, bossAtk, bossHp, type BossDef } from '../data/bosses';
 import type { EnemyDef } from '../data/enemies';
 import { audio } from '../core/audio';
 import { ENEMY_LOOKS, ignisFrame, lookFrame, mycoraFrame, white, tinted, charFrame } from '../gfx/sprites';
@@ -8,6 +8,21 @@ import { Enemy } from './enemy';
 import type { Room } from './room';
 
 
+/** 몸을 움직이지 않는 원거리·장판·소환 패턴. 다른 패턴과 동시에(보조 패턴으로) 쓸 수 있다. */
+const REMOTE = new Set([
+  'boneRain', 'lanternFire', 'ghostFlames', 'sporeCloud', 'spitVolley', 'rootSpikes', 'toxicFlood', 'lavaPillars', 'moltenRain',
+  'shadowBlades', 'crownBeam', 'swordRain', 'cannonBarrage', 'whirlpool', 'iceSpears', 'pageStorm', 'shelfCollapse', 'blizzard', 'voidPillars',
+]);
+/** 즉사기 */
+const EXECUTE = new Set(['royalExecution', 'oblivionErase']);
+/** 즉사기 재사용 대기 (프레임) */
+const EXECUTE_CD = 900;
+
+interface SubPattern {
+  name: string;
+  t: number;
+}
+
 interface PactShadow {
   id: string;
   x: number;
@@ -16,6 +31,7 @@ interface PactShadow {
   t: number;
   done: boolean;
   hit: boolean;
+  mk?: { end: () => void };
 }
 
 /** 보스: 페이즈별 패턴 풀에서 무작위로 고르며, 각 패턴은 프레임 타임라인으로 구현 */
@@ -34,6 +50,12 @@ export class Boss extends Enemy {
   combo = 0;
   deathT = 0;
   vulnT = 0;
+  subs: SubPattern[] = [];
+  /** 보조 패턴 실행 중 (몸 동작·예고 상태를 건드리지 않는다) */
+  private asSub = false;
+  private execCd = 600;
+  private landMark: { end: () => void } | null = null;
+  private safe: { x: number; y: number }[] = [];
 
   constructor(id: string, x: number, y: number, curse: number) {
     const bd = BOSS_MAP[id];
@@ -41,8 +63,8 @@ export class Boss extends Enemy {
     super(fake, x, y, false, 1, 0, 0);
     this.bd = bd;
     this.isBoss = true;
-    this.maxHp = this.hp = Math.round(bd.hp * (1 + curse));
-    this.atk = Math.round(bd.atk * (1 + curse * 0.8));
+    this.maxHp = this.hp = Math.round(bossHp(bd) * (1 + curse));
+    this.atk = Math.round(bossAtk(bd) * (1 + curse * 0.8));
     this.state = 'idle';
     this.st = 0;
     this.name = bd.name;
@@ -90,6 +112,9 @@ export class Boss extends Enemy {
       this.phase++;
       this.phaseT = 110;
       this.pattern = '';
+      this.subs = [];
+      this.landMark?.end();
+      this.landMark = null;
       this.b.vx = 0;
       audio.play('phase');
       room.cam.shake(7, 50);
@@ -98,9 +123,12 @@ export class Boss extends Enemy {
       if ((this.bd.id === 'king' || this.bd.id === 'oblivion') && this.phase === 2) room.darkBoost = 0.25;
       return;
     }
+    if (this.execCd > 0) this.execCd--;
+    this.runSubs(room);
     if (!this.pattern) {
       this.anim = 'idle';
       this.pose = 'idle0';
+      this.state = 'idle';
       this.face(room);
       const dx = room.player.cx - this.cx;
       if (this.bd.id !== 'mycora') {
@@ -109,33 +137,88 @@ export class Boss extends Enemy {
           this.anim = 'move';
         } else this.b.vx = 0;
       }
-      if (--this.idleT <= 0) {
-        const pool = this.bd.patterns[this.phase].filter((p) => p !== this.last);
-        this.pattern = pool[Math.floor(Math.random() * pool.length)];
-        this.last = this.pattern;
-        this.pt = 0;
-        this.combo = 0;
-      }
+      if (--this.idleT <= 0) this.pickPattern();
       return;
     }
     this.pt++;
+    this.state = 'atk'; // 예고(빨간 번쩍임)는 각 패턴이 판정 직전 구간에만 'wind'로 켠다
     const done = this.runPattern(room, this.pattern, this.pt);
     if (done) {
       this.pattern = '';
-      this.idleT = [55, 40, 30][this.phase] ?? 30;
+      this.idleT = [40, 28, 18][this.phase] ?? 18;
       this.anim = 'idle';
+      this.state = 'idle';
       this.b.vx = 0;
+      this.landMark?.end();
+      this.landMark = null;
     }
   }
 
+  /** 주 패턴 선택 + 보조 패턴(동시 사용) 추가 */
+  private pickPattern(): void {
+    const all = this.bd.patterns[this.phase];
+    const exec = all.filter((p) => EXECUTE.has(p));
+    let pool = all.filter((p) => p !== this.last && !EXECUTE.has(p));
+    if (exec.length && this.execCd <= 0) pool = exec;
+    this.pattern = pool[Math.floor(Math.random() * pool.length)];
+    this.last = this.pattern;
+    this.pt = 0;
+    this.combo = 0;
+    if (EXECUTE.has(this.pattern)) {
+      this.execCd = EXECUTE_CD;
+      return; // 즉사기 중에는 다른 패턴을 겹치지 않는다
+    }
+    const heavy = this.bd.id === 'king' || this.bd.id === 'oblivion';
+    const chance = ([0.4, 0.65, 0.85][this.phase] ?? 0.85) + (heavy ? 0.15 : 0);
+    const maxSubs = this.phase >= 1 ? 2 : 1;
+    for (let i = 0; i < maxSubs; i++) {
+      if (this.subs.length >= maxSubs || Math.random() > chance - i * 0.3) break;
+      const cands = all.filter((p) => REMOTE.has(p) && p !== this.pattern && !this.subs.some((s) => s.name === p));
+      if (!cands.length) break;
+      this.subs.push({ name: cands[Math.floor(Math.random() * cands.length)], t: 0 });
+    }
+  }
+
+  /** 보조 패턴 진행: 몸 상태를 저장했다가 되돌려 주 패턴의 동작·예고와 섞이지 않게 한다 */
+  private runSubs(room: Room): void {
+    if (!this.subs.length) return;
+    const keep = { pose: this.pose, anim: this.anim, state: this.state, vx: this.b.vx, facing: this.facing };
+    this.asSub = true;
+    this.subs = this.subs.filter((s) => !this.runPattern(room, s.name, ++s.t));
+    this.asSub = false;
+    this.pose = keep.pose;
+    this.anim = keep.anim;
+    this.state = keep.state;
+    this.b.vx = keep.vx;
+    this.facing = keep.facing;
+  }
+
+  /** 판정 직전 예고 구간: t < until 동안 빨간 번쩍임(state 'wind'). 판정 프레임(until)부터 꺼진다. */
   private wind(t: number, until: number): boolean {
     if (t < until) {
       this.anim = 'wind';
-      this.state = 'wind';
+      this.tele(true);
       return true;
     }
-    this.state = 'atk';
+    this.tele(false);
     return false;
+  }
+
+  private tele(on: boolean): void {
+    if (this.asSub) return;
+    this.state = on ? 'wind' : 'atk';
+  }
+
+  /** 점프·순간이동 착지 지점 예고: 착지(판정) 순간에 끈다 */
+  private markLanding(room: Room, x: number, w: number): void {
+    this.landMark?.end();
+    const gy = room.world.groundBelow(x, room.player.b.y);
+    this.landMark = room.marker(x - w / 2, gy - 4, w, 4, 200, '#ff3030');
+  }
+
+  private landed(): void {
+    this.landMark?.end();
+    this.landMark = null;
   }
 
   private ground(room: Room): number {
@@ -148,8 +231,11 @@ export class Boss extends Enemy {
 
   private skyDrop(room: Room, x: number, delay: number, spr: 'bone' | 'blade' | 'fireball' | 'rock' | 'shard' | 'spear', col: string, dmgMul = 0.7, st?: 'burn' | 'chill'): void {
     const gy = room.world.groundBelow(x, 40);
-    room.marker(x - 6, gy - 4, 12, 4, delay, '#ff3030');
-    room.later(delay - 22, () => {
+    // 낙하 시간만큼 먼저 떨어뜨려, 예고가 꺼지는 순간 바닥에 닿게 한다
+    const fall = Math.max(1, Math.round((gy - 24) / 6));
+    const dur = Math.max(delay, fall + 1);
+    room.marker(x - 6, gy - 4, 12, 4, dur, '#ff3030');
+    room.later(dur - fall, () => {
       room.addProj('enemy', { spr, spd: 6, life: 80, w: spr === 'rock' ? 14 : 8, h: spr === 'rock' ? 14 : 12, col, st }, x, 24, Math.PI / 2, Math.round(this.atk * dmgMul), 'normal');
     });
   }
@@ -250,16 +336,18 @@ export class Boss extends Enemy {
         }
         if (t < 24) {
           this.anim = 'wind';
-          this.state = 'wind';
+          this.tele(true);
           return false;
         }
         if (t === 24) {
           this.b.vy = -8;
           this.b.vx = (p.cx - this.cx) / 52;
           this.pose = 'jump';
+          this.markLanding(room, p.cx, 120);
           audio.play('jump', 0.4);
         }
         if (t > 30 && this.b.onGround) {
+          this.landed();
           this.b.vx = 0;
           this.pose = 'slam';
           room.enemyExplode(this.cx, this.b.y + this.b.h - 10, 60, this.atk * 1.2);
@@ -303,16 +391,17 @@ export class Boss extends Enemy {
         if (lt === 0) audio.play('warn');
         if (lt < 26) {
           this.anim = 'wind';
-          this.state = 'wind';
+          this.tele(true);
           return false;
         }
         if (lt === 26) {
           this.b.vy = -7.5;
           this.b.vx = (p.cx - this.cx) / 48;
           this.anim = 'atk';
-          this.state = 'atk';
+          this.markLanding(room, p.cx, 128);
         }
         if (lt > 30 && this.b.onGround && this.b.vx !== 0) {
+          this.landed();
           this.b.vx = 0;
           room.enemyExplode(this.cx, this.b.y + this.b.h - 8, 64, this.atk * 1.1, 'poison');
           this.wave(room, [-1, 1], '#8bdc3a', 3.6, 16, 'poison');
@@ -325,6 +414,7 @@ export class Boss extends Enemy {
       }
       case 'spitVolley': {
         this.anim = 'wind';
+        this.tele(t < 30);
         if (t === 1) audio.play('warn');
         if (t === 30) {
           this.anim = 'atk';
@@ -389,7 +479,7 @@ export class Boss extends Enemy {
         }
         if (lt < 44) {
           this.anim = 'wind';
-          this.state = 'wind';
+          this.tele(true);
           return false;
         }
         if (lt === 44) {
@@ -430,6 +520,7 @@ export class Boss extends Enemy {
       }
       case 'boulderRoll': {
         this.anim = t < 30 ? 'wind' : 'atk';
+        this.tele(t < 30 || (p2 && t >= 44 && t < 60));
         if (t === 1) {
           this.face(room);
           audio.play('warn');
@@ -459,6 +550,7 @@ export class Boss extends Enemy {
         if (t === 2) room.marker(x0, y, w, 12, 54, '#ffb02a', true);
         if (t < 56) {
           this.anim = 'wind';
+          this.tele(true);
           return false;
         }
         this.anim = 'atk';
@@ -483,13 +575,12 @@ export class Boss extends Enemy {
         }
         if (lt < 18) {
           this.anim = 'wind';
-          this.state = 'wind';
+          this.tele(true);
           this.pose = k % 2 ? 'windLow' : 'windHigh';
           this.b.vx = 0;
           return false;
         }
         if (lt === 18) {
-          this.state = 'atk';
           this.anim = 'atk';
           this.pose = k % 2 ? 'slashUp' : 'slashDown';
           this.b.vx = this.facing * 4;
@@ -536,12 +627,15 @@ export class Boss extends Enemy {
           audio.play('dash', 0.8);
           this.flash = 0;
         }
+        this.tele(true); // 사라진 뒤 내려찍어 착지할 때까지 예고
         if (t < 30) {
           this.anim = 'wind';
           this.pose = 'dash';
           const gy = room.world.groundBelow(p.cx, p.b.y);
-          if (t === 2) room.marker(p.cx - 30, gy - 4, 60, 4, 28, '#ff3030');
-          if (t === 2) this.aim = { x: p.cx, y: gy };
+          if (t === 2) {
+            this.aim = { x: p.cx, y: gy };
+            this.markLanding(room, p.cx, 112);
+          }
           return false;
         }
         if (t === 30) {
@@ -552,6 +646,8 @@ export class Boss extends Enemy {
           room.fx.burst(this.cx, this.cy, '#9a6bff', 20, 3);
         }
         if (t > 30 && this.b.onGround) {
+          this.landed();
+          this.tele(false);
           room.enemyExplode(this.cx, this.b.y + this.b.h - 10, 56, this.atk * 1.2);
           room.cam.shake(7);
           room.fx.dust(this.cx, this.b.y + this.b.h, 16);
@@ -575,6 +671,7 @@ export class Boss extends Enemy {
       case 'darkWave': {
         this.pose = t < 40 ? 'slamWind' : 'slam';
         this.anim = t < 40 ? 'wind' : 'atk';
+        this.tele(t < 40 || (this.phase >= 2 && t >= 60 && t < 75));
         if (t === 1) audio.play('warn');
         if (t === 40) {
           this.wave(room, [-1, 1], '#9a6bff', 3, 40);
@@ -584,11 +681,77 @@ export class Boss extends Enemy {
         if (this.phase >= 2 && t === 75) this.wave(room, [-1, 1], '#9a6bff', 3.8, 30);
         return t > 95;
       }
+      // ─────────── 즉사기 ───────────
+      case 'royalExecution': {
+        // 왕의 참수: 바닥 높이를 가로지르는 칼날. 판정 순간 땅에 서 있으면 즉사 — 점프하거나 발판 위로.
+        const T = 110;
+        const gy = this.ground(room);
+        this.pose = t < T ? 'windHigh' : 'slashDown';
+        this.anim = t < T ? 'wind' : 'atk';
+        this.b.vx = 0;
+        this.tele(t < T);
+        if (t === 1) {
+          this.face(room);
+          room.bossShout(this.bd.id === 'king' ? '무릎 꿇어라. 왕의 참수다! — 뛰어올라라!' : '왕의 칼은 이제 나의 것… — 뛰어올라라!', '#ff4060');
+          audio.play('boss_roar', 0.9);
+          room.marker(16, gy - 30, room.world.pxW - 32, 30, T, '#ff2040', true);
+        }
+        if (t === T - 60 || t === T - 40 || t === T - 20) {
+          room.toastWorld(room.player.cx, room.player.b.y - 16, `${(T - t) / 20}`, '#ff4060');
+          audio.play('warn');
+        }
+        if (t === T) {
+          for (let x = 40; x < room.world.pxW; x += 80) room.fx.slash(x, gy - 15, this.facing, { arc: 'h', r: 44 }, '#ff4060');
+          room.flash('#ff4060', 0.6);
+          room.cam.shake(10, 30);
+          audio.play('swing_heavy', 1.4);
+          const pl = room.player;
+          if (pl.b.y + pl.b.h > gy - 30) room.instantKill('왕의 참수');
+        }
+        return t > T + 30;
+      }
+      case 'oblivionErase': {
+        // 망각의 선고: 화면 전체가 지워진다. 「기억의 빛」 안에 있어야만 살아남는다.
+        const T = 130;
+        this.pose = 'castUp';
+        this.anim = 'wind';
+        this.b.vx = 0;
+        this.tele(t < T);
+        if (t === 1) {
+          room.bossShout('모든 기억은 지워진다… 빛을 붙잡아라.', '#ff80d0');
+          audio.play('boss_roar', 0.7);
+          const n = this.phase >= 2 ? 1 : 2;
+          this.safe = [];
+          for (let i = 0; i < n; i++) {
+            const x = 60 + Math.random() * (room.world.pxW - 120);
+            const gy = room.world.groundBelow(x, 60);
+            this.safe.push({ x, y: gy });
+            room.marker(x - 22, gy - 60, 44, 60, T, '#fff0a0', true);
+          }
+          room.marker(0, 0, room.world.pxW, room.world.pxH, T, '#ff80d0', true);
+        }
+        if (t === T - 60 || t === T - 40 || t === T - 20) {
+          room.toastWorld(room.player.cx, room.player.b.y - 16, `${(T - t) / 20}`, '#ff80d0');
+          audio.play('warn');
+        }
+        if (t === T) {
+          room.flash('#ffffff', 1);
+          room.cam.shake(10, 40);
+          audio.play('explode', 1.6);
+          const pl = room.player;
+          const ok = this.safe.some((z) => Math.abs(pl.cx - z.x) <= 22 && pl.b.y + pl.b.h > z.y - 60 && pl.b.y < z.y);
+          if (!ok) room.instantKill('망각의 선고');
+          for (const z of this.safe) room.fx.burst(z.x, z.y - 30, '#fff0a0', 24, 3);
+        }
+        return t > T + 30;
+      }
       // ─────────── 모르텐 ───────────
       case 'harpoonVolley': {
         const n = p2 ? 5 : 3;
         this.pose = 'throw';
         this.anim = 'wind';
+        // 매 투척 직전 10프레임 예고
+        this.tele(t < 20 || (t > 20 && (t - 20) % 14 >= 4 && (t - 20) / 14 < n - 1));
         if (t === 1) audio.play('warn');
         if (t >= 20 && (t - 20) % 14 === 0 && (t - 20) / 14 < n) {
           this.face(room);
@@ -601,6 +764,7 @@ export class Boss extends Enemy {
       case 'tidalWave': {
         this.pose = t < 36 ? 'slamWind' : 'slam';
         this.anim = t < 36 ? 'wind' : 'atk';
+        this.tele(t < 36 || (p2 && t >= 56 && t < 70));
         if (t === 1) {
           audio.play('warn');
           room.bossShout('파도가 덮쳐온다! 뛰어넘어라!', '#80d0ff');
@@ -670,6 +834,7 @@ export class Boss extends Enemy {
       case 'frostNova': {
         this.pose = t < 40 ? 'castUp' : 'cast';
         this.anim = t < 40 ? 'wind' : 'atk';
+        this.tele(t < 40);
         if (t === 1) {
           audio.play('warn');
           room.marker(this.cx - 75, this.cy - 75, 150, 150, 40, '#a8e4ff', true);
@@ -731,6 +896,7 @@ export class Boss extends Enemy {
         if (t < 52) {
           this.anim = 'wind';
           this.pose = 'thrustWind';
+          this.tele(true);
           return false;
         }
         this.anim = 'atk';
@@ -767,7 +933,8 @@ export class Boss extends Enemy {
           if (s.done) continue;
           allDone = false;
           if (s.t === 1) {
-            room.marker(Math.min(s.x, s.x + s.dir * 2000), s.y - 22, room.world.pxW, 20, 40, '#9a6bff', true);
+            // 그림자가 화면을 다 가로지를 때까지 경로 표시
+            s.mk = room.marker(0, s.y - 22, room.world.pxW, 20, 999, '#9a6bff', true);
             room.toastWorld(s.x, s.y - 34, CHAR_MAP[s.id]?.name ?? '', '#c8a8ff');
           }
           if (s.t > 40) {
@@ -776,7 +943,10 @@ export class Boss extends Enemy {
               s.hit = room.damagePlayer(Math.round(this.atk * 0.9), s.x, `${CHAR_MAP[s.id]?.name ?? ''}의 그림자`, { kb: 4 });
             }
             if (s.t % 2 === 0) room.fx.ghost(charFrame(s.id, 'thrust'), s.x - 24, s.y - 44, s.dir < 0, '#3a1a5a', 12);
-            if (s.x < -30 || s.x > room.world.pxW + 30) s.done = true;
+            if (s.x < -30 || s.x > room.world.pxW + 30) {
+              s.done = true;
+              s.mk?.end();
+            }
           }
         }
         return (allDone && t > 10) || t > 400;

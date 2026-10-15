@@ -1,7 +1,7 @@
 import { app, type Scene } from '../app';
 import { audio } from '../core/audio';
 import { CHAR_MAP, CHARACTERS, TYPE_COL, TYPE_LABEL } from '../data/characters';
-import { BANNER_INFO, GACHA, rate5At, type BannerKind } from '../data/gacha';
+import { BANNER_INFO, GACHA, type BannerKind } from '../data/gacha';
 import { WEAPON_MAP, WEAPONS, weaponDesc } from '../data/weapons';
 import { text } from '../gfx/renderer';
 import { charFrame, tinted } from '../gfx/sprites';
@@ -65,7 +65,7 @@ export class GachaScene implements Scene {
     const s = app.save.stones;
     const out = [
       { label: '1회 계약', sub: `영혼석 ${pullCost(1)}`, count: 1, free: false, ok: s >= pullCost(1) },
-      { label: '10회 계약', sub: `영혼석 ${pullCost(10)} · ★4↑ 보장`, count: 10, free: false, ok: s >= pullCost(10) },
+      { label: '10회 계약', sub: `영혼석 ${pullCost(10)}`, count: 10, free: false, ok: s >= pullCost(10) },
     ];
     if (this.freeAvailable()) out.push({ label: '첫 계약 · 무료 10회', sub: '★4 이상 확정!', count: 10, free: true, ok: true });
     return out;
@@ -420,7 +420,7 @@ export class GachaScene implements Scene {
       button(g, 70 + i * 116, 184, 108, 22, l, pk.row === 2 && pk.col === i, { col: i === 0 ? '#80ffa0' : '#9ef0ff' });
       hot.add(`pkb:${i}`, 70 + i * 116, 184, 108, 22);
     });
-    text(g, '천장·픽업 보장 상태는 그대로 유지된다', 240, 214, { size: 6, align: 'center', color: '#8a8098' });
+    text(g, '뽑기 기록은 그대로 유지된다', 240, 214, { size: 6, align: 'center', color: '#8a8098' });
     keyHint(g, [['방향키', '이동'], [app.input.label('attack'), '선택'], ['Esc', '취소']]);
   }
 
@@ -541,21 +541,11 @@ export class GachaScene implements Scene {
       text(g, pct(p, 1), 466, 51 + i * 12, { size: 7, align: 'right', color: RARITY_COL[r as 3 | 4 | 5] });
     });
     const pity = save.pity[k];
-    const n5 = pity.since5 + 1;
-    text(g, '천장 (배너별)', 356, 92, { size: 7, color: '#e0d0ff' });
-    text(g, `★5까지 ${GACHA.hardPity - pity.since5}회 이내 확정`, 356, 104, { size: 6, color: '#ffe080' });
-    g.fillStyle = '#1a1424';
-    g.fillRect(356, 114, 110, 5);
-    g.fillStyle = pity.since5 >= GACHA.softPityStart - 1 ? '#ffcc40' : '#a080ff';
-    g.fillRect(356, 114, (110 * pity.since5) / GACHA.hardPity, 5);
-    g.fillStyle = '#ff6080';
-    g.fillRect(356 + (110 * (GACHA.softPityStart - 1)) / GACHA.hardPity, 113, 1, 7);
-    text(g, `현재 ${pity.since5}/${GACHA.hardPity}회`, 356, 122, { size: 6, color: '#c8c0d8' });
-    text(g, `다음 ★5 확률 ${pct(rate5At(n5), 1)}`, 356, 132, { size: 6, color: n5 >= GACHA.softPityStart ? '#ffcc40' : '#c8c0d8' });
-    text(g, `${GACHA.softPityStart}회부터 확률 상승`, 356, 142, { size: 6, color: '#8a8098' });
-    text(g, `★4 보장까지 ${GACHA.pity4 - pity.since4}회`, 356, 152, { size: 6, color: '#c080ff' });
-    if (k === 'pickup') text(g, pity.guaranteed ? '다음 ★5는 픽업 확정!' : '★5의 50%는 픽업 영웅', 356, 164, { size: 6, color: pity.guaranteed ? '#ffcc40' : '#a8a0c0' });
-    text(g, `누적 ${pity.total}회`, 356, 176, { size: 6, color: '#8a8098' });
+    text(g, '천장 없음', 356, 92, { size: 7, color: '#e0d0ff' });
+    text(g, '매 회 독립 확률 · 보장 없음', 356, 104, { size: 6, color: '#c8c0d8' });
+    if (k === 'pickup') text(g, '★5의 50%는 픽업 영웅', 356, 116, { size: 6, color: '#a8a0c0' });
+    text(g, `마지막 ★5 이후 ${pity.since5}회`, 356, 152, { size: 6, color: '#8a8098' });
+    text(g, `누적 ${pity.total}회`, 356, 164, { size: 6, color: '#8a8098' });
     text(g, '중복: 영웅 각성 / 무기 재련', 356, 186, { size: 6, color: '#8a8098' });
     // 버튼
     const btns = this.buttons();

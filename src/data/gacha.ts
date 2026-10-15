@@ -1,28 +1,15 @@
 /** 가챠 확률 데이터. 밸런싱은 여기 수치만 바꾸면 된다. */
 export const GACHA = {
-  rate5: 0.007,
-  rate4: 0.163,
-  softPityStart: 45, // 이 회차(포함)부터 ★5 확률 점진 상승
-  hardPity: 60, // 이 회차에 ★5 확정
-  pity4: 10, // 10회 안에 ★4 이상 1개 보장
-  pickupRate5: 0.5, // 픽업 배너 ★5가 픽업일 확률 (실패 시 다음 ★5 픽업 확정)
+  rate5: 0.005,
+  rate4: 0.095, // ★3 = 나머지 90%
+  pickupRate5: 0.5, // 픽업 배너 ★5가 픽업일 확률 (보장 없음)
   pickupRate4: 0.5,
   costSingle: 160,
   costTen: 1600,
   rotationRuns: 3, // 런 3회마다 픽업 교체
 };
 
-/** 소프트 천장: 45회차부터 60회차까지 선형으로 1.0에 도달 */
-export function rate5At(pullIndex: number): number {
-  // pullIndex: 이번 뽑기가 마지막 ★5 이후 몇 번째인지 (1부터)
-  const { rate5, softPityStart, hardPity } = GACHA;
-  if (pullIndex >= hardPity) return 1;
-  if (pullIndex < softPityStart) return rate5;
-  const steps = hardPity - softPityStart + 1; // 16
-  const k = pullIndex - softPityStart + 1; // 1..15
-  return rate5 + ((1 - rate5) * k) / steps;
-}
-
+/** 천장 없음: 매 회 독립 확률 */
 export type BannerKind = 'char' | 'weapon' | 'pickup';
 
 export const BANNER_INFO: Record<BannerKind, { name: string; desc: string }> = {

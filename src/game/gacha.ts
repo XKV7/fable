@@ -1,10 +1,11 @@
-import { GACHA, rate5At, type BannerKind } from '../data/gacha';
+import { GACHA, type BannerKind } from '../data/gacha';
 import type { Rarity } from './types';
 
+/** 배너별 뽑기 기록 (통계용). 천장이 없으므로 확률에는 영향이 없다. */
 export interface PityState {
   since5: number; // 마지막 ★5 이후 뽑은 횟수
   since4: number; // 마지막 ★4 이상 이후 뽑은 횟수
-  guaranteed: boolean; // 픽업 배너: 다음 ★5 픽업 확정
+  guaranteed: boolean; // (구버전 저장 호환용, 사용하지 않음)
   total: number;
 }
 
@@ -29,16 +30,12 @@ export interface PullResult {
   pityAt: number; // 몇 번째에 나왔는지 (★5일 때 의미)
 }
 
-/** 다음 1회의 희귀도를 결정 (천장 상태 갱신 포함). rand: [0,1) */
+/** 다음 1회의 희귀도를 결정. 천장 없이 매 회 독립 확률. force4: 첫 무료 10연 보장용. rand: [0,1) */
 export function rollRarity(p: PityState, rand: () => number, force4 = false): Rarity {
-  const n5 = p.since5 + 1;
-  const n4 = p.since4 + 1;
   const r = rand();
-  const r5 = rate5At(n5);
   let rar: Rarity;
-  if (r < r5) rar = 5;
-  else if (n4 >= GACHA.pity4 || force4) rar = 4;
-  else if (r < r5 + GACHA.rate4) rar = 4;
+  if (r < GACHA.rate5) rar = 5;
+  else if (force4 || r < GACHA.rate5 + GACHA.rate4) rar = 4;
   else rar = 3;
   p.total++;
   if (rar === 5) {
@@ -58,15 +55,13 @@ export function pullOnce(pool: BannerPool, p: PityState, rand: () => number, for
   let candidates = pool.items.filter((i) => i.rarity === rarity);
   let pickup = false;
   if (pool.kind === 'pickup' && rarity === 5 && pool.pickup5?.length) {
-    if (p.guaranteed || rand() < GACHA.pickupRate5) {
+    if (rand() < GACHA.pickupRate5) {
       candidates = candidates.filter((c) => pool.pickup5!.includes(c.id));
       pickup = true;
-      p.guaranteed = false;
     } else {
       const others = candidates.filter((c) => !pool.pickup5!.includes(c.id));
       if (others.length) candidates = others;
       else pickup = true;
-      p.guaranteed = !pickup;
     }
   } else if (pool.kind === 'pickup' && rarity === 4 && pool.pickup4?.length) {
     if (rand() < GACHA.pickupRate4) {
@@ -79,7 +74,7 @@ export function pullOnce(pool: BannerPool, p: PityState, rand: () => number, for
   return { id: it.id, rarity, pickup, pityAt: at };
 }
 
-/** count회 뽑기. guarantee4: 10연 중 ★4 이상 보장(첫 무료 10연 등) */
+/** count회 뽑기. guarantee4: 10연 중 ★4 이상 보장 (첫 무료 10연 전용) */
 export function pullMany(pool: BannerPool, p: PityState, rand: () => number, count: number, guarantee4 = false): PullResult[] {
   const out: PullResult[] = [];
   for (let i = 0; i < count; i++) {

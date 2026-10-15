@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { GACHA, rate5At } from '../src/data/gacha';
+import { GACHA } from '../src/data/gacha';
 import { newPity, pullMany, pullOnce, type BannerPool } from '../src/game/gacha';
 import { Rng } from '../src/core/rng';
 
@@ -13,104 +13,64 @@ const pool: BannerPool = {
 };
 const pickupPool: BannerPool = { ...pool, kind: 'pickup', pickup5: ['a5'], pickup4: ['a4'] };
 
-/** 소프트 천장 확률 곡선에서 기대 ★5 비율(=1/기대 회차) 계산 */
-function expectedRate5(): number {
-  let survive = 1;
-  let expect = 0;
-  for (let n = 1; n <= GACHA.hardPity; n++) {
-    const p = rate5At(n);
-    expect += n * survive * p;
-    survive *= 1 - p;
-  }
-  return 1 / expect;
-}
-
-describe('가챠 확률 곡선', () => {
-  it('기본 확률과 천장', () => {
-    expect(rate5At(1)).toBeCloseTo(GACHA.rate5);
-    expect(rate5At(44)).toBeCloseTo(GACHA.rate5);
-    expect(rate5At(45)).toBeGreaterThan(GACHA.rate5);
-    expect(rate5At(60)).toBe(1);
-    for (let n = 1; n < 60; n++) expect(rate5At(n + 1)).toBeGreaterThanOrEqual(rate5At(n));
-  });
-});
-
-describe('10만 회 시뮬레이션', () => {
+describe('10만 회 시뮬레이션 (천장 없음)', () => {
   const N = 100_000;
   const rng = new Rng(12345);
   const p = newPity();
-  let gap = 0;
+  let n5 = 0;
+  let n4 = 0;
   let maxGap = 0;
-  let base5 = 0;
-  let baseN = 0;
-  let base4 = 0;
-  let base4N = 0;
-  let total5 = 0;
-  let since4 = 0;
-  let max4Gap = 0;
+  let gap = 0;
   for (let i = 0; i < N; i++) {
-    const n5 = p.since5 + 1;
-    const n4 = p.since4 + 1;
     const r = pullOnce(pool, p, () => rng.next());
     gap++;
-    since4++;
-    if (n5 < GACHA.softPityStart) {
-      baseN++;
-      if (r.rarity === 5) base5++;
-      if (n4 < GACHA.pity4) {
-        base4N++;
-        if (r.rarity === 4) base4++;
-      }
-    }
-    if (r.rarity >= 4) {
-      max4Gap = Math.max(max4Gap, since4);
-      since4 = 0;
-    }
     if (r.rarity === 5) {
-      total5++;
+      n5++;
       maxGap = Math.max(maxGap, gap);
       gap = 0;
     }
+    if (r.rarity === 4) n4++;
   }
-
-  it('하드 천장: 60회 이내 ★5 확정', () => {
-    expect(maxGap).toBeLessThanOrEqual(60);
+  it('★5 ≈ 0.5%', () => {
+    expect(GACHA.rate5).toBe(0.005);
+    expect(Math.abs(n5 / N - GACHA.rate5)).toBeLessThan(GACHA.rate5 * 0.15);
   });
-  it('소프트 천장 이전 ★5 확률 ≈ 0.7%', () => {
-    expect(Math.abs(base5 / baseN - GACHA.rate5)).toBeLessThan(GACHA.rate5 * 0.12);
+  it('★4 ≈ 9.5%, ★3 ≈ 90%', () => {
+    expect(GACHA.rate4).toBe(0.095);
+    expect(Math.abs(n4 / N - GACHA.rate4)).toBeLessThan(0.004);
+    expect(Math.abs((N - n4 - n5) / N - 0.9)).toBeLessThan(0.004);
   });
-  it('★4 확률 ≈ 16.3%', () => {
-    expect(Math.abs(base4 / base4N - GACHA.rate4)).toBeLessThan(0.006);
+  it('천장 없음: ★5 간격이 60회를 넘는 경우가 존재', () => {
+    expect(maxGap).toBeGreaterThan(60);
   });
-  it('10회마다 ★4 이상 1개 보장', () => {
-    expect(max4Gap).toBeLessThanOrEqual(10);
-  });
-  it('전체 ★5 비율이 확률 곡선의 기대값과 일치', () => {
-    const exp = expectedRate5();
-    expect(Math.abs(total5 / N - exp) / exp).toBeLessThan(0.05);
+  it('항상 ★3만 나오는 난수에서는 유료 10연도 ★3만 나온다 (보장 없음)', () => {
+    const res = pullMany(pool, newPity(), () => 0.999, 10);
+    expect(res.every((r) => r.rarity === 3)).toBe(true);
   });
 });
 
 describe('픽업 배너', () => {
-  it('픽업 실패 후 다음 ★5는 픽업 확정, 픽업 비율 ≈ 2/3', () => {
+  it('★5 픽업 비율 ≈ 50%, 픽업 실패 후 보장 없음', () => {
     const rng = new Rng(777);
     const p = newPity();
     let five = 0;
     let pick = 0;
+    let missAfterMiss = 0;
     let lastWasMiss = false;
-    for (let i = 0; i < 100_000; i++) {
+    for (let i = 0; i < 400_000; i++) {
       const r = pullOnce(pickupPool, p, () => rng.next());
       if (r.rarity === 5) {
         five++;
         if (r.pickup) pick++;
-        if (lastWasMiss) expect(r.pickup).toBe(true);
+        if (lastWasMiss && !r.pickup) missAfterMiss++;
         lastWasMiss = !r.pickup;
         if (r.pickup) expect(r.id).toBe('a5');
       }
     }
-    expect(Math.abs(pick / five - 2 / 3)).toBeLessThan(0.03);
+    expect(Math.abs(pick / five - 0.5)).toBeLessThan(0.04);
+    expect(missAfterMiss).toBeGreaterThan(0);
   });
-  it('천장 카운트는 배너별로 독립', () => {
+  it('뽑기 기록은 배너별로 독립', () => {
     const a = newPity();
     const b = newPity();
     const rng = new Rng(1);

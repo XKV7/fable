@@ -2,7 +2,7 @@ import { app, type Scene } from '../app';
 import { audio } from '../core/audio';
 import { BOSS_MAP } from '../data/bosses';
 import { CHAR_MAP } from '../data/characters';
-import { chapterDef, FINAL_STAGE, ITEM_MAP, ROUTE } from '../data/meta';
+import { chapterDef, ITEM_MAP } from '../data/meta';
 import { RELIC_MAP } from '../data/relics';
 import { ROOMS } from '../data/rooms';
 import { text } from '../gfx/renderer';
@@ -80,10 +80,10 @@ export class RunScene implements Scene {
     this.room.useItemRequest = () => this.useItem();
     this.room.build.fire('roomStart', {}, Math.random);
     if (node.type === 'boss') {
-      audio.playMusic(run.theme === 4 || run.theme === 7 ? 'finalboss' : 'boss');
+      audio.playMusic(run.chapter >= run.storyDef.finalStage ? 'finalboss' : 'boss');
       this.bossCard = 150;
     } else audio.playMusic(ch.music);
-    if (chapterStart) this.card = { title: `제${run.chapter}장  ${ch.name}`, sub: run.chapter === 1 ? '계약자여, 끝없는 왕을 쓰러뜨려라' : run.theme === 7 ? '왕이 삼킨 혼들이 잠든 곳 — 진실의 끝으로' : '더 깊은 곳으로', t: 180 };
+    if (chapterStart) this.card = { title: `제${run.chapter}장  ${ch.name}`, sub: run.storyDef.cards[run.chapter - 1] ?? '더 깊은 곳으로', t: 180 };
     else if (node.type !== 'combat' && node.type !== 'boss') this.card = { title: { start: '입구', tutorial: '훈련의 방', elite: '정예의 방', altar: '영혼 제단', armory: '무기고', shop: '상점', rest: '휴식처', event: '???', treasure: '보물방', combat: '', boss: '' }[node.type], sub: '', t: 90 };
     if (node.type === 'elite') this.card = { title: '정예의 방', sub: '강력한 적이 유물을 지키고 있다', t: 100 };
   }
@@ -193,7 +193,7 @@ export class RunScene implements Scene {
     const pool = Object.values(ENEMY_MAP).filter((e) => e.chapter === this.run.theme && !e.flying);
     for (let i = 0; i < 3; i++) {
       const d = pool[i % pool.length];
-      const e = new Enemy(d, room.player.cx + (i - 1) * 70 + 20, room.player.b.y + room.player.b.h, i === 0, this.run.chapter, this.run.curseEnemy, this.run.node.layer);
+      const e = new Enemy(d, room.player.cx + (i - 1) * 70 + 20, room.player.b.y + room.player.b.h, i === 0, this.run.chapter, this.run.curseEnemy, this.run.node.layer, this.run.power);
       room.enemies.push(e);
     }
     room.cleared = false;
@@ -232,14 +232,18 @@ export class RunScene implements Scene {
     app.toast(`${nm} 처치!`, '#ffe080');
     audio.play('victory');
     this.relicChoice(3, `${nm}의 유산`, 2);
-    if (id === 'king') run.kingDown = true;
-    if (id === 'oblivion') {
+    const sd = run.storyDef;
+    if (run.chapter >= sd.finalStage) run.kingDown = true;
+    const next = run.nextThemes();
+    if (sd.trueStage && run.chapter >= sd.trueStage) {
       run.trueEnd = true;
       this.room.addExitDoors([{ nodeId: -2 }]);
-    } else if (run.chapter >= FINAL_STAGE) {
-      this.room.addExitDoors([{ nodeId: -2 }, { nodeId: -1, nextCh: ROUTE[run.chapter][0] }]);
-      app.toast('계약을 완수할 수 있다 — 혹은 망각의 심연으로…', '#ff80d0');
-    } else this.room.addExitDoors((ROUTE[run.chapter] ?? [1]).map((n) => ({ nodeId: -1, nextCh: n })));
+    } else if (run.chapter >= sd.finalStage) {
+      if (sd.trueStage && next.length) {
+        this.room.addExitDoors([{ nodeId: -2 }, { nodeId: -1, nextCh: next[0] }]);
+        app.toast('계약을 완수할 수 있다 — 혹은 망각의 심연으로…', '#ff80d0');
+      } else this.room.addExitDoors([{ nodeId: -2 }]);
+    } else this.room.addExitDoors((next.length ? next : [run.theme]).map((n) => ({ nodeId: -1, nextCh: n })));
     audio.playMusic('none');
   }
 
@@ -293,7 +297,7 @@ export class RunScene implements Scene {
     const t = this.transTarget!;
     this.transTarget = null;
     if (t === -1) {
-      this.run.newChapter(this.run.chapter + 1, this.nextTheme || (ROUTE[this.run.chapter] ?? [1])[0]);
+      this.run.newChapter(this.run.chapter + 1, this.nextTheme || (this.run.nextThemes()[0] ?? this.run.theme));
       this.enterNode(0, true);
     } else this.enterNode(t);
   }

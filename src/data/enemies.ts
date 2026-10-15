@@ -1,4 +1,5 @@
 import type { FieldVis, ProjDef, StatusId } from '../game/types';
+import { STORY_ENEMIES } from './enemies2';
 
 export type EnemyAI = 'boss' | 'melee' | 'archer' | 'flyer' | 'jumper' | 'charger' | 'turret' | 'shield' | 'teleporter' | 'caster' | 'bomber' | 'lancer' | 'golem' | 'dummy';
 
@@ -73,7 +74,7 @@ const RAW_ENEMIES: EnemyDef[] = [
   { id: 'dummy', name: '훈련용 허수아비', chapter: 0, ai: 'dummy', hp: 999999, atk: 0, speed: 0, w: 14, h: 24, range: 0, windup: 0, cd: 0, kbRes: 1, gold: 0, col: '#c0a060', eliteSkill: 'enrage', weight: 0 },
 ];
 
-export const ENEMIES: EnemyDef[] = RAW_ENEMIES.map((e) =>
+export const ENEMIES: EnemyDef[] = [...RAW_ENEMIES, ...STORY_ENEMIES].map((e) =>
   e.ai === 'dummy'
     ? e
     : { ...e, hp: Math.round(e.hp * ENEMY_TUNE.hp), atk: Math.round(e.atk * ENEMY_TUNE.atk), cd: Math.round(e.cd * ENEMY_TUNE.cd), speed: e.speed * ENEMY_TUNE.speed },

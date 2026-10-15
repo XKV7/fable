@@ -1,9 +1,9 @@
-import { BOSS_MAP, bossAtk, bossHp, type BossDef } from '../data/bosses';
+import { BOSS_MAP, bossAtk, bossHp, type BossDef, type BossElem } from '../data/bosses';
 import type { EnemyDef } from '../data/enemies';
 import { audio } from '../core/audio';
 import { ENEMY_LOOKS, ignisFrame, lookFrame, mycoraFrame, white, tinted, charFrame } from '../gfx/sprites';
 import { CHAR_MAP } from '../data/characters';
-import type { PoseName } from './types';
+import type { FieldVis, PoseName, StatusId } from './types';
 import { Enemy } from './enemy';
 import type { Room } from './room';
 
@@ -12,11 +12,22 @@ import type { Room } from './room';
 const REMOTE = new Set([
   'boneRain', 'lanternFire', 'ghostFlames', 'sporeCloud', 'spitVolley', 'rootSpikes', 'toxicFlood', 'lavaPillars', 'moltenRain',
   'shadowBlades', 'crownBeam', 'swordRain', 'cannonBarrage', 'whirlpool', 'iceSpears', 'pageStorm', 'shelfCollapse', 'blizzard', 'voidPillars',
+  'starfall', 'pillarMarch', 'homingOrbs', 'crossBeam', 'laserSweep', 'gravityWell', 'floorHalf', 'meteor',
 ]);
 /** 즉사기 */
 const EXECUTE = new Set(['royalExecution', 'oblivionErase']);
 /** 즉사기 재사용 대기 (프레임) */
 const EXECUTE_CD = 900;
+
+interface Clone {
+  x: number;
+  y: number;
+  dir: number;
+  t: number;
+  done: boolean;
+  hit: boolean;
+  mk?: { end: () => void };
+}
 
 interface SubPattern {
   name: string;
@@ -56,15 +67,19 @@ export class Boss extends Enemy {
   private execCd = 600;
   private landMark: { end: () => void } | null = null;
   private safe: { x: number; y: number }[] = [];
+  private clones: Clone[] = [];
+  private side = 0;
+  /** 거울의 계약자: 플레이어의 현재 영웅 모습을 비춘다 */
+  mirrorOf = '';
 
-  constructor(id: string, x: number, y: number, curse: number) {
+  constructor(id: string, x: number, y: number, curse: number, power = { hp: 1, atk: 1 }) {
     const bd = BOSS_MAP[id];
     const fake: EnemyDef = { id, name: bd.name, chapter: bd.chapter, ai: 'boss', hp: bd.hp, atk: bd.atk, speed: 1, w: bd.w, h: bd.h, range: 0, windup: 0, cd: 0, kbRes: 1, gold: 0, col: bd.col, eliteSkill: 'enrage', weight: 0 };
     super(fake, x, y, false, 1, 0, 0);
     this.bd = bd;
     this.isBoss = true;
-    this.maxHp = this.hp = Math.round(bossHp(bd) * (1 + curse));
-    this.atk = Math.round(bossAtk(bd) * (1 + curse * 0.8));
+    this.maxHp = this.hp = Math.round(bossHp(bd) * (1 + curse) * power.hp);
+    this.atk = Math.round(bossAtk(bd) * (1 + curse * 0.8) * power.atk);
     this.state = 'idle';
     this.st = 0;
     this.name = bd.name;
@@ -131,7 +146,7 @@ export class Boss extends Enemy {
       this.state = 'idle';
       this.face(room);
       const dx = room.player.cx - this.cx;
-      if (this.bd.id !== 'mycora') {
+      if (this.bd.id !== 'mycora' && !this.bd.still) {
         if (Math.abs(dx) > 50 && this.b.onGround) {
           this.b.vx = Math.sign(dx) * (this.bd.id === 'ignis' ? 0.5 : this.bd.id === 'libra' ? 0.7 : 0.9);
           this.anim = 'move';
@@ -193,6 +208,16 @@ export class Boss extends Enemy {
     this.facing = keep.facing;
   }
 
+  /** 범용 패턴 속성 (스토리 2~4 보스). 원래 보스는 기본값 */
+  private get E(): BossElem {
+    return this.bd.elem ?? { col: this.bd.col, vis: 'void', drop: 'blade', proj: 'orb' };
+  }
+
+  /** 기존 패턴의 고유 색 — 새 보스가 쓰면 그 보스의 색으로 */
+  private ec(def: string): string {
+    return this.bd.elem?.col ?? def;
+  }
+
   /** 판정 직전 예고 구간: t < until 동안 빨간 번쩍임(state 'wind'). 판정 프레임(until)부터 꺼진다. */
   private wind(t: number, until: number): boolean {
     if (t < until) {
@@ -225,27 +250,27 @@ export class Boss extends Enemy {
     return room.world.groundBelow(this.cx, this.b.y + this.b.h - 4);
   }
 
-  private wave(room: Room, dirs: number[], col: string, spd = 3.4, h = 20, st?: 'burn' | 'poison'): void {
+  private wave(room: Room, dirs: number[], col: string, spd = 3.4, h = 20, st?: StatusId): void {
     for (const dir of dirs) room.addProj('enemy', { spr: 'wave', spd, life: 120, w: 12, h, col, ground: true, pierce: 99, st }, this.cx + dir * 10, this.b.y + this.b.h - h / 2, dir > 0 ? 0 : Math.PI, Math.round(this.atk * 0.8), 'normal');
   }
 
-  private skyDrop(room: Room, x: number, delay: number, spr: 'bone' | 'blade' | 'fireball' | 'rock' | 'shard' | 'spear', col: string, dmgMul = 0.7, st?: 'burn' | 'chill'): void {
+  private skyDrop(room: Room, x: number, delay: number, spr: BossElem['drop'], col: string, dmgMul = 0.7, st?: StatusId): void {
     const gy = room.world.groundBelow(x, 40);
     // 낙하 시간만큼 먼저 떨어뜨려, 예고가 꺼지는 순간 바닥에 닿게 한다
     const fall = Math.max(1, Math.round((gy - 24) / 6));
     const dur = Math.max(delay, fall + 1);
     room.marker(x - 6, gy - 4, 12, 4, dur, '#ff3030');
     room.later(dur - fall, () => {
-      room.addProj('enemy', { spr, spd: 6, life: 80, w: spr === 'rock' ? 14 : 8, h: spr === 'rock' ? 14 : 12, col, st }, x, 24, Math.PI / 2, Math.round(this.atk * dmgMul), 'normal');
+      room.addProj('enemy', { spr, spd: 6, life: 80, w: spr === 'rock' ? 14 : 8, h: spr === 'rock' ? 14 : 12, col, st, landY: gy - 2 }, x, 24, Math.PI / 2, Math.round(this.atk * dmgMul), 'normal');
     });
   }
 
-  private pillar(room: Room, x: number, delay: number, vis: 'fire' | 'holy' | 'void' | 'poison' | 'ice', w = 22, h = 110, st?: 'burn' | 'poison' | 'chill'): void {
+  private pillar(room: Room, x: number, delay: number, vis: FieldVis, w = 22, h = 110, st?: StatusId): void {
     const gy = room.world.groundBelow(x, 60);
     room.marker(x - w / 2, gy - h, w, h, delay, '#ff3030', true);
     room.later(delay, () => {
       room.addField('enemy', { vis, w, h, life: 34, tick: 12, m: 1, st }, x - w / 2, gy - h, Math.round(this.atk * 0.9), 'normal');
-      room.fx.burst(x, gy - 4, vis === 'fire' ? '#ff8a2a' : vis === 'holy' ? '#ffe080' : vis === 'poison' ? '#8bdc3a' : vis === 'ice' ? '#d0f4ff' : '#9a6bff', 14, 3);
+      room.fx.burst(x, gy - 4, this.bd.elem?.col ?? (vis === 'fire' ? '#ff8a2a' : vis === 'holy' ? '#ffe080' : vis === 'poison' ? '#8bdc3a' : vis === 'ice' ? '#d0f4ff' : '#9a6bff'), 14, 3);
       audio.play(vis === 'fire' ? 'burn' : 'cast', 0.7);
     });
   }
@@ -274,12 +299,12 @@ export class Boss extends Enemy {
           this.pose = 'slam';
           this.anim = 'atk';
           room.enemyHit({ x: this.facing > 0 ? this.cx : this.cx - 70, y: this.b.y, w: 70, h: this.b.h }, this.atk * 1.3, this.cx, this.name);
-          this.wave(room, [-1, 1], '#80e0ff');
+          this.wave(room, [-1, 1], this.ec('#80e0ff'));
           room.cam.shake(6);
           audio.play('hit_power', 0.6);
           room.fx.dust(this.cx + this.facing * 30, this.b.y + this.b.h, 14);
         }
-        if (p2 && t === 90) this.wave(room, [-1, 1], '#80e0ff', 4.5);
+        if (p2 && t === 90) this.wave(room, [-1, 1], this.ec('#80e0ff'), 4.5);
         return t > 110;
       }
       case 'charge': {
@@ -298,7 +323,7 @@ export class Boss extends Enemy {
         if (this.b.hitWall || t > 130) {
           room.cam.shake(6);
           audio.play('crumble');
-          for (let i = 0; i < (p2 ? 6 : 3); i++) this.skyDrop(room, 40 + Math.random() * (room.world.pxW - 80), 40 + i * 6, 'bone', '#e8e0c8');
+          for (let i = 0; i < (p2 ? 6 : 3); i++) this.skyDrop(room, 40 + Math.random() * (room.world.pxW - 80), 40 + i * 6, this.bd.elem?.drop ?? 'bone', this.ec('#e8e0c8'));
           this.b.vx = -this.facing * 2;
           return true;
         }
@@ -351,7 +376,7 @@ export class Boss extends Enemy {
           this.b.vx = 0;
           this.pose = 'slam';
           room.enemyExplode(this.cx, this.b.y + this.b.h - 10, 60, this.atk * 1.2);
-          this.wave(room, [-1, 1], '#80e0ff', 4);
+          this.wave(room, [-1, 1], this.ec('#80e0ff'), 4);
           room.cam.shake(8);
           room.fx.dust(this.cx, this.b.y + this.b.h, 20);
           return true;
@@ -425,6 +450,8 @@ export class Boss extends Enemy {
             const gg = 0.12;
             const vx = (tx - this.cx) / T;
             const vy = (p.cy - this.b.y - 0.5 * gg * T * T) / T;
+            const gy = room.world.groundBelow(tx, p.b.y);
+            room.marker(tx - 10, gy - 4, 20, 4, T, '#8bdc3a');
             room.addProj('enemy', { spr: 'spore', spd: Math.hypot(vx, vy), life: 120, w: 9, h: 9, col: '#c0f060', grav: gg, st: 'poison', boom: { r: 18, m: 1, st: 'poison' } }, this.cx, this.b.y + 10, Math.atan2(vy, vx), Math.round(this.atk * 0.7), 'normal');
           }
           audio.play('poison');
@@ -585,9 +612,9 @@ export class Boss extends Enemy {
           this.pose = k % 2 ? 'slashUp' : 'slashDown';
           this.b.vx = this.facing * 4;
           room.enemyHit({ x: this.facing > 0 ? this.cx : this.cx - 64, y: this.b.y - 4, w: 64, h: this.b.h + 4 }, this.atk, this.cx, this.name);
-          room.fx.slash(this.cx, this.cy, this.facing, { arc: k % 2 ? 'up' : 'down', r: 40 }, '#c8a8ff');
+          room.fx.slash(this.cx, this.cy, this.facing, { arc: k % 2 ? 'up' : 'down', r: 40 }, this.ec('#c8a8ff'));
           audio.play('swing_heavy', 0.8);
-          if (k === n - 1) this.wave(room, [this.facing], '#c8a8ff', 4.5, 26);
+          if (k === n - 1) this.wave(room, [this.facing], this.ec('#c8a8ff'), 4.5, 26);
         }
         if (lt > 18) this.b.vx *= 0.85;
         return false;
@@ -623,7 +650,7 @@ export class Boss extends Enemy {
       }
       case 'teleSlam': {
         if (t === 1) {
-          room.fx.burst(this.cx, this.cy, '#9a6bff', 20, 3);
+          room.fx.burst(this.cx, this.cy, this.ec('#9a6bff'), 20, 3);
           audio.play('dash', 0.8);
           this.flash = 0;
         }
@@ -643,7 +670,7 @@ export class Boss extends Enemy {
           this.b.y = this.aim.y - this.b.h - 80;
           this.b.vy = 9;
           this.pose = 'slam';
-          room.fx.burst(this.cx, this.cy, '#9a6bff', 20, 3);
+          room.fx.burst(this.cx, this.cy, this.ec('#9a6bff'), 20, 3);
         }
         if (t > 30 && this.b.onGround) {
           this.landed();
@@ -680,6 +707,326 @@ export class Boss extends Enemy {
         }
         if (this.phase >= 2 && t === 75) this.wave(room, [-1, 1], '#9a6bff', 3.8, 30);
         return t > 95;
+      }
+      // ─────────── 범용 패턴 (스토리 2~4 보스, 속성은 bd.elem) ───────────
+      case 'starfall': {
+        const E = this.E;
+        this.pose = 'castUp';
+        this.anim = 'wind';
+        if (t === 1) audio.play('cast', 0.6);
+        const n = p2 ? 14 : 9;
+        if (t <= n * 6 && t % 6 === 0) this.skyDrop(room, t % 18 === 0 ? p.cx : 30 + Math.random() * (room.world.pxW - 60), 44, E.drop, E.col, 0.75, E.st);
+        return t > n * 6 + 50;
+      }
+      case 'pillarMarch': {
+        // 보스 앞에서부터 기둥이 차례로 솟는다
+        const E = this.E;
+        this.pose = 'castUp';
+        this.anim = 'wind';
+        const n = p2 ? 9 : 7;
+        if (t === 1) {
+          this.face(room);
+          audio.play('warn');
+          const dirs = p2 ? [this.facing, -this.facing] : [this.facing];
+          for (const dir of dirs) {
+            for (let i = 0; i < n; i++) {
+              const x = this.cx + dir * (30 + i * 34);
+              if (x < 20 || x > room.world.pxW - 20) break;
+              this.pillar(room, x, 40 + i * 7, E.vis, 22, 110, E.st);
+            }
+          }
+        }
+        return t > 40 + n * 7 + 24;
+      }
+      case 'radialBurst': {
+        // 사방으로 퍼지는 탄막 (2페이즈: 엇갈린 두 번째 고리)
+        const E = this.E;
+        this.pose = t < 30 ? 'castUp' : 'cast';
+        this.anim = t < 30 ? 'wind' : 'atk';
+        this.tele(t < 30 || (p2 && t >= 40 && t < 55));
+        if (t === 1) audio.play('warn');
+        const ring = (off: number): void => {
+          const n = p2 ? 16 : 12;
+          for (let i = 0; i < n; i++) room.addProj('enemy', { spr: E.proj, spd: 2.4, life: 200, w: 9, h: 9, col: E.col, st: E.st }, this.cx, this.cy, off + (i / n) * Math.PI * 2, Math.round(this.atk * 0.6), 'normal');
+          audio.play('cast', 0.8);
+        };
+        if (t === 30) ring(0);
+        if (p2 && t === 55) ring(Math.PI / 16);
+        return t > 80;
+      }
+      case 'aimedFan': {
+        // 조준 부채꼴 사격 3연발, 매 사격 직전 예고
+        const E = this.E;
+        const n = 3;
+        const cycle = 26;
+        const k = Math.floor((t - 1) / cycle);
+        const lt = (t - 1) % cycle;
+        if (k >= n) return true;
+        this.pose = lt < 14 ? 'shootWind' : 'shoot';
+        this.anim = lt < 14 ? 'wind' : 'atk';
+        this.tele(lt < 14);
+        if (lt === 0) {
+          this.face(room);
+          audio.play('warn', 0.6);
+        }
+        if (lt === 14) {
+          const base = Math.atan2(p.cy - (this.cy - 4), p.cx - this.cx);
+          const m = p2 ? 7 : 5;
+          for (let i = 0; i < m; i++) room.addProj('enemy', { spr: E.proj, spd: 3.6, life: 120, w: 10, h: 6, col: E.col, st: E.st }, this.cx + this.facing * 10, this.cy - 4, base + (i - (m - 1) / 2) * 0.16, Math.round(this.atk * 0.55), 'normal');
+          audio.play('proj', 0.8);
+        }
+        return false;
+      }
+      case 'dashSlash': {
+        // 경로가 표시된 뒤 순식간에 돌진해 벤다
+        const E = this.E;
+        const n = p2 ? 4 : 3;
+        const cycle = 40;
+        const k = Math.floor((t - 1) / cycle);
+        const lt = (t - 1) % cycle;
+        if (k >= n) return true;
+        if (lt === 0) {
+          this.face(room);
+          const tx = Math.max(24, Math.min(room.world.pxW - 24, p.cx + this.facing * 50));
+          this.aim = { x: tx, y: 0 };
+          room.marker(Math.min(this.cx, tx) - 8, this.b.y, Math.abs(tx - this.cx) + 16, this.b.h, 30, E.col, true);
+          audio.play('warn', 0.7);
+        }
+        if (lt < 22) {
+          this.anim = 'wind';
+          this.pose = 'thrustWind';
+          this.tele(true);
+          this.b.vx = 0;
+          return false;
+        }
+        if (lt === 22) audio.play('dash', 0.9);
+        if (lt < 30) {
+          this.anim = 'atk';
+          this.pose = 'thrust';
+          this.b.vx = (this.aim.x - this.cx) / (30 - lt);
+          this.contact(room, this.atk);
+          if (lt % 2 === 0) room.fx.dust(this.cx, this.b.y + this.b.h, 2);
+          return false;
+        }
+        if (lt === 30) {
+          this.b.vx = 0;
+          room.fx.slash(this.cx, this.cy, this.facing, { arc: 'h', r: 30 }, E.col);
+        }
+        return false;
+      }
+      case 'shockRing': {
+        // 양옆으로 퍼지는 충격파 연속 — 점프 타이밍
+        const E = this.E;
+        const n = p2 ? 4 : 3;
+        const cycle = 36;
+        const k = Math.floor((t - 1) / cycle);
+        const lt = (t - 1) % cycle;
+        if (k >= n) return t > n * cycle + 20;
+        this.pose = lt < 20 ? 'slamWind' : 'slam';
+        this.anim = lt < 20 ? 'wind' : 'atk';
+        this.tele(lt < 20);
+        if (lt === 0) audio.play('warn', 0.6);
+        if (lt === 20) {
+          this.wave(room, [-1, 1], E.col, 3.6 + k * 0.3, 20, E.st);
+          room.cam.shake(4);
+          room.fx.dust(this.cx, this.b.y + this.b.h, 10);
+          audio.play('hit_power', 0.5);
+        }
+        return false;
+      }
+      case 'gravityWell': {
+        // 플레이어 쪽을 끌어당기는 장판 (2페이즈: 장판 중심에서 탄 방출)
+        const E = this.E;
+        this.pose = 'castUp';
+        this.anim = 'wind';
+        if (t === 1) {
+          audio.play('warn');
+          const x = p.cx;
+          const gy = room.world.groundBelow(x, p.b.y);
+          this.aim = { x, y: gy };
+          room.marker(x - 60, gy - 50, 120, 50, 40, E.col, true);
+        }
+        if (t === 40) {
+          room.addField('enemy', { vis: E.vis, w: 120, h: 50, life: 150, tick: 24, m: 1, pull: 1.6, st: E.st }, this.aim.x - 60, this.aim.y - 50, Math.round(this.atk * 0.45), 'normal');
+          audio.play('cast');
+        }
+        if (p2 && t === 80) {
+          for (let i = 0; i < 8; i++) room.addProj('enemy', { spr: E.proj, spd: 2.2, life: 160, w: 9, h: 9, col: E.col, st: E.st }, this.aim.x, this.aim.y - 25, (i / 8) * Math.PI * 2, Math.round(this.atk * 0.5), 'normal');
+        }
+        return t > 120;
+      }
+      case 'cloneDash': {
+        // 보스의 분신이 화면 끝에서 차례로 돌진 (경로 표시는 분신이 지나갈 때까지)
+        const E = this.E;
+        this.pose = 'castUp';
+        this.anim = 'wind';
+        if (t === 1) {
+          audio.play('cast', 0.8);
+          const gy = this.ground(room);
+          const n = p2 ? 3 : 2;
+          this.clones = [];
+          for (let i = 0; i < n; i++) {
+            const dir = i % 2 ? -1 : 1;
+            this.clones.push({ x: dir > 0 ? -20 : room.world.pxW + 20, y: i === 2 ? gy - 60 : gy, dir, t: -i * 30, done: false, hit: false });
+          }
+        }
+        let allDone = true;
+        for (const c of this.clones) {
+          c.t++;
+          if (c.done) continue;
+          allDone = false;
+          if (c.t === 1) c.mk = room.marker(0, c.y - 24, room.world.pxW, 22, 999, E.col, true);
+          if (c.t > 36) {
+            c.x += c.dir * 7;
+            if (!c.hit && Math.abs(room.player.cx - c.x) < 16 && Math.abs(room.player.cy - (c.y - 12)) < 20) c.hit = room.damagePlayer(Math.round(this.atk * 0.9), c.x, `${this.name}의 분신`, { kb: 4, st: E.st });
+            if ((c.dir > 0 && c.x > room.world.pxW + 30) || (c.dir < 0 && c.x < -30)) {
+              c.done = true;
+              c.mk?.end();
+            }
+          }
+        }
+        return (allDone && t > 10) || t > 400;
+      }
+      case 'crossBeam': {
+        // 플레이어 위치의 세로 기둥 + 가로 광선(낮게: 점프 / 높게: 엎드려 피하기)
+        const E = this.E;
+        this.pose = 'castUp';
+        this.anim = 'wind';
+        if (t === 1) {
+          audio.play('warn');
+          const gy = this.ground(room);
+          this.pillar(room, p.cx, 50, E.vis, 26, 260, E.st);
+          const hy = Math.random() < 0.5 ? gy - 16 : gy - 62;
+          const w = room.world.pxW - 32;
+          room.marker(16, hy, w, 14, 50, E.col, true);
+          room.later(50, () => {
+            room.addField('enemy', { vis: E.vis, w, h: 14, life: 30, tick: 8, m: 1, st: E.st }, 16, hy, Math.round(this.atk * 0.8), 'normal');
+            room.cam.shake(4);
+          });
+        }
+        if (p2 && t === 40) this.pillar(room, p.cx, 40, E.vis, 26, 260, E.st);
+        return t > 110;
+      }
+      case 'homingOrbs': {
+        const E = this.E;
+        this.pose = 'cast';
+        this.anim = 'wind';
+        const waves = p2 ? 3 : 2;
+        if (t % 22 === 10 && t < 22 * waves) {
+          for (let i = 0; i < 4; i++) room.addProj('enemy', { spr: E.proj, spd: 1.9, life: 200, w: 8, h: 8, col: E.col, home: 0.035, st: E.st }, this.cx, this.b.y + 10, -Math.PI / 2 + (i - 1.5) * 0.7, Math.round(this.atk * 0.55), 'normal');
+          audio.play('cast', 0.6);
+        }
+        return t > 22 * waves + 40;
+      }
+      case 'spikeWave': {
+        // 내려찍으면 바닥 가시가 양옆으로 번져 나간다
+        const E = this.E;
+        const n = p2 ? 9 : 7;
+        this.pose = t < 24 ? 'slamWind' : 'slam';
+        this.anim = t < 24 ? 'wind' : 'atk';
+        this.tele(t < 24);
+        if (t === 1) {
+          audio.play('warn');
+          for (const dir of [-1, 1]) {
+            for (let i = 1; i <= n; i++) {
+              const x = this.cx + dir * i * 26;
+              if (x < 16 || x > room.world.pxW - 16) break;
+              const gy = room.world.groundBelow(x, this.b.y);
+              const d = 24 + i * 5;
+              room.marker(x - 9, gy - 4, 18, 4, d, '#ff3030');
+              room.later(d, () => {
+                room.enemyHit({ x: x - 9, y: gy - 40, w: 18, h: 40 }, this.atk * 0.9, x, this.name);
+                room.spike(x, gy, E.col);
+              });
+            }
+          }
+        }
+        if (t === 24) {
+          room.cam.shake(4);
+          audio.play('hit_power', 0.5);
+        }
+        return t > 24 + n * 5 + 20;
+      }
+      case 'floorHalf': {
+        // 바닥의 절반이 차례로 뒤덮인다 — 반대편으로
+        const E = this.E;
+        this.pose = 'castUp';
+        this.anim = 'wind';
+        const reps = this.phase >= 2 ? 3 : 2;
+        const cycle = 70;
+        const k = Math.floor((t - 1) / cycle);
+        const lt = (t - 1) % cycle;
+        if (k >= reps) return t > reps * cycle + 10;
+        if (lt === 0) {
+          this.side = k === 0 ? (p.cx < room.world.pxW / 2 ? 0 : 1) : 1 - this.side;
+          const gy = this.ground(room);
+          const w = room.world.pxW / 2 - 16;
+          const x0 = this.side === 0 ? 16 : room.world.pxW / 2;
+          room.marker(x0, gy - 56, w, 56, 50, E.col, true);
+          room.later(50, () => {
+            room.addField('enemy', { vis: E.vis, w, h: 56, life: 24, tick: 8, m: 1, st: E.st }, x0, gy - 56, Math.round(this.atk * 0.9), 'normal');
+            audio.play('explode', 0.9);
+          });
+          audio.play('warn');
+        }
+        return false;
+      }
+      case 'laserSweep': {
+        // 높이가 다른 가로 광선이 차례로
+        const E = this.E;
+        this.pose = 'thrustWind';
+        this.anim = 'wind';
+        const n = p2 ? 3 : 2;
+        if (t === 1) {
+          audio.play('warn');
+          const gy = this.ground(room);
+          const ys = [gy - 16, gy - 50, gy - 90].sort(() => Math.random() - 0.5);
+          const w = room.world.pxW - 32;
+          for (let i = 0; i < n; i++) {
+            const y = ys[i];
+            const d = 40 + i * 30;
+            room.marker(16, y, w, 12, d, E.col, true);
+            room.later(d, () => {
+              room.addField('enemy', { vis: E.vis, w, h: 12, life: 24, tick: 8, m: 1, st: E.st }, 16, y, Math.round(this.atk * 0.8), 'normal');
+              audio.play('explode', 1.3);
+              room.cam.shake(3);
+            });
+          }
+        }
+        return t > 40 + n * 30 + 20;
+      }
+      case 'meteor': {
+        // 거대한 운석 하나 — 넓은 범위, 예고가 끝나는 순간 폭발
+        const E = this.E;
+        this.pose = 'castUp';
+        this.anim = 'wind';
+        const T = 80;
+        if (t === 1) {
+          room.bossShout('하늘이 무너진다!', E.col);
+          audio.play('warn');
+          const x = p.cx;
+          const gy = room.world.groundBelow(x, p.b.y);
+          this.aim = { x, y: gy };
+          room.marker(x - 70, gy - 70, 140, 70, T, E.col, true);
+        }
+        if (t > T - 16 && t < T) {
+          const k = (T - t) / 16;
+          room.fx.parts.push({ x: this.aim.x + k * 60, y: this.aim.y - 40 - k * 200, vx: 0, vy: 0, life: 0, max: 6, col: E.col, size: 6, grav: 0, kind: 'px', drag: 1 });
+        }
+        if (t === T) {
+          room.enemyExplode(this.aim.x, this.aim.y - 20, 70, this.atk * 1.6, E.st);
+          room.fx.burst(this.aim.x, this.aim.y - 10, E.col, 40, 5);
+          room.flash(E.col, 0.5);
+          room.cam.shake(10, 30);
+          audio.play('explode', 0.6);
+        }
+        return t > T + 30;
+      }
+      case 'summon': {
+        this.pose = 'castUp';
+        this.anim = 'wind';
+        if (t === 20) room.spawnMinions(this, p2 ? 3 : 2);
+        return t > 50;
       }
       // ─────────── 즉사기 ───────────
       case 'royalExecution': {
@@ -917,7 +1264,7 @@ export class Boss extends Enemy {
         this.pose = 'castUp';
         this.anim = 'wind';
         if (t === 1) {
-          room.bossShout(this.bd.id === 'oblivion' ? '네가 계약한 혼들… 모두 내가 기억하고 있다.' : '계약자여, 네가 부린 혼들도 결국 나의 것이다!', '#c8a8ff');
+          room.bossShout(this.bd.id === 'oblivion' ? '네가 계약한 혼들… 모두 내가 기억하고 있다.' : this.bd.id === 'arche' ? '그 혼들과의 계약도, 처음엔 내가 맺은 것이다.' : '계약자여, 네가 부린 혼들도 결국 나의 것이다!', this.ec('#c8a8ff'));
           audio.play('boss_roar', 0.8);
           const pool = room.pactPool();
           this.shadows = pool.slice(0, 4).map((id, i) => {
@@ -934,7 +1281,7 @@ export class Boss extends Enemy {
           allDone = false;
           if (s.t === 1) {
             // 그림자가 화면을 다 가로지를 때까지 경로 표시
-            s.mk = room.marker(0, s.y - 22, room.world.pxW, 20, 999, '#9a6bff', true);
+            s.mk = room.marker(0, s.y - 22, room.world.pxW, 20, 999, this.ec('#9a6bff'), true);
             room.toastWorld(s.x, s.y - 34, CHAR_MAP[s.id]?.name ?? '', '#c8a8ff');
           }
           if (s.t > 40) {
@@ -977,7 +1324,7 @@ export class Boss extends Enemy {
         let pose = this.pose;
         if (this.anim === 'move') pose = (['run0', 'run1', 'run2', 'run3', 'run4', 'run5'] as PoseName[])[Math.floor(this.animT / 6) % 6];
         else if (this.anim === 'idle') pose = f % 2 ? 'idle1' : 'idle0';
-        img = lookFrame(`b:${this.bd.id}`, ENEMY_LOOKS[this.bd.id], pose);
+        img = this.mirrorOf ? charFrame(this.mirrorOf, pose) : lookFrame(`b:${this.bd.id}`, ENEMY_LOOKS[this.bd.id], pose);
       }
     }
     const fw = img.width * sc;
@@ -1021,6 +1368,22 @@ export class Boss extends Enemy {
       draw(tinted(img, '#ff3030'));
     }
     g.restore();
+    // 분신 돌진
+    for (const c of this.clones) {
+      if (c.done || c.t < 1) continue;
+      const base = this.mirrorOf ? charFrame(this.mirrorOf, c.t > 36 ? 'dash' : 'thrustWind') : lookFrame(`b:${this.bd.id}`, ENEMY_LOOKS[this.bd.id], c.t > 36 ? 'dash' : 'thrustWind');
+      const im = tinted(base, this.ec('#9a6bff'));
+      g.save();
+      g.globalAlpha = Math.min(1, c.t / 20) * 0.75;
+      const cxp = Math.round(c.x - 24 - cx);
+      const cyp = Math.round(c.y - 44 - cy);
+      if (c.dir < 0) {
+        g.translate(cxp + 24, 0);
+        g.scale(-1, 1);
+        g.drawImage(im, -24, cyp);
+      } else g.drawImage(im, cxp, cyp);
+      g.restore();
+    }
     // 계약의 그림자
     for (const s of this.shadows) {
       if (s.done || s.t < 1) continue;

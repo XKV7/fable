@@ -3,19 +3,10 @@ import { audio } from '../core/audio';
 import { text } from '../gfx/renderer';
 import { keyHint } from '../ui/widgets';
 import { HubScene } from './hub';
+import { STORIES } from '../data/stories';
 
-const LINES = [
-  '한때 빛나던 왕국 아스펠은 하룻밤 사이에 무너졌다.',
-  '왕은 죽음을 거부했고, 스스로 「끝없는 왕」이 되어',
-  '왕국의 모든 혼을 지하 묘소에 가두었다.',
-  '',
-  '그대는 계약자.',
-  '영혼석으로 쓰러진 영웅들의 혼을 불러내 계약하고,',
-  '그들의 몸을 빌려 싸울 수 있는 유일한 자.',
-  '',
-  '계약의 성소에서 영웅을 부르고, 묘소의 가장 깊은 곳으로 내려가라.',
-  '끝없는 왕에게 끝을 선사하라.',
-];
+/** 게임 첫 인트로 = 스토리 1의 이야기 */
+const LINES = STORIES[0].intro;
 
 export class IntroScene implements Scene {
   t = 0;
@@ -31,6 +22,7 @@ export class IntroScene implements Scene {
   }
   private finish(): void {
     app.save.introSeen = true;
+    app.save.storySeen[1] = true;
     app.persist();
     app.go(new HubScene());
   }

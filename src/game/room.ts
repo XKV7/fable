@@ -252,7 +252,8 @@ export class Room {
     // 적 웨이브 구성
     if (init.mode !== 'hub') this.planWaves(init);
     if (init.type === 'boss' && init.bossId) {
-      this.boss = new Boss(init.bossId, bossPos.x, bossPos.y, run.curseEnemy);
+      this.boss = new Boss(init.bossId, bossPos.x, bossPos.y, run.curseEnemy, run.power);
+      if (init.bossId === 'mirror') this.boss.mirrorOf = run.party[run.active]?.id ?? '';
       this.cleared = false;
     }
     // 튜토리얼 적
@@ -328,7 +329,7 @@ export class Room {
   }
 
   private makeEnemy(def: EnemyDef, x: number, y: number, elite: boolean): Enemy {
-    return new Enemy(def, x, y, elite, this.run.chapter, this.run.curseEnemy, this.run.node?.layer ?? 0);
+    return new Enemy(def, x, y, elite, this.run.chapter, this.run.curseEnemy, this.run.node?.layer ?? 0, this.run.power);
   }
 
   private planWaves(init: RoomInit): void {
@@ -336,7 +337,7 @@ export class Room {
     const pool = enemyPool(this.ch.n);
     const rng = this.run.rng;
     const depth = init.depth;
-    let count = Math.min(10, Math.round(3 + depth * 0.6 + this.run.chapter * 0.4 + this.run.curse * 0.3));
+    let count = Math.min(12, Math.round(4 + depth * 0.6 + this.run.chapter * 0.4 + this.run.curse * 0.3 + (this.run.story - 1) * 0.5));
     if (init.type === 'start') count = Math.max(3, count - 1);
     const flyers = pool.filter((d) => d.flying);
     const grounds = pool.filter((d) => !d.flying);
@@ -545,13 +546,14 @@ export class Room {
     const k = this.ch.particles;
     const x = this.cam.x + Math.random() * W;
     const y = this.cam.y + Math.random() * H;
-    const col = k === 'ember' ? '#ff8a3a' : k === 'spore' ? '#a0ff80' : k === 'shadow' ? '#9a6bff' : k === 'rain' ? '#80b0e0' : k === 'snow' ? '#e8f4ff' : k === 'void' ? '#ff80d0' : '#c0b8d0';
+    const col = ({ ember: '#ff8a3a', spore: '#a0ff80', shadow: '#9a6bff', rain: '#80b0e0', snow: '#e8f4ff', void: '#ff80d0', ash: '#a09890', petal: '#ffb0d0', spark: '#ffe080', blood: '#d0203a', star: '#e0e0ff', bubble: '#a0f0ff', leaf: '#80b060' } as Record<string, string>)[k] ?? '#c0b8d0';
     if (k === 'rain') {
       for (let i = 0; i < 4; i++) this.fx.parts.push({ x: this.cam.x + Math.random() * W, y: this.cam.y - 10, vx: -0.8, vy: 5, life: 0, max: 60, col, size: 1, grav: 0, kind: 'spark', drag: 1 });
       return;
     }
-    const vy = k === 'ember' ? -0.4 : k === 'dust' ? 0.1 : k === 'snow' ? 0.35 : -0.15;
-    this.fx.parts.push({ x, y, vx: (Math.random() - 0.5) * (k === 'snow' ? 0.6 : 0.3), vy, life: 0, max: 160, col, size: k === 'snow' ? 2 : 1, grav: 0, kind: 'px', drag: 1 });
+    const vy = k === 'ember' || k === 'bubble' || k === 'spark' ? -0.4 : k === 'dust' ? 0.1 : k === 'snow' || k === 'ash' || k === 'petal' || k === 'leaf' ? 0.35 : k === 'blood' ? 0.6 : -0.15;
+    const drift = k === 'snow' || k === 'petal' || k === 'leaf' ? 0.6 : 0.3;
+    this.fx.parts.push({ x, y, vx: (Math.random() - 0.5) * drift, vy, life: 0, max: 160, col, size: k === 'snow' || k === 'petal' || k === 'leaf' || k === 'bubble' ? 2 : 1, grav: 0, kind: 'px', drag: 1 });
   }
 
   private roomCleared(): void {
@@ -1222,7 +1224,7 @@ export class Room {
       const def = id ? ENEMY_MAP[id] : pool[Math.floor(Math.random() * pool.length)];
       const x = Math.max(30, Math.min(this.world.pxW - 30, src.cx + (i % 2 ? 1 : -1) * (30 + i * 16)));
       const gy = this.world.groundBelow(x, src.b.y);
-      const e = new Enemy(def, x, gy, false, this.run.chapter, this.run.curseEnemy, 0);
+      const e = new Enemy(def, x, gy, false, this.run.chapter, this.run.curseEnemy, 0, this.run.power);
       e.minion = true;
       e.maxHp = e.hp = Math.round(e.maxHp * 0.6);
       e.st = 40;
@@ -1235,7 +1237,7 @@ export class Room {
   spawnFlyers(src: Enemy, n: number, id: string): void {
     const alive = this.enemies.filter((e) => !e.dead && e.minion).length;
     for (let i = 0; i < n && alive + i < 4; i++) {
-      const e = new Enemy(ENEMY_MAP[id], src.cx + (i % 2 ? 1 : -1) * (30 + i * 20), src.b.y - 10, false, this.run.chapter, this.run.curseEnemy, 0);
+      const e = new Enemy(ENEMY_MAP[id], src.cx + (i % 2 ? 1 : -1) * (30 + i * 20), src.b.y - 10, false, this.run.chapter, this.run.curseEnemy, 0, this.run.power);
       e.minion = true;
       e.maxHp = e.hp = Math.round(e.maxHp * 0.6);
       e.st = 40;

@@ -53,14 +53,15 @@ export class Enemy {
     chapter: number,
     curse: number,
     depth: number,
+    power = { hp: 1, atk: 1 }, // 스토리 배율
   ) {
-    const sc = (CHAPTER_SCALE[chapter] ?? 1) * (1 + curse) * (1 + depth * 0.05);
+    const sc = (CHAPTER_SCALE[chapter] ?? 1) * (1 + curse) * (1 + depth * 0.05) * power.hp;
     this.scale = elite ? ELITE_MULT.size : 1;
     const w = Math.round(def.w * this.scale);
     const h = Math.round(def.h * this.scale);
     this.b = newBody(x - w / 2, y - h, w, h);
     this.maxHp = this.hp = Math.round(def.hp * sc * (elite ? ELITE_MULT.hp : 1));
-    this.atk = Math.round(def.atk * (CHAPTER_SCALE[chapter] ?? 1) * (1 + curse * 0.8) * (elite ? ELITE_MULT.atk : 1));
+    this.atk = Math.round(def.atk * (CHAPTER_SCALE[chapter] ?? 1) * (1 + curse * 0.8) * (elite ? ELITE_MULT.atk : 1) * power.atk);
     this.kbRes = elite ? Math.max(def.kbRes, 0.6) : def.kbRes;
     this.defense = def.def ?? 0;
     this.name = elite ? `정예 ${def.name}` : def.name;

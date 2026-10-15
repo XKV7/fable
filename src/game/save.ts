@@ -36,6 +36,12 @@ export interface SaveData {
   };
   curse: number;
   curseMax: number;
+  /** 선택한 스토리 / 해금된 최대 스토리 */
+  story: number;
+  storyMax: number;
+  /** 스토리별 인트로를 봤는지 / 클리어했는지 */
+  storySeen: Record<number, boolean>;
+  storyClear: Record<number, boolean>;
   loadout: { chars: [string, string]; weapon: string };
   pickupIndex: number;
   /** 디버그: 직접 지정한 픽업 (null이면 자동 로테이션) */
@@ -70,6 +76,10 @@ export function newSave(): SaveData {
     stats: { runs: 0, kills: 0, clears: 0, bestChapter: 0, swapHits: 0, maxCombo: 0, pulls: 0, deaths: 0, bossKills: {}, playTime: 0 },
     curse: 0,
     curseMax: 0,
+    story: 1,
+    storyMax: 1,
+    storySeen: {},
+    storyClear: {},
     loadout: { chars: [STARTER_CHAR, ''], weapon: STARTER_WEAPON },
     pickupIndex: 0,
     pickupOverride: null,
@@ -113,11 +123,15 @@ export function sanitize(raw: unknown): SaveData {
     weapons: { ...base.weapons, ...(r.weapons ?? {}) },
     loadout: r.loadout && Array.isArray(r.loadout.chars) ? { chars: [r.loadout.chars[0] ?? STARTER_CHAR, r.loadout.chars[1] ?? ''], weapon: r.loadout.weapon ?? STARTER_WEAPON } : base.loadout,
     newChars: Array.isArray(r.newChars) ? r.newChars : [],
+    storySeen: { ...(r.storySeen ?? {}) },
+    storyClear: { ...(r.storyClear ?? {}) },
     pickupOverride: validOverride(r.pickupOverride),
   };
-  for (const k of ['stones', 'crystals', 'curse', 'curseMax', 'pickupIndex', 'runsSinceRotation'] as const) {
+  for (const k of ['stones', 'crystals', 'curse', 'curseMax', 'pickupIndex', 'runsSinceRotation', 'story', 'storyMax'] as const) {
     if (typeof out[k] !== 'number' || !Number.isFinite(out[k])) out[k] = base[k];
   }
+  out.storyMax = Math.max(1, Math.min(4, Math.floor(out.storyMax)));
+  out.story = Math.max(1, Math.min(out.storyMax, Math.floor(out.story)));
   return out;
 }
 

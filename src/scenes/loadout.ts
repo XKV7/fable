@@ -13,8 +13,10 @@ import { button, hot, keyHint, panel, stars } from '../ui/widgets';
 import { crestTags } from '../ui/cards';
 import { RunScene } from './run';
 import { rgba } from '../gfx/pixel';
+import { STORIES, storyDef } from '../data/stories';
+import { StoryTextScene } from './story';
 
-type Focus = 0 | 1 | 2 | 3 | 4; // 슬롯1, 슬롯2, 무기, 저주, 출정
+type Focus = 0 | 1 | 2 | 3 | 4 | 5; // 슬롯1, 슬롯2, 무기, 저주, 출정, 스토리
 
 /** 편성: 영웅 2명 + 무기 1개 + 저주 단계 선택 후 출정 */
 export class LoadoutScene implements Scene {
@@ -97,6 +99,8 @@ export class LoadoutScene implements Scene {
         this.pick = Math.max(0, this.ownedWeapons().indexOf(lo.weapon));
       } else if (this.focus === 3) {
         if (!this.curseLocked()) app.save.curse = app.save.curse >= app.save.curseMax ? 0 : app.save.curse + 1;
+      } else if (this.focus === 5) {
+        if (!this.storyLocked()) app.save.story = app.save.story >= app.save.storyMax ? 1 : app.save.story + 1;
       } else this.depart();
     }
   }
@@ -109,12 +113,20 @@ export class LoadoutScene implements Scene {
     return true;
   }
 
+  /** 다음 스토리가 아직 잠겨 있으면 안내하고 true */
+  private storyLocked(): boolean {
+    if (app.save.storyMax > 1) return false;
+    audio.play('error');
+    app.toast('후속 스토리는 「망자의 계약」을 완수하면 열린다', '#ff9090');
+    return true;
+  }
+
   /**
    * 화면 배치대로 2차원 이동:
    *   [0 선봉] [1 교대]
-   *   [2 무기          ]
-   *   [3 저주] [4 출정!]
-   * 저주 칸에서 A/D는 단계 변경, 최고 단계에서 D를 누르면 출정으로.
+   *   [2 무기          ] [5 스토리]
+   *   [3 저주          ] [4 출정!]
+   * 저주·스토리 칸에서 A/D는 값 변경, 끝에서 한 번 더 누르면 옆 칸으로.
    */
   private navigate(): void {
     const inp = app.input;
@@ -124,6 +136,10 @@ export class LoadoutScene implements Scene {
       if (f === 1) n = 0;
       else if (f === 0) n = 1;
       else if (f === 4) n = 3;
+      else if (f === 5 && app.save.story > 1) {
+        app.save.story--;
+        audio.play('select');
+      } else if (f === 5) n = 2;
       else if (f === 3 && app.save.curse > 0) {
         app.save.curse--;
         audio.play('select');
@@ -132,7 +148,11 @@ export class LoadoutScene implements Scene {
     if (inp.menu('mright')) {
       if (f === 0) n = 1;
       else if (f === 1) n = 0;
-      else if (f === 2) n = 4;
+      else if (f === 2) n = 5;
+      else if (f === 5 && app.save.story < app.save.storyMax) {
+        app.save.story++;
+        audio.play('select');
+      } else if (f === 5) this.storyLocked();
       else if (f === 3 && app.save.curse < app.save.curseMax) {
         app.save.curse++;
         audio.play('select');
@@ -140,12 +160,14 @@ export class LoadoutScene implements Scene {
     }
     if (inp.menu('mup')) {
       if (f === 2) n = this.lastSlot;
-      else if (f === 3 || f === 4) n = 2;
+      else if (f === 3) n = 2;
+      else if (f === 4) n = 5;
+      else if (f === 5) n = 1;
     }
     if (inp.menu('mdown')) {
       if (f === 0 || f === 1) n = 2;
       else if (f === 2) n = 3;
-      else if (f === 3) n = 4;
+      else if (f === 3 || f === 5) n = 4;
     }
     if (n !== f) {
       this.focus = n;
@@ -164,8 +186,13 @@ export class LoadoutScene implements Scene {
     app.persist();
     const run = new RunState(app.save);
     if (markAch(app.save, 'first_run')) app.achToast(['first_run']);
+    const sd = run.storyDef;
+    const first = !app.save.storySeen[sd.id];
+    app.save.storySeen[sd.id] = true;
     app.persist();
-    app.go(new RunScene(run));
+    // 후속 스토리는 처음 출정할 때 이야기를 먼저 보여 준다 (스토리 1은 게임 첫 인트로가 대신한다)
+    if (first && sd.id > 1) app.go(new StoryTextScene(`스토리 ${sd.id}  「${sd.name}」`, sd.sub, sd.intro, () => app.go(new RunScene(run))));
+    else app.go(new RunScene(run));
   }
 
   world(g: CanvasRenderingContext2D): void {
@@ -234,8 +261,16 @@ export class LoadoutScene implements Scene {
     const cu = CURSES[save.curse];
     text(g, `◀ ${cu.name} ▶`, 20, 218, { size: 8, color: save.curse ? '#ff80a0' : '#c8c0d8', bold: true });
     text(g, save.curseMax ? cu.desc : '최종 보스를 쓰러뜨리면 저주 단계가 해금된다', 110, 219, { size: 6, color: '#a8a0c0', maxW: 190 });
+    // 스토리
+    const sd = storyDef(save.story);
+    const ssel = this.focus === 5;
+    panel(g, 316, 166, 156, 42, { border: ssel ? '#ffffff' : '#c0a060' });
+    hot.add('lf:5', 316, 166, 156, 42);
+    text(g, `스토리 ${sd.id} / ${STORIES.length}`, 322, 170, { size: 6, color: '#a8a0c0' });
+    text(g, `◀ ${sd.name} ▶`, 394, 180, { size: 9, align: 'center', color: '#ffe0a0', bold: true });
+    text(g, save.storyMax > 1 ? (save.storyClear[sd.id] ? `${sd.sub} · 완수` : sd.sub) : '「망자의 계약」을 완수하면 후속 스토리가 열린다', 394, 194, { size: 5, align: 'center', color: save.storyClear[sd.id] ? '#a0ffd0' : '#a8a0c0', maxW: 150 });
     // 출정
-    button(g, 316, 210, 156, 28, '출정!', this.focus === 4, { size: 11, col: '#ffcc40', sub: '끝없는 왕좌를 향해' });
+    button(g, 316, 210, 156, 28, '출정!', this.focus === 4, { size: 11, col: '#ffcc40', sub: sd.id === 1 ? '끝없는 왕좌를 향해' : sd.sub });
     hot.add('lf:4', 316, 210, 156, 28);
     // 피커
     if (this.picking) {

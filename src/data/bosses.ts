@@ -1,3 +1,15 @@
+import type { FieldVis, ProjSprite, StatusId } from '../game/types';
+import { STORY_BOSSES } from './bosses2';
+
+/** 범용 패턴용 속성 (색·장판 모양·낙하체·탄) */
+export interface BossElem {
+  col: string;
+  vis: FieldVis;
+  drop: 'bone' | 'blade' | 'fireball' | 'rock' | 'shard' | 'spear';
+  proj: ProjSprite;
+  st?: StatusId;
+}
+
 export interface BossDef {
   id: string;
   name: string;
@@ -12,6 +24,8 @@ export interface BossDef {
   col: string;
   soulStones: number; // 첫 처치 보상
   mult?: number; // 체력·공격력 배율 (기본 BOSS_TUNE)
+  elem?: BossElem;
+  still?: boolean; // 제자리에서 움직이지 않는다
 }
 
 /** 보스 기본 체력·공격력 배율. 끝없는 왕 3배, 망각 4배는 각 정의의 mult로 지정. */
@@ -85,6 +99,8 @@ export const BOSSES: BossDef[] = [
     col: '#ff80d0', soulStones: 1200, mult: 4,
   },
 ];
+
+BOSSES.push(...STORY_BOSSES);
 
 export const BOSS_MAP: Record<string, BossDef> = Object.fromEntries(BOSSES.map((b) => [b.id, b]));
 

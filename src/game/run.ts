@@ -5,6 +5,7 @@ import { RELICS } from '../data/relics';
 import { CHARACTERS } from '../data/characters';
 import { WEAPONS } from '../data/weapons';
 import type { SaveData } from './save';
+import { storyDef, type StoryDef } from '../data/stories';
 
 export interface MapNode {
   id: number;
@@ -100,9 +101,10 @@ export function generateChapter(rng: Rng, chapter: number, tutorial: boolean): {
 
 export class RunState {
   rng: Rng;
+  story = 1; // 스토리 (1~4)
   chapter = 1; // 진행 단계 (1~6)
   theme = 1; // 현재 챕터 테마 (ChapterDef.n)
-  kingDown = false; // 끝없는 왕 처치 (이후 심연에서 쓰러져도 클리어로 인정)
+  kingDown = false; // 스토리 최종 보스 처치 (이후 진엔딩 단계에서 쓰러져도 클리어로 인정)
   trueEnd = false;
   nodes: MapNode[] = [];
   layers: number[][] = [];
@@ -137,13 +139,28 @@ export class RunState {
     if (save.upgrades.potion) this.items.push('potion');
     this.curse = save.curse;
     this.tutorial = !save.tutorialDone;
-    this.newChapter(1, 1);
+    this.story = Math.max(1, Math.min(save.storyMax, save.story));
+    this.newChapter(1, this.storyDef.route[0][0]);
+  }
+
+  get storyDef(): StoryDef {
+    return storyDef(this.story);
+  }
+
+  /** 스토리별 적·보스 체력·공격력 배율 */
+  get power(): { hp: number; atk: number } {
+    return this.storyDef.power;
+  }
+
+  /** 다음 단계에서 고를 수 있는 테마 */
+  nextThemes(): number[] {
+    return this.storyDef.route[this.chapter] ?? [];
   }
 
   newChapter(stage: number, theme: number): void {
     this.chapter = stage;
     this.theme = theme;
-    const m = generateChapter(this.rng, stage, stage === 1 && this.tutorial);
+    const m = generateChapter(this.rng, stage, stage === 1 && this.tutorial && this.story === 1);
     this.nodes = m.nodes;
     this.layers = m.layers;
     this.cur = 0;

@@ -2,6 +2,9 @@ import type { Look, PoseName } from '../game/types';
 import { CHAR_MAP } from '../data/characters';
 import { drawHumanoid } from './humanoid';
 import { Pix, shade, silhouette } from './pixel';
+import { drawCreature } from './creatures';
+import { STORY_LOOKS } from './looks2';
+import { ENEMY_MAP } from '../data/enemies';
 
 /** 모든 스프라이트는 최초 요청 시 코드로 그려 오프스크린 캔버스에 캐싱된다. */
 const cache = new Map<string, HTMLCanvasElement>();
@@ -65,6 +68,7 @@ export const ENEMY_LOOKS: Record<string, Look> = {
   libra: { skin: '#e8f0ff', hair: '#c0e8ff', hairStyle: 'long', body: '#2a4a7a', trim: '#a8e4ff', legs: '#1a2a4a', boots: '#10182c', eye: '#a8e4ff', weapon: 'clock', wcol: '#e0f4ff', wcol2: '#5a6a9a', build: 'slim', cape: '#4a6aa0', glow: '#a8e4ff', extra: 'halo' },
   oblivion: { skin: '#2a1028', hair: '#ff80d0', hairStyle: 'crown', body: '#14081c', trim: '#ff80d0', legs: '#0c0412', boots: '#06020a', eye: '#ffffff', weapon: 'greatsword', wcol: '#ff80d0', wcol2: '#3a1a3a', build: 'big', glow: '#ff80d0', cape: '#3a0a2a', extra: 'wings' },
   graven: { skin: bone, hair: bone, hairStyle: 'skull', body: '#3a3448', trim: '#80e0ff', legs: '#2a2438', boots: '#1a1828', eye: '#80e0ff', weapon: 'shovel', wcol: '#8a8a7a', wcol2: '#4a3a2a', build: 'big', glow: '#80e0ff', cape: '#2a2438', extra: 'chains' },
+  ...STORY_LOOKS,
   king: { skin: '#c8b8d0', hair: '#e0e0f0', hairStyle: 'crown', body: '#2a1a3a', trim: '#e0b040', legs: '#1a1028', boots: '#100818', eye: '#ff4ab0', weapon: 'greatsword', wcol: '#c8a8ff', wcol2: '#e0b040', build: 'big', glow: '#c8a8ff', cape: '#6a0a2a' },
 };
 
@@ -318,6 +322,17 @@ const HUMANOID_ANIM: Record<string, Record<string, PoseName>> = {
   shade: { wind: 'thrustWind', atk: 'thrust', hurt: 'hurt' },
 };
 
+/** AI 유형별 기본 공격 포즈 (HUMANOID_ANIM에 없는 인간형 적) */
+const AI_ANIM: Record<string, Record<string, PoseName>> = {
+  archer: { wind: 'shootWind', atk: 'shoot', hurt: 'hurt' },
+  caster: { wind: 'castUp', atk: 'cast', hurt: 'hurt' },
+  turret: { wind: 'castUp', atk: 'cast', hurt: 'hurt' },
+  lancer: { wind: 'thrustWind', atk: 'thrust', hurt: 'hurt' },
+  teleporter: { wind: 'thrustWind', atk: 'thrust', hurt: 'hurt' },
+  shield: { wind: 'windHigh', atk: 'slashDown', hurt: 'hurt', block: 'guard' },
+  golem: { wind: 'slamWind', atk: 'slam', hurt: 'hurt' },
+};
+
 /** 적 프레임: anim = idle|move|wind|atk|hurt|block, f = 프레임 번호 */
 export function enemyFrame(id: string, anim: string, f: number): HTMLCanvasElement {
   const look = ENEMY_LOOKS[id];
@@ -326,7 +341,7 @@ export function enemyFrame(id: string, anim: string, f: number): HTMLCanvasEleme
     if (anim === 'idle') pose = f % 2 ? 'idle1' : 'idle0';
     else if (anim === 'move') pose = (['run0', 'run1', 'run2', 'run3', 'run4', 'run5'] as PoseName[])[f % 6];
     else {
-      const m = HUMANOID_ANIM[id] ?? HUMANOID_ANIM.default;
+      const m = HUMANOID_ANIM[id] ?? AI_ANIM[ENEMY_MAP[id]?.ai ?? ''] ?? HUMANOID_ANIM.default;
       pose = m[anim] ?? HUMANOID_ANIM.default[anim] ?? 'idle0';
     }
     return lookFrame(`e:${id}`, look, pose);
@@ -336,7 +351,7 @@ export function enemyFrame(id: string, anim: string, f: number): HTMLCanvasEleme
   let c = cache.get(k);
   if (!c) {
     const p = new Pix(48, 48);
-    (DRAW[id] ?? DRAW.dummy)(p, anim, ff);
+    if (!drawCreature(p, id, anim, ff)) (DRAW[id] ?? DRAW.dummy)(p, anim, ff);
     p.finish();
     c = p.c;
     cache.set(k, c);

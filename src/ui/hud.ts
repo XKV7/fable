@@ -186,7 +186,7 @@ export class Hud {
     const w = L * 12 + 8;
     const x0 = 476 - w;
     panel(g, x0, 4, w, 46, { alpha: 0.8 });
-    text(g, `제${run.chapter}장`, x0 + 4, 6, { size: 6, color: '#c0b0d8' });
+    text(g, `${run.story > 1 ? `스토리${run.story} · ` : ''}제${run.chapter}장`, x0 + 4, 6, { size: 6, color: '#c0b0d8' });
     const pos = (id: number): [number, number] => {
       const n = run.nodes[id];
       const cnt = run.layers[n.layer].length;

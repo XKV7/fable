@@ -40,8 +40,12 @@ export const ITEMS: ItemDef[] = [
 ];
 export const ITEM_MAP: Record<string, ItemDef> = Object.fromEntries(ITEMS.map((i) => [i.id, i]));
 
+import type { MusicTheme } from '../core/audio';
+
+export type Particles = 'dust' | 'spore' | 'ember' | 'shadow' | 'rain' | 'snow' | 'void' | 'ash' | 'petal' | 'spark' | 'blood' | 'star' | 'bubble' | 'leaf';
+
 export interface ChapterDef {
-  n: number; // 테마 id (적·보스·배경이 이 값으로 묶임)
+  n: number; // 테마 id (적·보스·배경이 이 값으로 묶임). 스토리 1: 1~7, 스토리 2: 11~16, 스토리 3: 21~26, 스토리 4: 31~36
   name: string;
   boss: string;
   bg: [string, string, string]; // 하늘/먼 배경/가까운 배경
@@ -49,15 +53,16 @@ export interface ChapterDef {
   ambient: string; // 어둠 색
   dark: number; // 어둠 강도
   light: string; // 광원 색
-  music: 'ch1' | 'ch2' | 'ch3' | 'ch4' | 'ch5' | 'ch6' | 'ch7';
-  particles: 'dust' | 'spore' | 'ember' | 'shadow' | 'rain' | 'snow' | 'void';
+  music: MusicTheme;
+  particles: Particles;
   hazard?: 'lava' | 'void'; // 바닥 구덩이 가시를 대체
   slippery?: boolean; // 미끄러운 바닥
   desc: string; // 분기 문 위 설명
 }
 
-/** 테마별 챕터. 진행 순서는 ROUTE가 정한다. */
+/** 테마별 챕터. 진행 순서는 스토리(src/data/stories.ts)의 route가 정한다. */
 export const CHAPTERS: ChapterDef[] = [
+  // ── 스토리 1: 망자의 계약 ──
   { n: 1, name: '무너진 묘소', boss: 'graven', bg: ['#14121c', '#221e2e', '#2e2838'], tile: ['#4a4458', '#6a6478', '#2a2636'], ambient: '#08060e', dark: 0.55, light: '#ffb060', music: 'ch1', particles: 'dust', desc: '해골과 망령' },
   { n: 2, name: '독버섯 지하수로', boss: 'mycora', bg: ['#0c1a14', '#14281e', '#1e3626'], tile: ['#3a5040', '#507060', '#20302a'], ambient: '#040a06', dark: 0.5, light: '#a0ff80', music: 'ch2', particles: 'spore', desc: '독과 슬라임' },
   { n: 5, name: '침몰한 항구', boss: 'morten', bg: ['#0a1622', '#12263a', '#1a3450'], tile: ['#3a4a58', '#5a7488', '#1e2a36'], ambient: '#02060c', dark: 0.5, light: '#80d0ff', music: 'ch5', particles: 'rain', desc: '익사자와 폭풍' },
@@ -65,14 +70,33 @@ export const CHAPTERS: ChapterDef[] = [
   { n: 6, name: '얼어붙은 왕립 도서관', boss: 'libra', bg: ['#0e1626', '#1a2a40', '#28405a'], tile: ['#4a5a70', '#a8d0ec', '#24304a'], ambient: '#040814', dark: 0.45, light: '#a8e4ff', music: 'ch6', particles: 'snow', slippery: true, desc: '서리와 금서' },
   { n: 4, name: '끝없는 왕좌', boss: 'king', bg: ['#0e0a1a', '#1a1430', '#261e40'], tile: ['#3a3450', '#5a5078', '#1e1a2e'], ambient: '#040210', dark: 0.6, light: '#c0a0ff', music: 'ch4', particles: 'shadow', desc: '끝없는 왕' },
   { n: 7, name: '망각의 심연', boss: 'oblivion', bg: ['#04020a', '#0c0618', '#160c28'], tile: ['#2a2040', '#6a4aa0', '#120a20'], ambient: '#000000', dark: 0.62, light: '#ff80d0', music: 'ch7', particles: 'void', hazard: 'void', desc: '진엔딩 · 왕이 삼킨 혼들의 끝' },
+  // ── 스토리 2: 잿빛 성좌 ──
+  { n: 11, name: '잿더미 순례길', boss: 'kardun', bg: ['#1a1614', '#2a2420', '#3a322a'], tile: ['#5a5048', '#7a7068', '#2a2420'], ambient: '#0a0806', dark: 0.45, light: '#ffb080', music: 's11', particles: 'ash', desc: '재와 순례자' },
+  { n: 12, name: '거꾸로 선 종탑', boss: 'bellona', bg: ['#141822', '#202838', '#2c364a'], tile: ['#4a4a5a', '#8a8090', '#24242e'], ambient: '#04060c', dark: 0.5, light: '#ffe0a0', music: 's12', particles: 'dust', desc: '종소리와 가고일' },
+  { n: 13, name: '별의 광맥', boss: 'astril', bg: ['#0c0c1e', '#16163a', '#202050'], tile: ['#3a3a6a', '#8a8aff', '#1a1a34'], ambient: '#02020a', dark: 0.55, light: '#a0a0ff', music: 's13', particles: 'star', desc: '수정과 광부' },
+  { n: 14, name: '구름 위 정원', boss: 'elowin', bg: ['#1a2a3a', '#2a4058', '#3a5878'], tile: ['#4a6a4a', '#8ac08a', '#2a3a2a'], ambient: '#06101a', dark: 0.3, light: '#e0ffe0', music: 's14', particles: 'petal', hazard: 'void', desc: '덩굴과 바람' },
+  { n: 15, name: '성좌의 천문대', boss: 'orbis', bg: ['#0a0e1e', '#141c36', '#1e2a4e'], tile: ['#3a4060', '#c0a060', '#1e2236'], ambient: '#02040c', dark: 0.5, light: '#ffe080', music: 's15', particles: 'spark', desc: '혼천의와 점성술사' },
+  { n: 16, name: '꺼진 별의 심장', boss: 'nemesia', bg: ['#06040a', '#120c1a', '#1e1428'], tile: ['#2e2838', '#8a7aa0', '#16121e'], ambient: '#000000', dark: 0.62, light: '#c0b0ff', music: 's16', particles: 'ash', hazard: 'void', desc: '꺼진 별' },
+  // ── 스토리 3: 핏빛 왕관 ──
+  { n: 21, name: '전쟁터의 진흙', boss: 'grak', bg: ['#1a1410', '#2a2018', '#3a2c20'], tile: ['#4a3a2a', '#6a5440', '#2a2014'], ambient: '#080402', dark: 0.45, light: '#ffa060', music: 's21', particles: 'rain', desc: '망자 병사와 까마귀' },
+  { n: 22, name: '핏빛 포도원', boss: 'seraphine', bg: ['#1e0a14', '#2e1420', '#40202e'], tile: ['#4a2a34', '#7a4a5a', '#2a141c'], ambient: '#0a0206', dark: 0.45, light: '#ff8090', music: 's22', particles: 'petal', desc: '포도원과 흡혈귀' },
+  { n: 23, name: '쇠사슬 감옥', boss: 'morg', bg: ['#121214', '#1e1e22', '#2a2a30'], tile: ['#3e3e44', '#6a6a72', '#202024'], ambient: '#040404', dark: 0.58, light: '#ffc070', music: 's23', particles: 'dust', desc: '간수와 고문 기계' },
+  { n: 24, name: '붉은 대성당', boss: 'valerius', bg: ['#1a0608', '#2c0e12', '#40161c'], tile: ['#5a3a3a', '#c09080', '#2a1414'], ambient: '#0a0204', dark: 0.5, light: '#ff6060', music: 's24', particles: 'blood', desc: '타락한 성직자' },
+  { n: 25, name: '달 없는 숲', boss: 'fenrik', bg: ['#060a08', '#0e1610', '#16241a'], tile: ['#2a3a2a', '#4a604a', '#141e14'], ambient: '#010402', dark: 0.66, light: '#c0ffc0', music: 's25', particles: 'leaf', desc: '늑대인간과 덫' },
+  { n: 26, name: '핏빛 왕좌', boss: 'carmilla', bg: ['#14020a', '#240614', '#380a20'], tile: ['#3a1a24', '#a04060', '#1e0a12'], ambient: '#060002', dark: 0.55, light: '#ff4070', music: 's26', particles: 'blood', hazard: 'lava', desc: '핏빛 여제' },
+  // ── 스토리 4: 태초의 계약 ──
+  { n: 31, name: '태초의 해안', boss: 'levia', bg: ['#04121a', '#082230', '#0c3246'], tile: ['#2a4a50', '#5a9aa0', '#14262a'], ambient: '#00060a', dark: 0.45, light: '#80ffe0', music: 's31', particles: 'bubble', slippery: true, desc: '심해의 것들' },
+  { n: 32, name: '화석의 숲', boss: 'yggdra', bg: ['#141810', '#20261a', '#2c3424'], tile: ['#5a5a4a', '#8a8a70', '#2a2a20'], ambient: '#040602', dark: 0.45, light: '#e0e0a0', music: 's32', particles: 'leaf', desc: '돌이 된 숲' },
+  { n: 33, name: '폭풍의 첨탑', boss: 'taranis', bg: ['#0c1018', '#161e2e', '#202c44'], tile: ['#3a4458', '#80a0d0', '#1a2030'], ambient: '#02040a', dark: 0.5, light: '#c0e0ff', music: 's33', particles: 'rain', desc: '번개와 폭풍' },
+  { n: 34, name: '거울의 미궁', boss: 'mirror', bg: ['#14141e', '#22223a', '#303056'], tile: ['#4a4a6a', '#d0d0ff', '#24243a'], ambient: '#04040c', dark: 0.4, light: '#ffffff', music: 's34', particles: 'spark', slippery: true, desc: '거울과 환영' },
+  { n: 35, name: '시간의 폐허', boss: 'aeon', bg: ['#1a160c', '#2a2414', '#3a321c'], tile: ['#5a5030', '#c0b070', '#2a2414'], ambient: '#060402', dark: 0.45, light: '#ffe0a0', music: 's35', particles: 'dust', hazard: 'void', desc: '멈춘 시간' },
+  { n: 36, name: '계약의 근원', boss: 'arche', bg: ['#08060e', '#120e1e', '#1c162e'], tile: ['#2e2840', '#e0d0ff', '#16121e'], ambient: '#000000', dark: 0.55, light: '#fff0c0', music: 's36', particles: 'star', hazard: 'void', desc: '최초의 계약자' },
 ];
 
 export const chapterDef = (n: number): ChapterDef => CHAPTERS.find((c) => c.n === n) ?? CHAPTERS[0];
 
-/** 진행 경로: 단계별로 고를 수 있는 테마. 2장은 분기, 6장은 왕 처치 후 선택(진엔딩) */
-export const ROUTE: number[][] = [[1], [2, 5], [3], [6], [4], [7]];
-export const FINAL_STAGE = 5; // 끝없는 왕
-export const TRUE_STAGE = 6; // 망각의 심연
+/** 테마가 속한 스토리 (1~4) */
+export const storyOfTheme = (n: number): number => (n < 10 ? 1 : Math.floor(n / 10) + 1);
 
 export interface AchievementDef {
   id: string;
@@ -105,6 +129,9 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'curse1', name: '저주를 넘어', desc: '저주 1단계 이상으로 최종 보스 처치', reward: 640 },
   { id: 'hidden', name: '벽 너머', desc: '숨겨진 보물을 발견한다', reward: 160 },
   { id: 'nodamage', name: '무결', desc: '보스를 피격 없이 처치한다', reward: 480 },
+  { id: 'story2', name: '꺼진 별', desc: '스토리 2 「잿빛 성좌」를 완수한다', reward: 2000 },
+  { id: 'story3', name: '부서진 왕관', desc: '스토리 3 「핏빛 왕관」을 완수한다', reward: 3000 },
+  { id: 'story4', name: '마지막 계약', desc: '스토리 4 「태초의 계약」을 완수한다', reward: 4000 },
 ];
 
 export interface EventChoice {

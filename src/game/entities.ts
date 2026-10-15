@@ -310,7 +310,8 @@ export class Field {
       if (this.def.pull && room.player.overlaps({ x: rect.x - 40, y: rect.y, w: rect.w + 80, h: rect.h })) {
         room.player.b.vx += Math.sign(this.x + this.def.w / 2 - room.player.cx) * this.def.pull * 0.35;
       }
-      if (this.t % this.def.tick === 0 && room.player.overlaps(rect)) {
+      // 적 장판은 생기는 순간(예고가 끝나는 프레임)에 첫 판정
+      if ((this.t - 1) % this.def.tick === 0 && room.player.overlaps(rect)) {
         room.damagePlayer(this.mult, this.x + this.def.w / 2, '장판', { st: this.def.st, kb: 0.5 });
       }
     }

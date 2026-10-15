@@ -2,7 +2,9 @@
 
 type Wave = OscillatorType;
 
-export type MusicTheme = 'title' | 'hub' | 'ch1' | 'ch2' | 'ch3' | 'ch4' | 'ch5' | 'ch6' | 'ch7' | 'boss' | 'finalboss' | 'gacha' | 'none';
+export type MusicTheme =
+  | 'title' | 'hub' | 'ch1' | 'ch2' | 'ch3' | 'ch4' | 'ch5' | 'ch6' | 'ch7' | 'boss' | 'finalboss' | 'gacha' | 'none'
+  | 's11' | 's12' | 's13' | 's14' | 's15' | 's16' | 's21' | 's22' | 's23' | 's24' | 's25' | 's26' | 's31' | 's32' | 's33' | 's34' | 's35' | 's36';
 
 interface ThemeDef {
   bpm: number;
@@ -35,6 +37,27 @@ const THEMES: Record<Exclude<MusicTheme, 'none'>, ThemeDef> = {
   ch7: { bpm: 118, root: 37, scale: LOCRIAN, prog: [0, 6, 1, 4], lead: 'square', bass: 'sawtooth', pad: 'sine', drums: 0.65 },
   boss: { bpm: 140, root: 40, scale: PHRYG, prog: [0, 1, 5, 4], lead: 'sawtooth', bass: 'square', pad: 'sawtooth', drums: 1 },
   finalboss: { bpm: 150, root: 38, scale: LOCRIAN, prog: [0, 1, 4, 2], lead: 'square', bass: 'sawtooth', pad: 'sawtooth', drums: 1 },
+  // 스토리 2: 잿빛 성좌
+  s11: { bpm: 98, root: 44, scale: PHRYG, prog: [0, 1, 4, 0], lead: 'triangle', bass: 'triangle', pad: 'sawtooth', drums: 0.45 },
+  s12: { bpm: 88, root: 46, scale: HARM, prog: [0, 4, 5, 4], lead: 'sine', bass: 'triangle', pad: 'triangle', drums: 0.35 },
+  s13: { bpm: 108, root: 49, scale: DORIAN, prog: [0, 3, 1, 4], lead: 'sine', bass: 'square', pad: 'sine', drums: 0.5 },
+  s14: { bpm: 94, root: 53, scale: DORIAN, prog: [0, 5, 3, 4], lead: 'triangle', bass: 'sine', pad: 'sine', drums: 0.3, swing: 0.1 },
+  s15: { bpm: 112, root: 48, scale: HARM, prog: [0, 5, 6, 4], lead: 'square', bass: 'triangle', pad: 'sine', drums: 0.55 },
+  s16: { bpm: 124, root: 39, scale: LOCRIAN, prog: [0, 1, 6, 4], lead: 'sawtooth', bass: 'sawtooth', pad: 'sine', drums: 0.7 },
+  // 스토리 3: 핏빛 왕관
+  s21: { bpm: 116, root: 41, scale: MINOR, prog: [0, 6, 5, 4], lead: 'square', bass: 'sawtooth', pad: 'square', drums: 0.7 },
+  s22: { bpm: 90, root: 45, scale: HARM, prog: [0, 3, 4, 0], lead: 'triangle', bass: 'triangle', pad: 'sawtooth', drums: 0.4, swing: 0.14 },
+  s23: { bpm: 104, root: 40, scale: PHRYG, prog: [0, 1, 0, 5], lead: 'square', bass: 'square', pad: 'sawtooth', drums: 0.6 },
+  s24: { bpm: 84, root: 43, scale: HARM, prog: [0, 5, 3, 4], lead: 'sine', bass: 'triangle', pad: 'sawtooth', drums: 0.35 },
+  s25: { bpm: 120, root: 38, scale: MINOR, prog: [0, 5, 6, 6], lead: 'triangle', bass: 'sawtooth', pad: 'sine', drums: 0.65 },
+  s26: { bpm: 130, root: 42, scale: HARM, prog: [0, 1, 4, 5], lead: 'sawtooth', bass: 'square', pad: 'sawtooth', drums: 0.8 },
+  // 스토리 4: 태초의 계약
+  s31: { bpm: 86, root: 47, scale: DORIAN, prog: [0, 4, 2, 5], lead: 'sine', bass: 'sine', pad: 'triangle', drums: 0.3, swing: 0.06 },
+  s32: { bpm: 96, root: 44, scale: MINOR, prog: [0, 2, 5, 4], lead: 'triangle', bass: 'triangle', pad: 'sine', drums: 0.45 },
+  s33: { bpm: 132, root: 43, scale: PHRYG, prog: [0, 1, 3, 1], lead: 'sawtooth', bass: 'square', pad: 'square', drums: 0.85 },
+  s34: { bpm: 100, root: 50, scale: HARM, prog: [0, 6, 5, 4], lead: 'sine', bass: 'triangle', pad: 'sine', drums: 0.4 },
+  s35: { bpm: 92, root: 46, scale: LOCRIAN, prog: [0, 3, 6, 1], lead: 'triangle', bass: 'sawtooth', pad: 'triangle', drums: 0.5 },
+  s36: { bpm: 140, root: 36, scale: HARM, prog: [0, 5, 1, 4], lead: 'square', bass: 'sawtooth', pad: 'sawtooth', drums: 0.9 },
 };
 
 const mtof = (m: number): number => 440 * Math.pow(2, (m - 69) / 12);

@@ -3,6 +3,7 @@ import { audio } from '../core/audio';
 import { CHAR_MAP } from '../data/characters';
 import { CREST_MAP } from '../data/crests';
 import { ACHIEVEMENTS, chapterDef, ROOM_TYPES } from '../data/meta';
+import { storyDef } from '../data/stories';
 import { RELIC_MAP } from '../data/relics';
 import { WEAPON_MAP } from '../data/weapons';
 import { text } from '../gfx/renderer';
@@ -15,6 +16,7 @@ import { keyHint, panel } from '../ui/widgets';
 import { HubScene } from './hub';
 import type { CrestId } from '../game/types';
 import { fmtNum } from '../core/math';
+import { StoryTextScene } from './story';
 
 export class ResultScene implements Scene {
   sum!: RunSummary;
@@ -37,7 +39,11 @@ export class ResultScene implements Scene {
       app.achToast(this.sum.newAch);
       if (this.sum.curseUnlocked) app.toast(`저주 ${app.save.curseMax}단계 해금! 편성에서 선택할 수 있다`, '#ff80a0');
       if (this.sum.rotated) app.toast('픽업 배너가 교체되었다!', '#ffcc40');
-      app.go(new HubScene());
+      if (this.sum.storyUnlocked) app.toast(`스토리 ${this.sum.storyUnlocked} 「${storyDef(this.sum.storyUnlocked).name}」 해금! 출정 편성에서 고를 수 있다`, '#ffe0a0');
+      const sd = this.run.storyDef;
+      // 스토리를 처음 완수했다면 엔딩 이야기를 먼저
+      if (this.sum.storyFirstClear) app.go(new StoryTextScene(`「${sd.name}」 완수`, this.run.trueEnd ? '진정한 끝' : '그리고…', sd.ending, () => app.go(new HubScene())));
+      else app.go(new HubScene());
     }
   }
 
@@ -59,10 +65,10 @@ export class ResultScene implements Scene {
     const run = this.run;
     const st = run.stats;
     const a = Math.min(1, this.t / 30);
-    text(g, run.trueEnd ? '망각의 끝 — 진정한 계약 완수' : run.victory ? '계약 완수' : '쓰러졌다…', 240, 12, { size: 18, align: 'center', color: run.victory ? '#ffe080' : '#ff8090', bold: true, alpha: a });
+    text(g, run.trueEnd ? '망각의 끝 — 진정한 계약 완수' : run.victory ? (run.story === 1 ? '계약 완수' : `「${run.storyDef.name}」 완수`) : '쓰러졌다…', 240, 12, { size: 18, align: 'center', color: run.victory ? '#ffe080' : '#ff8090', bold: true, alpha: a });
     const ch = chapterDef(run.theme);
     const node = run.nodes[run.cur];
-    text(g, `도달: 제${run.chapter}장 ${ch.name} — ${node ? ROOM_TYPES[node.type].name : ''} (${(node?.layer ?? 0) + 1}/${run.layers.length})`, 240, 38, { size: 8, align: 'center', color: '#d0c8e0' });
+    text(g, `스토리 ${run.story} · 제${run.chapter}장 ${ch.name} — ${node ? ROOM_TYPES[node.type].name : ''} (${(node?.layer ?? 0) + 1}/${run.layers.length})`, 240, 38, { size: 8, align: 'center', color: '#d0c8e0' });
     if (!run.victory && st.cause) text(g, `사망 원인: ${st.cause}`, 240, 50, { size: 7, align: 'center', color: '#ff9090' });
     // 기록
     panel(g, 16, 64, 210, 112);

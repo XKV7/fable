@@ -122,7 +122,10 @@ export function checkAchievements(save: SaveData): string[] {
   m('swap50', save.stats.swapHits >= 50);
   m('first_run', save.stats.runs >= 1);
   const clearAch: Record<string, string> = { graven: 'clear1', mycora: 'clear2', ignis: 'clear3', king: 'clear4', morten: 'clear_morten', libra: 'clear_libra', oblivion: 'clear_oblivion' };
-  for (const b of BOSSES) m(clearAch[b.id], (save.stats.bossKills[b.id] ?? 0) > 0);
+  for (const b of BOSSES) if (clearAch[b.id]) m(clearAch[b.id], (save.stats.bossKills[b.id] ?? 0) > 0);
+  m('story2', !!save.storyClear[2]);
+  m('story3', !!save.storyClear[3]);
+  m('story4', !!save.storyClear[4]);
   return got;
 }
 
@@ -135,6 +138,9 @@ export interface RunSummary {
   newAch: string[];
   curseUnlocked: boolean;
   rotated: boolean;
+  /** 이번 런으로 스토리를 처음 완수 / 다음 스토리 해금 */
+  storyFirstClear: boolean;
+  storyUnlocked: number;
 }
 
 /** 런 종료 정산 */
@@ -162,7 +168,15 @@ export function finishRun(save: SaveData, run: RunState): RunSummary {
   if (!run.victory) save.stats.deaths++;
   save.tutorialDone = true;
   let curseUnlocked = false;
+  let storyFirstClear = false;
+  let storyUnlocked = 0;
   if (run.victory) {
+    storyFirstClear = !save.storyClear[run.story];
+    save.storyClear[run.story] = true;
+    if (run.story >= save.storyMax && save.storyMax < 4) {
+      save.storyMax = run.story + 1;
+      storyUnlocked = save.storyMax;
+    }
     save.stats.clears++;
     if (save.curseMax < 5 && run.curse >= save.curseMax) {
       save.curseMax = Math.min(5, run.curse + 1);
@@ -179,5 +193,5 @@ export function finishRun(save: SaveData, run: RunState): RunSummary {
     rotated = true;
   }
   const newAch = checkAchievements(save);
-  return { stones, crystals, bonusStones: bonus, chapter: run.chapter, victory: run.victory, newAch, curseUnlocked, rotated };
+  return { stones, crystals, bonusStones: bonus, chapter: run.chapter, victory: run.victory, newAch, curseUnlocked, rotated, storyFirstClear, storyUnlocked };
 }

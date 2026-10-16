@@ -1,6 +1,9 @@
 import type { CharDef } from '../game/types';
 import { melee, multi, P, shot } from './actionKit';
 
+/** 카일루스 「천구 나침반」 강화 효과 id — 발밑 나침반 그림도 이 효과가 있는 동안 그린다 (Player.render) */
+export const CAELUS_COMPASS = 'caelus_compass';
+
 /** 확장 영웅 13명 (★7 1 / ★5 2 / ★4 4 / ★3 6). 형식은 characters.ts와 동일 */
 export const CHARACTERS_EX: CharDef[] = [
   // ───────────────────────── ★7 ─────────────────────────
@@ -52,15 +55,15 @@ export const CHARACTERS_EX: CharDef[] = [
       },
       {
         name: '천구 나침반',
-        desc: '발밑에 별의 나침반 마법진을 세워 2.5초간 적을 끌어당기며 지속 피해를 준다 (공격력 75%/0.33초).',
-        cd: 13,
+        desc: '발밑에 별의 나침반을 펼쳐 8초간 공격 속도 +60%, 공격력 +50%.',
+        cd: 14,
         act: {
-          dur: 26,
+          dur: 24,
           pose: [[0, 'cast'], [6, 'castUp']],
           ev: [
             { t: 6, k: 'sfx', s: 'gem' },
             { t: 6, k: 'pic', name: 'card', dx: 10, dy: -14, s0: 22, s1: 34, life: 22 },
-            { t: 8, k: 'field', f: { vis: 'compass', w: 140, h: 40, life: 150, tick: 20, m: 0.75, el: 'holy', pull: 1.4 }, dx: 0, ground: true },
+            { t: 8, k: 'buff', id: CAELUS_COMPASS, stats: { aspd: 0.6, atk: 0.5 }, dur: 8 },
           ],
         },
       },
@@ -91,7 +94,7 @@ export const CHARACTERS_EX: CharDef[] = [
     },
     awaken: [
       { desc: '성흔 결정창 파편 +4', mods: [{ target: 'skill1', count: 4 }] },
-      { desc: '천구 나침반 피해 +50%', mods: [{ target: 'skill2', dmg: 0.5 }] },
+      { desc: '천구 나침반 쿨타임 -3초', mods: [{ target: 'skill2', cd: 3 }] },
       { desc: '치명타 피해 +40%', effects: [{ stats: { critDmg: 0.4 } }] },
       { desc: '별의 심판 피해 +60%', mods: [{ target: 'swap', dmg: 0.6 }] },
       { desc: '모든 기술 피해 +40%, 스킬 쿨타임 -15%', mods: [{ target: 'all', dmg: 0.4 }], effects: [{ stats: { cdr: 0.15 } }] },

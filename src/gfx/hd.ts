@@ -251,7 +251,8 @@ const CAELUS_POSE: Record<PoseName, string> = {
 /** 반복 동작: 원본 칸 사이에 만든 사이 동작(이름에 '_')을 끼워 더 부드럽게 */
 const CYCLES: Record<string, { frames: string[]; tick: number }> = {
   idle: { frames: ['idle0', 'idle1', 'idle2', 'idle3', 'idle4'], tick: 9 },
-  run: { frames: ['run0', 'run0_1', 'run1', 'run1_2', 'run2', 'run2_3', 'run3', 'run3_0'], tick: 4 },
+  // 컨셉아트 달리기 칸은 다리 모양이 거의 같아 미끄러지듯 보여서, 다리를 엉덩이 기준으로 흔들고 몸을 출렁이게 만든 보폭 칸을 쓴다
+  run: { frames: ['stride0', 'stride1', 'stride2', 'stride3', 'stride4', 'stride5', 'stride6', 'stride7'], tick: 3 },
   hurt: { frames: ['hit0', 'hit1', 'hit2', 'hit3', 'hit4'], tick: 4 },
   dead: { frames: ['hit1', 'hit_die', 'die0', 'die0_1', 'die1', 'die1_2', 'die2', 'die2_3', 'die3'], tick: 4 },
 };
@@ -376,7 +377,7 @@ export interface HDDraw {
   alpha: number;
   rot?: { ox: number; oy: number; a: number }; // 회전 (쓰러짐)
   /** 이펙트 그림: 원본 시트의 잘라낼 칸, 월드 단위 크기, 중심 기준 회전, 가산 혼합 */
-  fx?: { sx: number; sy: number; sw: number; sh: number; w: number; h: number; ang: number; add: boolean };
+  fx?: { sx: number; sy: number; sw: number; sh: number; w: number; h: number; ang: number; add: boolean; squash: number };
 }
 export const hdQueue: HDDraw[] = [];
 
@@ -399,13 +400,14 @@ export type HDFxName = keyof typeof CAELUS_FX;
  * 컨셉아트 이펙트 그림을 고해상도 층에 그린다. (x, y) = 월드 화면 좌표의 중심, w = 월드 단위 너비(높이는 비율대로).
  * 아직 불러오지 않았거나 고해상도를 쓰지 않는 화면이면 false → 호출한 쪽이 기존 방식으로 그린다.
  */
-export function hdFx(name: HDFxName, x: number, y: number, w: number, o: { ang?: number; flip?: boolean; alpha?: number; h?: number } = {}): boolean {
+/** squash: 세로로 눌러 바닥에 눕힌 모습 (회전 후 적용 — 바닥에서 도는 마법진) */
+export function hdFx(name: HDFxName, x: number, y: number, w: number, o: { ang?: number; flip?: boolean; alpha?: number; h?: number; squash?: number } = {}): boolean {
   const img = fxSheet();
   if (!img || hdState.off) return false;
   const f = CAELUS_FX[name];
   hdQueue.push({
     img, x, y, flip: !!o.flip, alpha: o.alpha ?? 1,
-    fx: { sx: f.x, sy: f.y, sw: f.w, sh: f.h, w, h: o.h ?? (w * f.h) / f.w, ang: o.ang ?? 0, add: f.add },
+    fx: { sx: f.x, sy: f.y, sw: f.w, sh: f.h, w, h: o.h ?? (w * f.h) / f.w, ang: o.ang ?? 0, add: f.add, squash: o.squash ?? 1 },
   });
   return true;
 }
@@ -435,6 +437,7 @@ export function drawHDQueue(d: CanvasRenderingContext2D, shakeX: number, shakeY:
       const f = q.fx;
       if (f.add) d.globalCompositeOperation = 'lighter';
       d.translate(q.x, q.y);
+      if (f.squash !== 1) d.scale(1, f.squash);
       if (f.ang) d.rotate(f.ang);
       if (q.flip) d.scale(-1, 1);
       d.drawImage(q.img, f.sx, f.sy, f.sw, f.sh, -f.w / 2, -f.h / 2, f.w, f.h);

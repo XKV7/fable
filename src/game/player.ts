@@ -2,7 +2,8 @@ import { CHAR_MAP } from '../data/characters';
 import { WEAPON_MAP } from '../data/weapons';
 import { audio } from '../core/audio';
 import { charFrame, white, tinted } from '../gfx/sprites';
-import { charFrameHD, hasLyingFrame, hdQueue } from '../gfx/hd';
+import { charFrameHD, hasLyingFrame, hdFx, hdQueue } from '../gfx/hd';
+import { CAELUS_COMPASS } from '../data/characters2';
 import { charAtk, charHp } from './combat';
 import type { Room } from './room';
 import type { ActEvent, ActionDef, CharDef, PoseName } from './types';
@@ -542,6 +543,13 @@ export class Player {
       : charFrameHD(this.def.id, pose, { t: this.animT, since: lieHD ? this.deadT : this.hdSince++, prev: this.hdPrev });
     const x = Math.round(this.cx - 24 - cx);
     const y = Math.round(this.b.y + this.b.h - 44 - cy);
+    // 카일루스 「천구 나침반」: 강화 중엔 발밑에 별의 나침반 마법진이 바닥에 누워 돈다 (캐릭터 뒤)
+    const cb = this.room.build.buffs.get(CAELUS_COMPASS);
+    const left = cb ? cb.until - this.room.build.time : 0;
+    if (left > 0 && this.state !== 'dead') {
+      const pop = Math.min(1, (8 - left) * 4 + 0.4);
+      hdFx('circle', x + 24, y + 44, 66 * pop, { ang: time * 0.05, squash: 0.3, alpha: Math.min(1, left * 2) * 0.95 });
+    }
     g.save();
     if (this.inv > 0 && this.state !== 'dead' && (time >> 2) % 2 === 0) g.globalAlpha = 0.45;
     const draw = (im: HTMLCanvasElement, hdIm?: HTMLCanvasElement | null): void => {

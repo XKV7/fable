@@ -2,7 +2,7 @@ import type { BossDef } from './bosses';
 
 /**
  * 스토리 5~6 보스 12체. 모두 여러 패턴을 한꺼번에 쓴다(multi: 페이즈별 최소 동시 패턴 수).
- * 5번째 보스(칼라이스·녹티스)는 날아다니고, 6번째 보스(세베르·이스카)는 광역 패턴이 많고 한 번 분열한다(split).
+ * 5번째 보스(칼라이스·녹티스)는 날개 없는 구체 모습으로 날아다니고(orb), 6번째 보스(세베르·이스카)는 광역 패턴이 많고, 완전체(3페이즈)를 쓰러뜨리면 둘로 분열해 별도의 4페이즈가 시작된다(split).
  * 5·6번째 보스는 즉사기를 하나씩 가진다 (eclipseDive / worldSever, src/game/boss.ts).
  */
 type Row = Omit<BossDef, 'chapter' | 'w' | 'h' | 'soulStones'> & { theme: number; big?: boolean };
@@ -46,7 +46,7 @@ const ROWS: Row[] = [
     col: '#fff0d0', elem: { col: '#fff0d0', vis: 'holy', drop: 'blade', proj: 'blade' },
   },
   {
-    id: 'kalais', theme: 45, name: '폭풍의 사도 칼라이스', title: '하늘을 나는 마지막 사도', hp: 6300, atk: 27, flying: true,
+    id: 'kalais', theme: 45, name: '폭풍의 사도 칼라이스', title: '하늘을 나는 마지막 사도', hp: 6300, atk: 27, flying: true, orb: true,
     phases: [0.5], multi: [3, 4],
     patterns: [
       ['diveBomb', 'swoop', 'aimedFan', 'homingOrbs', 'galeWaves', 'laserSweep', 'starfall', 'eclipseDive'],
@@ -56,11 +56,13 @@ const ROWS: Row[] = [
   },
   {
     id: 'sever', theme: 46, name: '하늘을 찢는 자 세베르', title: '세계에 상처를 낸 칼날', hp: 8400, atk: 32, mult: 3,
-    phases: [0.66, 0.33], multi: [3, 4, 5], split: 1,
+    phases: [0.66, 0.33], multi: [3, 4, 5, 3], split: true,
     patterns: [
       ['swordCombo', 'dashSlash', 'spikeWave', 'floorSweep', 'checkerFloor', 'starfall', 'laserSweep'],
       ['swordCombo', 'dashSlash', 'spikeWave', 'floorSweep', 'checkerFloor', 'starfall', 'laserSweep', 'beamGrid', 'skyCurtain', 'floorHalf', 'worldSever'],
       ['swordCombo', 'dashSlash', 'spikeWave', 'floorSweep', 'checkerFloor', 'starfall', 'laserSweep', 'beamGrid', 'skyCurtain', 'floorHalf', 'meteor', 'crossBeam', 'cloneDash', 'worldSever'],
+      // 4페이즈 (분열 후 본체 쪽. 분열체는 즉사기를 뺀 같은 목록)
+      ['swordCombo', 'dashSlash', 'spikeWave', 'floorSweep', 'checkerFloor', 'starfall', 'laserSweep', 'beamGrid', 'skyCurtain', 'meteor', 'crossBeam', 'worldSever'],
     ],
     col: '#e0c0ff', elem: { col: '#e0c0ff', vis: 'void', drop: 'shard', proj: 'crescent' },
   },
@@ -102,7 +104,7 @@ const ROWS: Row[] = [
     col: '#ffd080', elem: { col: '#ffd080', vis: 'time', drop: 'blade', proj: 'star' },
   },
   {
-    id: 'noctis', theme: 55, name: '검은 오로라 녹티스', title: '심연 위를 나는 밤의 날개', hp: 6600, atk: 28, flying: true,
+    id: 'noctis', theme: 55, name: '검은 오로라 녹티스', title: '심연 위를 나는 밤의 날개', hp: 6600, atk: 28, flying: true, orb: true,
     phases: [0.5], multi: [3, 4],
     patterns: [
       ['diveBomb', 'swoop', 'radialBurst', 'bladeHalo', 'skyCurtain', 'crossBeam', 'galeWaves', 'eclipseDive'],
@@ -112,11 +114,13 @@ const ROWS: Row[] = [
   },
   {
     id: 'iska', theme: 56, name: '바깥의 전령 이스카', title: '세계의 바깥에서 온 목소리', hp: 9000, atk: 34, mult: 3,
-    phases: [0.66, 0.33], multi: [3, 4, 5], split: 1,
+    phases: [0.66, 0.33], multi: [3, 4, 5, 3], split: true,
     patterns: [
       ['swordCombo', 'dashSlash', 'shockRing', 'checkerFloor', 'floorSweep', 'skyCurtain', 'beamGrid'],
       ['swordCombo', 'dashSlash', 'shockRing', 'checkerFloor', 'floorSweep', 'skyCurtain', 'beamGrid', 'laserSweep', 'floorHalf', 'meteor', 'worldSever'],
       ['swordCombo', 'dashSlash', 'shockRing', 'checkerFloor', 'floorSweep', 'skyCurtain', 'beamGrid', 'laserSweep', 'floorHalf', 'meteor', 'starfall', 'crossBeam', 'pactShadows', 'gravityWell', 'worldSever'],
+      // 4페이즈 (분열 후 본체 쪽. 분열체는 즉사기를 뺀 같은 목록)
+      ['swordCombo', 'dashSlash', 'shockRing', 'checkerFloor', 'floorSweep', 'skyCurtain', 'beamGrid', 'laserSweep', 'meteor', 'starfall', 'crossBeam', 'gravityWell', 'worldSever'],
     ],
     col: '#a0ffe0', elem: { col: '#a0ffe0', vis: 'void', drop: 'shard', proj: 'soul' },
   },

@@ -51,7 +51,9 @@ describe('스토리 구성', () => {
         const ex = [...new Set(b.patterns.flat().filter((p) => EXEC.includes(p)))];
         expect(ex.length, b.id).toBe(i >= 4 ? 1 : 0);
         expect(!!b.flying, b.id).toBe(i === 4);
-        expect(b.split, b.id).toBe(i === 5 ? 1 : undefined);
+        expect(!!b.split, b.id).toBe(i === 5);
+        expect(!!b.orb, b.id).toBe(i === 4);
+        if (b.split) expect(b.patterns.length, b.id).toBe(b.phases.length + 2);
       });
     }
   });
@@ -65,7 +67,7 @@ describe('스토리 구성', () => {
     for (const s of STORIES.slice(1)) {
       const b = BOSS_MAP[chapterDef(s.route[5][0]).boss];
       expect(b.phases.length).toBe(2);
-      expect(b.patterns.length).toBe(3);
+      expect(b.patterns.length).toBe(b.split ? 4 : 3); // 분열 보스는 완전체 처치 뒤 4페이즈
       expect(b.mult).toBe(3);
       expect(STORY_LOOKS[b.id]).toBeTruthy();
     }

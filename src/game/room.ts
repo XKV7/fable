@@ -1016,6 +1016,8 @@ export class Room {
 
   killEnemy(e: Enemy): void {
     if (e.dead) return;
+    // 분열 보스: 완전체를 쓰러뜨리면 죽지 않고 분열해 4페이즈로
+    if (e instanceof Boss && e.reborn(this)) return;
     e.dead = true;
     e.deadT = 0;
     e.hp = 0;

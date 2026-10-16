@@ -1,6 +1,7 @@
 import { BOSS_MAP, bossAtk, bossHp, type BossDef, type BossElem } from '../data/bosses';
 import type { EnemyDef } from '../data/enemies';
 import { audio } from '../core/audio';
+import { orbFrame } from '../gfx/orb';
 import { ENEMY_LOOKS, ignisFrame, lookFrame, mycoraFrame, white, tinted, charFrame } from '../gfx/sprites';
 import { CHAR_MAP } from '../data/characters';
 import type { FieldVis, PoseName, StatusId } from './types';
@@ -99,6 +100,8 @@ export class Boss extends Enemy {
   private air = { x: 0, y: 0, tx: 0, ty: 0, dir: 1, hit: false, mk: null as { end: () => void } | null };
   /** 분열 보스: 이미 분열했는지 / 분열체인지 */
   private splitDone = false;
+  /** 완전체를 쓰러뜨려 4페이즈 전환 중 — 전환 중간에 분열체가 나온다 */
+  private splitPending = false;
   twin = false;
   /** floorSweep: 왼쪽에서 시작? */
   private sweepL = true;
@@ -116,8 +119,8 @@ export class Boss extends Enemy {
     this.state = 'idle';
     this.st = 0;
     this.name = bd.name;
-    this.b.w = bd.w * 0.6;
-    this.b.h = bd.h;
+    this.b.w = bd.orb ? 36 : bd.w * 0.6;
+    this.b.h = bd.orb ? 36 : bd.h;
     this.b.x = x - this.b.w / 2;
     this.b.y = y - this.b.h;
     this.facing = -1;
@@ -148,7 +151,10 @@ export class Boss extends Enemy {
       this.anim = 'wind';
       this.pose = 'castUp';
       if (this.phaseT % 10 === 0) room.fx.ring(this.cx, this.cy, this.bd.col, 60);
-      if (this.phaseT === 60 && this.bd.split === this.phase && !this.splitDone) this.doSplit(room);
+      if (this.phaseT === 60 && this.splitPending) {
+        this.splitPending = false;
+        this.doSplit(room);
+      }
       if (this.phaseT === 0) {
         this.idleT = 30;
         this.pattern = '';
@@ -264,18 +270,46 @@ export class Boss extends Enemy {
     this.anim = Math.abs(this.b.vx) > 0.4 ? 'move' : 'idle';
   }
 
-  /** 한 번 분열: 본체의 50% 체력·공격력을 가진 분열체 (페이즈 전환 없음, 즉사기 없음, 동시 패턴 2개) */
-  private doSplit(room: Room): void {
+  /**
+   * 분열 보스: 완전체(마지막 페이즈)가 쓰러지면 죽는 대신 별도의 페이즈(patterns 마지막 목록)로 되살아나 둘로 갈라진다.
+   * 본체·분열체 모두 원래 최대 체력의 50%. room.killEnemy가 부르며, true면 처치를 취소한다.
+   */
+  reborn(room: Room): boolean {
+    if (!this.bd.split || this.splitDone || this.twin) return false;
     this.splitDone = true;
+    this.splitPending = true;
+    this.phase = this.bd.patterns.length - 1;
+    this.bd = { ...this.bd, phases: [] };
+    this.maxHp = this.hp = Math.round(this.maxHp * 0.5);
+    this.phaseT = 130;
+    this.pattern = '';
+    this.subs = [];
+    this.landMark?.end();
+    this.landMark = null;
+    this.b.vx = 0;
+    this.execCd = 300;
+    audio.play('phase');
+    room.cam.shake(10, 60);
+    room.flash('#ffffff', 0.9);
+    room.hitstop = Math.max(room.hitstop, 24);
+    room.fx.burst(this.cx, this.cy, this.bd.col, 60, 4);
+    room.bossPhaseBanner(this.phase);
+    room.bossShout(`완전체가 무너졌다… 그러나 ${this.bd.name.split(' ').pop()}의 몸이 갈라지기 시작한다!`, this.bd.col);
+    return true;
+  }
+
+  /** 4페이즈 분열: 본체와 같은 체력(원래의 50%)·공격력 70%의 분열체 (즉사기 없음, 동시 패턴 2개) */
+  private doSplit(room: Room): void {
     const W = room.world.pxW;
     const x = Math.max(40, Math.min(W - 40, this.cx + (this.cx < W / 2 ? 140 : -140)));
     const gy = room.world.groundBelow(x, this.b.y);
     const tw = new Boss(this.bd.id, x, gy, 0);
     tw.bd = { ...this.bd, name: `${this.bd.name}의 분열체`, phases: [], patterns: [this.bd.patterns[this.phase].filter((p) => !EXECUTE.has(p))], multi: [2], split: undefined };
     tw.twin = true;
+    tw.splitDone = true;
     tw.name = tw.bd.name;
-    tw.maxHp = tw.hp = Math.round(this.maxHp * 0.5);
-    tw.atk = Math.round(this.atk * 0.5);
+    tw.maxHp = tw.hp = this.maxHp;
+    tw.atk = Math.round(this.atk * 0.7);
     tw.intro = 70;
     tw.idleT = 60;
     tw.facing = -this.facing;
@@ -1807,7 +1841,12 @@ export class Boss extends Enemy {
     let sc = 1;
     let footOff = 44;
     const f = Math.floor(this.animT / 10);
-    switch (this.bd.id) {
+    if (this.bd.orb) {
+      // 날개 없는 구체: 몸통 중심에 구체 중심(프레임 24,24)을 맞춘다
+      img = orbFrame(this.bd.id, Math.floor(this.animT / 6) % 12, this.state === 'wind');
+      sc = 2;
+      footOff = (this.b.h / 2 + 48) / 2;
+    } else switch (this.bd.id) {
       case 'mycora':
         img = mycoraFrame(this.anim, f);
         sc = 2;

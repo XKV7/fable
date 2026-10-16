@@ -102,56 +102,57 @@ export const CHARACTERS_EX: CharDef[] = [
     ],
   },
   {
-    // 컨셉아트: 「아스트랄 나이트」 — 후드·별의 지팡이·별의 나침반. 스프라이트는 전용 시트(sheets/astral)
+    // 컨셉아트: 「아스트랄 나이트」 — 후드·별의 지팡이·별의 나침반. 마법 캐릭터(원거리 마법 평타). 역할: 원거리 포격
+    // 스프라이트는 전용 시트(sheets/astral)
     id: 'astral', name: '아스트랄 나이트', title: '별의 경계에서, 너와 나', rarity: 7, type: 'magic', crest: 'soul',
     lore: '별과 별 사이의 경계를 지키는 기사. 별의 지팡이로 그은 자리마다 하늘이 열리고, 그 너머의 별빛이 쏟아진다.',
     atk: 70, hp: 300, speed: 2.15, fx: '#a890ff',
     look: { skin: '#f4ecf0', hair: '#c8c0e8', hairStyle: 'starhood', body: '#1a1630', trim: '#a890ff', legs: '#12101e', boots: '#2a2440', cape: '#14122a', eye: '#a070ff', weapon: 'staff', wcol: '#c8b8ff', wcol2: '#3a2a6a', build: 'slim', glow: '#a890ff', extra: 'compass' },
     combo: [
-      melee({ dur: 13, t: 4, m: 0.8, box: [0, -18, 40, 26], w: 'windHigh', s: 'slashDown', fx: { arc: 'down', r: 30, col: '#b8a8ff' }, hs: 3, lunge: 2.5 }),
-      melee({ dur: 13, t: 4, m: 0.85, box: [0, -20, 40, 28], w: 'windLow', s: 'slashUp', fx: { arc: 'up', r: 30, col: '#a890ff' }, hs: 3, lunge: 2.5 }),
-      melee({ dur: 16, t: 5, m: 1.0, box: [-14, -22, 52, 34], w: 'windHigh', s: 'spin', fx: { arc: 'circle', r: 32, col: '#c8b8ff' }, hs: 4, el: 'holy' }),
+      // 평타: 지팡이로 별빛 마법탄 → 두 발 → 별의 고리(느리고 관통) → 별의 창(유도·관통)
+      shot({ dur: 14, t: 4, m: 0.85, p: { spr: 'star', spd: 6.5, life: 50, w: 9, h: 9, col: '#c8b8ff', el: 'holy', pic: { name: 'astral:sparkle', w: 16, spin: 0.25 } }, w: 'windHigh', s: 'slashDown', sfx: 'cast' }),
+      shot({ dur: 14, t: 4, m: 0.6, n: 2, spread: 10, p: { spr: 'star', spd: 6.5, life: 50, w: 9, h: 9, col: '#c8b8ff', el: 'holy', pic: { name: 'astral:sparkle', w: 14, spin: 0.25 } }, w: 'windLow', s: 'slashUp', sfx: 'cast' }),
+      shot({ dur: 18, t: 6, m: 1.0, p: { spr: 'orb', spd: 3.5, life: 70, w: 16, h: 16, col: '#a890ff', el: 'holy', pierce: 3, pic: { name: 'astral:ring', w: 26, spin: 0.15 } }, w: 'windHigh', s: 'spin', sfx: 'cast' }),
       {
-        // 마무리: 지팡이 찌르기 + 별의 창 (컨셉아트 「별」 에셋, 유도·관통)
-        dur: 28,
+        dur: 26,
         pose: [[0, 'thrustWind'], [7, 'thrust']],
-        cancel: 22,
-        move: [[5, 3], [12, 0]],
+        cancel: 20,
         ev: [
           { t: 6, k: 'sfx', s: 'cast' },
-          { t: 8, k: 'hit', box: [0, -14, 48, 22], m: 1.3, kb: 4, hs: 6, el: 'holy', fx: { arc: 'thrust', r: 40, col: '#c8b8ff' }, fin: true },
-          { t: 8, k: 'proj', p: { spr: 'shard', spd: 5.5, life: 60, w: 18, h: 18, col: '#c8b8ff', el: 'holy', pierce: 99, home: 0.08, pic: { name: 'astral:star', w: 30, spin: 0.25 } }, m: 1.9 },
+          { t: 8, k: 'proj', p: { spr: 'shard', spd: 5.5, life: 70, w: 18, h: 18, col: '#c8b8ff', el: 'holy', pierce: 99, home: 0.08, pic: { name: 'astral:star', w: 30, spin: 0.25 } }, m: 1.9 },
         ],
       },
     ],
-    air: melee({ dur: 16, t: 4, m: 0.85, box: [0, -6, 36, 26], w: 'windHigh', s: 'slashDown', fx: { arc: 'down', r: 28, col: '#b8a8ff' }, air: true, grav: 0.3, hs: 3 }),
-    dashAtk: melee({ dur: 20, t: 5, m: 1.5, box: [-10, -14, 56, 18], w: 'thrustWind', s: 'thrust', fx: { arc: 'h', r: 44, col: '#a890ff' }, lunge: 8, hs: 5, el: 'holy', inv: [0, 10] }),
+    air: shot({ dur: 16, t: 4, m: 0.85, ang: 35, air: true, grav: 0.35, p: { spr: 'star', spd: 6, life: 50, w: 9, h: 9, col: '#c8b8ff', el: 'holy', pic: { name: 'astral:sparkle', w: 16, spin: 0.25 } }, w: 'cast', s: 'castUp' }),
+    dashAtk: { dur: 18, pose: [[0, 'dash'], [6, 'cast']], move: [[0, 4], [10, 0]], inv: [0, 8], ev: [{ t: 6, k: 'pic', name: 'astral:ring', dx: 0, dy: -8, s0: 20, s1: 60, life: 16 }, { t: 6, k: 'nova', r: 36, m: 1.1, el: 'holy', col: '#a890ff' }, { t: 6, k: 'sfx', s: 'cast' }] },
     skills: [
       {
-        name: '별의 창',
-        desc: '지팡이 끝에 별의 고리를 열어 별의 창 세 개를 부채꼴로 쏜다 (공격력 150%×3, 관통·유도).',
-        cd: 7,
+        name: '별의 낙하',
+        desc: '앞쪽 하늘을 열어 거대한 별 세 개를 차례로 떨어뜨린다. 떨어진 자리마다 별빛 폭발 (각 공격력 170%, 범위).',
+        cd: 8,
         act: {
-          dur: 26,
+          dur: 30,
           pose: [[0, 'cast'], [8, 'castUp']],
           ev: [
-            { t: 6, k: 'pic', name: 'astral:ring', dx: 14, dy: -10, s0: 18, s1: 34, life: 18 },
-            { t: 9, k: 'sfx', s: 'cast' },
-            { t: 10, k: 'proj', p: { spr: 'shard', spd: 6, life: 70, w: 16, h: 16, col: '#c8b8ff', el: 'holy', pierce: 3, home: 0.05, pic: { name: 'astral:star', w: 26, spin: 0.25 } }, m: 1.5, n: 3, spread: 14 },
+            { t: 6, k: 'sfx', s: 'cast' },
+            { t: 6, k: 'pic', name: 'astral:ring', dx: 16, dy: -22, s0: 16, s1: 34, life: 22 },
+            { t: 10, k: 'proj', p: { spr: 'shard', spd: 7, life: 40, w: 16, h: 16, col: '#c8b8ff', el: 'holy', boom: { r: 36, m: 1, el: 'holy', col: '#a890ff' }, pic: { name: 'astral:star', w: 32, spin: 0.2 }, boomPic: { name: 'astral:bigcircle', s0: 24, s1: 80, life: 18 } }, m: 1.7, ang: 90, dx: 50, dy: -64 },
+            { t: 15, k: 'proj', p: { spr: 'shard', spd: 7, life: 40, w: 16, h: 16, col: '#c8b8ff', el: 'holy', boom: { r: 36, m: 1, el: 'holy', col: '#a890ff' }, pic: { name: 'astral:star', w: 32, spin: 0.2 }, boomPic: { name: 'astral:bigcircle', s0: 24, s1: 80, life: 18 } }, m: 1.7, ang: 90, dx: 90, dy: -64 },
+            { t: 20, k: 'proj', p: { spr: 'shard', spd: 7, life: 40, w: 16, h: 16, col: '#c8b8ff', el: 'holy', boom: { r: 36, m: 1, el: 'holy', col: '#a890ff' }, pic: { name: 'astral:star', w: 32, spin: 0.2 }, boomPic: { name: 'astral:bigcircle', s0: 24, s1: 80, life: 18 } }, m: 1.7, ang: 90, dx: 130, dy: -64 },
           ],
         },
       },
       {
-        name: '성역의 나침반',
-        desc: '발밑에 별의 나침반을 펼쳐 7초간 따라다니게 한다. 안의 적에게 지속 피해(공격력 55%/0.33초), 받는 피해 -30%, 치명타 확률 +20%.',
+        name: '성역의 결계',
+        desc: '몸 주위에 도는 별의 결계를 6초간 두른다. 닿는 적에게 지속 피해(공격력 60%/0.3초), 받는 피해 -30%.',
         cd: 15,
         act: {
-          dur: 24,
+          dur: 22,
           pose: [[0, 'cast'], [6, 'castUp']],
           ev: [
             { t: 6, k: 'sfx', s: 'gem' },
-            { t: 8, k: 'field', f: { vis: 'holy', w: 130, h: 34, life: 420, tick: 20, m: 0.55, el: 'holy', follow: true, pic: { name: 'astral:compass', mode: 'floor', size: 96, spin: 0.04 } }, dx: 0, ground: true },
-            { t: 8, k: 'buff', id: 'astral_sanct', stats: { dmgTaken: -0.3, crit: 0.2 }, dur: 7 },
+            { t: 8, k: 'field', f: { vis: 'holy', w: 84, h: 52, life: 360, tick: 18, m: 0.6, el: 'holy', follow: true, pic: { name: 'astral:bigcircle', mode: 'stand', size: 70, spin: 0.05 } }, dx: 0, ground: true },
+            { t: 8, k: 'buff', id: 'astral_ward', stats: { dmgTaken: -0.3 }, dur: 6 },
           ],
         },
       },
@@ -181,8 +182,8 @@ export const CHARACTERS_EX: CharDef[] = [
       ],
     },
     awaken: [
-      { desc: '별의 창 +2개', mods: [{ target: 'skill1', count: 2 }] },
-      { desc: '성역의 나침반 쿨타임 -3초', mods: [{ target: 'skill2', cd: 3 }] },
+      { desc: '별의 낙하 피해 +40%', mods: [{ target: 'skill1', dmg: 0.4 }] },
+      { desc: '성역의 결계 쿨타임 -3초', mods: [{ target: 'skill2', cd: 3 }] },
       { desc: '치명타 피해 +40%', effects: [{ stats: { critDmg: 0.4 } }] },
       { desc: '별의 경계 피해 +60%', mods: [{ target: 'swap', dmg: 0.6 }] },
       { desc: '모든 기술 피해 +40%, 스킬 쿨타임 -15%', mods: [{ target: 'all', dmg: 0.4 }], effects: [{ stats: { cdr: 0.15 } }] },
@@ -190,7 +191,7 @@ export const CHARACTERS_EX: CharDef[] = [
   },
   // ───────────────────────── ★6 ─────────────────────────
   {
-    // 컨셉아트: 「세계를 비추는 별의 계승자」(이름 없음 → 솔렌). 떠 있는 별의 구체·별의 문장, 검과 구체로 싸운다. 스프라이트는 전용 시트
+    // 컨셉아트: 「세계를 비추는 별의 계승자」(이름 없음 → 솔렌). 떠 있는 별의 구체·별의 문장, 검과 구체로 싸운다. 역할: 기동·생존 지원
     id: 'solen', name: '솔렌', title: '세계를 비추는 별의 계승자', rarity: 6, type: 'speed', crest: 'soul',
     lore: '「…별은 사라지지 않아. 다만, 다른 세상으로 이어질 뿐.」 꺼져 가던 별의 빛을 이어받은 계승자. 곁에 떠도는 별의 구체가 그의 검을 비춘다.',
     atk: 55, hp: 238, speed: 2.15, fx: '#9ab4ff',
@@ -217,30 +218,39 @@ export const CHARACTERS_EX: CharDef[] = [
     dashAtk: melee({ dur: 20, t: 5, m: 1.4, box: [-10, -14, 54, 18], w: 'thrustWind', s: 'thrust', fx: { arc: 'h', r: 42, col: '#9ab4ff' }, lunge: 8, hs: 5, el: 'holy', inv: [0, 10] }),
     skills: [
       {
-        name: '별빛 구체',
-        desc: '별의 구체를 앞으로 던진다. 닿으면 별빛이 크게 터진다 (공격력 220%, 범위 폭발).',
-        cd: 7,
+        name: '빛의 돌진',
+        desc: '빛이 되어 앞으로 돌진하며 지나가는 적을 세 번 베고(각 공격력 90%), 끝에서 별빛이 터진다(120%). 돌진 중 무적.',
+        cd: 6,
         act: {
-          dur: 26,
-          pose: [[0, 'cast'], [8, 'castUp']],
+          dur: 24,
+          pose: [[0, 'dash'], [4, 'thrust'], [14, 'slam']],
+          inv: [0, 16],
+          move: [[2, 9], [13, 0]],
           ev: [
-            { t: 8, k: 'sfx', s: 'cast' },
-            { t: 9, k: 'proj', p: { spr: 'orb', spd: 4, life: 55, w: 18, h: 18, col: '#9ab4ff', el: 'holy', home: 0.04, boom: { r: 46, m: 1, el: 'holy', col: '#9ab4ff' }, pic: { name: 'solen:orb', w: 26, spin: 0.15 }, boomPic: { name: 'solen:nova', s0: 30, s1: 92, life: 24 } }, m: 2.2 },
+            { t: 2, k: 'sfx', s: 'swing_heavy' },
+            { t: 4, k: 'hit', box: [-24, -16, 44, 24], m: 0.9, kb: 1, hs: 2, el: 'holy', fx: { arc: 'h', r: 30, col: '#c8d8ff' } },
+            { t: 7, k: 'hit', box: [-24, -16, 44, 24], m: 0.9, kb: 1, hs: 2, el: 'holy' },
+            { t: 10, k: 'hit', box: [-24, -16, 44, 24], m: 0.9, kb: 1, hs: 2, el: 'holy' },
+            { t: 14, k: 'pic', name: 'solen:nova', dx: 8, dy: -8, s0: 24, s1: 80, life: 20 },
+            { t: 14, k: 'nova', r: 44, m: 1.2, el: 'holy', col: '#9ab4ff' },
+            { t: 14, k: 'sfx', s: 'explode' },
           ],
         },
       },
       {
         name: '세계를 비추는 빛',
-        desc: '별의 문장을 펼쳐 5초간 주위를 비춘다. 따라다니는 빛 속의 적에게 지속 피해(공격력 60%/0.5초), 받는 피해 -25%.',
-        cd: 14,
+        desc: '별의 문장을 비춰 체력을 15% 회복하고 최대 체력 25%의 보호막을 얻는다. 5초간 공격력 +20%.',
+        cd: 16,
         act: {
-          dur: 24,
+          dur: 26,
           pose: [[0, 'cast'], [6, 'castUp']],
           ev: [
-            { t: 6, k: 'sfx', s: 'gem' },
-            { t: 6, k: 'pic', name: 'solen:constell', dx: 0, dy: -18, s0: 30, s1: 60, life: 24 },
-            { t: 8, k: 'field', f: { vis: 'holy', w: 140, h: 44, life: 300, tick: 30, m: 0.6, el: 'holy', follow: true, pic: { name: 'solen:bigstar', mode: 'floor', size: 104, spin: 0.03 } }, dx: 0, ground: true },
-            { t: 8, k: 'buff', id: 'solen_light', stats: { dmgTaken: -0.25 }, dur: 5 },
+            { t: 4, k: 'sfx', s: 'gem' },
+            { t: 4, k: 'pic', name: 'solen:constell', dx: 0, dy: -16, s0: 30, s1: 70, life: 26 },
+            { t: 8, k: 'pic', name: 'solen:bigstar', dx: 0, dy: -10, s0: 40, s1: 110, life: 34, spin: 0.03 },
+            { t: 10, k: 'heal', v: 0.15 },
+            { t: 10, k: 'shield', v: 0.25 },
+            { t: 10, k: 'buff', id: 'solen_light', stats: { atk: 0.2 }, dur: 5 },
           ],
         },
       },
@@ -271,36 +281,36 @@ export const CHARACTERS_EX: CharDef[] = [
       ],
     },
     awaken: [
-      { desc: '별빛 구체 피해 +40%', mods: [{ target: 'skill1', dmg: 0.4 }] },
-      { desc: '세계를 비추는 빛 쿨타임 -3초', mods: [{ target: 'skill2', cd: 3 }] },
+      { desc: '빛의 돌진 피해 +40%', mods: [{ target: 'skill1', dmg: 0.4 }] },
+      { desc: '세계를 비추는 빛 쿨타임 -4초', mods: [{ target: 'skill2', cd: 4 }] },
       { desc: '치명타 확률 +15%', effects: [{ stats: { crit: 0.15 } }] },
       { desc: '별자리 계승 피해 +60%', mods: [{ target: 'swap', dmg: 0.6 }] },
       { desc: '모든 기술 피해 +35%, 스킬 쿨타임 -10%', mods: [{ target: 'all', dmg: 0.35 }], effects: [{ stats: { cdr: 0.1 } }] },
     ],
   },
   {
-    // 컨셉아트: 「별의 항해자 루카스」 — 별의 책·별의 나침반, 소환한 고래. 스프라이트는 전용 시트(sheets/lucas)
+    // 컨셉아트: 「별의 항해자 루카스」 — 별의 책·별의 나침반, 소환한 고래. 마법 캐릭터(원거리 마법 평타). 역할: 소환·제압
+    // 스프라이트는 전용 시트(sheets/lucas)
     id: 'lucas', name: '루카스', title: '별의 항해자', rarity: 6, type: 'magic', crest: 'soul',
     lore: '「…더 넓은 세상을, 함께 보자.」 별의 책에 적힌 항로를 따라 하늘을 항해하는 소년. 그가 책장을 넘기면 별의 바다에서 고래가 헤엄쳐 온다.',
     atk: 50, hp: 219, speed: 2.0, fx: '#7ab8ff',
     look: { skin: '#f4ecf0', hair: '#d8d8f0', hairStyle: 'starhood', body: '#1a1a3a', trim: '#7ab8ff', legs: '#14142e', boots: '#c8c8e0', cape: '#e0e0f0', eye: '#7ab8ff', weapon: 'orb', wcol: '#7ab8ff', wcol2: '#2a2a5a', build: 'slim', glow: '#7ab8ff', extra: 'compass' },
     combo: [
-      melee({ dur: 13, t: 4, m: 0.8, box: [0, -20, 46, 30], w: 'windHigh', s: 'slashDown', fx: { arc: 'down', r: 32, col: '#9ac8ff' }, hs: 3, lunge: 2 }),
-      melee({ dur: 13, t: 4, m: 0.85, box: [0, -20, 44, 30], w: 'windLow', s: 'slashUp', fx: { arc: 'up', r: 30, col: '#7ab8ff' }, hs: 3, lunge: 2 }),
+      // 평타: 별의 책에서 별빛 마법탄 → 물결처럼 퍼지는 두 발 → 유도 나침반
+      shot({ dur: 15, t: 5, m: 0.85, p: { spr: 'star', spd: 6, life: 55, w: 10, h: 10, col: '#9ac8ff', el: 'holy', pic: { name: 'lucas:spark', w: 16, spin: 0.25 } }, w: 'windHigh', s: 'slashDown', sfx: 'cast' }),
+      shot({ dur: 15, t: 5, m: 0.6, n: 2, spread: 14, p: { spr: 'star', spd: 6, life: 55, w: 10, h: 10, col: '#9ac8ff', el: 'holy', pic: { name: 'lucas:spark', w: 14, spin: 0.25 } }, w: 'windLow', s: 'slashUp', sfx: 'cast' }),
       {
-        // 마무리: 별의 나침반을 날린다 (관통·유도)
         dur: 26,
         pose: [[0, 'thrustWind'], [6, 'thrust']],
         cancel: 20,
         ev: [
           { t: 5, k: 'sfx', s: 'cast' },
-          { t: 7, k: 'hit', box: [0, -14, 40, 22], m: 1.0, kb: 3, hs: 5, el: 'holy', fx: { arc: 'thrust', r: 34, col: '#9ac8ff' }, fin: true },
-          { t: 7, k: 'proj', p: { spr: 'orb', spd: 5, life: 70, w: 16, h: 16, col: '#7ab8ff', el: 'holy', pierce: 2, home: 0.1, pic: { name: 'lucas:compass', w: 22, spin: 0.2 } }, m: 1.5 },
+          { t: 7, k: 'proj', p: { spr: 'orb', spd: 5, life: 70, w: 16, h: 16, col: '#7ab8ff', el: 'holy', pierce: 2, home: 0.1, pic: { name: 'lucas:compass', w: 22, spin: 0.2 } }, m: 1.6 },
         ],
       },
     ],
     air: shot({ dur: 16, t: 4, m: 0.8, ang: 35, air: true, grav: 0.35, p: { spr: 'star', spd: 5, life: 60, w: 9, h: 9, col: '#9ac8ff', el: 'holy', pic: { name: 'lucas:spark', w: 14, spin: 0.2 } }, w: 'cast', s: 'castUp' }),
-    dashAtk: melee({ dur: 20, t: 5, m: 1.3, box: [-10, -14, 52, 18], w: 'thrustWind', s: 'thrust', fx: { arc: 'h', r: 40, col: '#7ab8ff' }, lunge: 7, hs: 5, el: 'holy', inv: [0, 10] }),
+    dashAtk: { dur: 18, pose: [[0, 'dash'], [6, 'cast']], move: [[0, 4], [10, 0]], inv: [0, 8], ev: [{ t: 6, k: 'pic', name: 'lucas:compass', dx: 0, dy: -8, s0: 20, s1: 50, life: 16 }, { t: 6, k: 'nova', r: 34, m: 1.0, el: 'holy', col: '#7ab8ff' }, { t: 6, k: 'sfx', s: 'cast' }] },
     skills: [
       {
         name: '별바다의 고래',
@@ -317,15 +327,14 @@ export const CHARACTERS_EX: CharDef[] = [
       },
       {
         name: '항로의 나침반',
-        desc: '발밑에 별의 나침반을 펼쳐 6초간 따라다니게 한다. 안의 적은 느려지고 지속 피해(공격력 45%/0.33초), 스킬 쿨타임 회복 +30%.',
-        cd: 14,
+        desc: '앞에 별의 나침반을 세워 4초간 주위의 적을 끌어당기고 느리게 한다 (공격력 50%/0.4초).',
+        cd: 13,
         act: {
           dur: 22,
           pose: [[0, 'cast'], [6, 'castUp']],
           ev: [
             { t: 6, k: 'sfx', s: 'gem' },
-            { t: 8, k: 'field', f: { vis: 'holy', w: 120, h: 30, life: 360, tick: 20, m: 0.45, el: 'holy', follow: true, slow: true, pic: { name: 'lucas:circle', mode: 'floor', size: 92, spin: 0.04 } }, dx: 0, ground: true },
-            { t: 8, k: 'buff', id: 'lucas_course', stats: { cdr: 0.3 }, dur: 6 },
+            { t: 8, k: 'field', f: { vis: 'holy', w: 110, h: 64, life: 240, tick: 24, m: 0.5, el: 'holy', slow: true, pull: 1.8, pic: { name: 'lucas:circle', mode: 'stand', size: 78, spin: 0.03 } }, dx: 70, ground: true },
           ],
         },
       },
@@ -357,7 +366,7 @@ export const CHARACTERS_EX: CharDef[] = [
     },
     awaken: [
       { desc: '별바다의 고래 피해 +40%', mods: [{ target: 'skill1', dmg: 0.4 }] },
-      { desc: '항로의 나침반 피해 +50%', mods: [{ target: 'skill2', dmg: 0.5 }] },
+      { desc: '항로의 나침반 범위 +30%', mods: [{ target: 'skill2', size: 0.3 }] },
       { desc: '스킬 피해 +20%', effects: [{ stats: { skillDmg: 0.2 } }] },
       { desc: '대항해 피해 +60%', mods: [{ target: 'swap', dmg: 0.6 }] },
       { desc: '모든 기술 피해 +35%, 스킬 쿨타임 -10%', mods: [{ target: 'all', dmg: 0.35 }], effects: [{ stats: { cdr: 0.1 } }] },

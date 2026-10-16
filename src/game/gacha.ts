@@ -1,4 +1,4 @@
-import { GACHA, RATE_TABLE, type BannerKind } from '../data/gacha';
+import { FIXED_SHARE, GACHA, RATE_TABLE, type BannerKind } from '../data/gacha';
 import type { Rarity } from './types';
 
 /** 배너별 뽑기 기록. since5가 천장(100회) 카운트 */
@@ -79,8 +79,21 @@ export function pullOnce(pool: BannerPool, p: PityState, rand: () => number, for
     }
   }
   if (!candidates.length) candidates = pool.items.filter((i) => i.rarity === rarity);
-  const it = candidates[Math.floor(rand() * candidates.length)];
+  const it = pickShared(candidates, rand);
   return { id: it.id, rarity, pickup, pityAt: at };
+}
+
+/** 같은 등급 후보 중 하나: FIXED_SHARE가 있는 후보는 그 비율로, 나머지는 남은 비율을 똑같이 나눔 */
+export function pickShared(cands: PoolItem[], rand: () => number): PoolItem {
+  const fixed = cands.filter((c) => FIXED_SHARE[c.id] !== undefined);
+  const rest = cands.filter((c) => FIXED_SHARE[c.id] === undefined);
+  if (!fixed.length || !rest.length) return cands[Math.floor(rand() * cands.length)];
+  let r = rand();
+  for (const c of fixed) {
+    if (r < FIXED_SHARE[c.id]) return c;
+    r -= FIXED_SHARE[c.id];
+  }
+  return rest[Math.floor(rand() * rest.length)];
 }
 
 /** count회 뽑기. guarantee4: 10연 중 ★4 이상 보장 (마지막 장에서 강제) */

@@ -573,6 +573,7 @@ export class GachaScene implements Scene {
     text(g, `현재 ${pity.since5}/${GACHA.hardPity}회`, 356, 129, { size: 6, color: '#c8c0d8' });
     text(g, '10회 계약: ★4 이상 확정', 356, 140, { size: 6, color: '#c080ff' });
     if (k === 'pickup') text(g, '★5의 50%는 픽업 영웅', 356, 151, { size: 6, color: '#a8a0c0' });
+    else if (k === 'char') text(g, '에녹: ★7 중 1%', 356, 151, { size: 6, color: '#a8a0c0' });
     const notReady = RATE_TABLE.map(([r]) => r).filter((r) => r > 5 && !ready(r));
     if (notReady.length) {
       let to = Math.min(...notReady) - 1;

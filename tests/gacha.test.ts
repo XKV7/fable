@@ -202,3 +202,21 @@ describe('키 설정 이전', () => {
     expect(sanitize({ settings: { bindVer: 1, bindings: v2 } }).settings.bindings.attack.keys).toEqual(DEFAULT_BINDINGS.attack.keys);
   });
 });
+
+describe('같은 등급 안 고정 비율 (에녹 = ★7 중 1%)', () => {
+  it('★7 후보 4명 중 에녹은 약 1%, 나머지는 약 33%씩', async () => {
+    const { pickShared } = await import('../src/game/gacha');
+    const items = [{ id: 'caelus', rarity: 7 }, { id: 'astral', rarity: 7 }, { id: 'ashen', rarity: 7 }, { id: 'enoch', rarity: 7 }] as const;
+    let seed = 7;
+    const rand = (): number => ((seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648);
+    const cnt: Record<string, number> = {};
+    const N = 200000;
+    for (let i = 0; i < N; i++) {
+      const it = pickShared([...items], rand);
+      cnt[it.id] = (cnt[it.id] ?? 0) + 1;
+    }
+    expect(cnt.enoch / N).toBeGreaterThan(0.008);
+    expect(cnt.enoch / N).toBeLessThan(0.012);
+    for (const id of ['caelus', 'astral', 'ashen']) expect(Math.abs(cnt[id] / N - 0.33)).toBeLessThan(0.01);
+  });
+});

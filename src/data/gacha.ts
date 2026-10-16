@@ -12,6 +12,14 @@ export const GACHA = {
   rotationRuns: 3, // 런 3회마다 픽업 교체
 };
 
+/**
+ * 같은 등급 안에서 고정 비율로만 나오는 영웅·무기 (그 등급이 나왔을 때의 비율).
+ * 나머지 비율은 같은 등급의 다른 후보가 똑같이 나눠 갖는다. 예: 에녹 = ★7이 나왔을 때 1%.
+ */
+export const FIXED_SHARE: Record<string, number> = {
+  enoch: 0.01,
+};
+
 /** 희귀도별 확률 (높은 등급부터) */
 export const RATE_TABLE: [7 | 6 | 5 | 4 | 3, number][] = [
   [7, GACHA.rate7],

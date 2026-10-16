@@ -490,6 +490,200 @@ export const CHARACTERS_EX: CharDef[] = [
       { desc: '모든 기술 피해 +35%, 스킬 쿨타임 -10%', mods: [{ target: 'all', dmg: 0.35 }], effects: [{ stats: { cdr: 0.1 } }] },
     ],
   },
+  {
+    // 컨셉아트: 「붉은 잿더미의 계승자」 — 후드 망토, 붉은 성흔(무기 구체)·성흔의 문장. 마법 캐릭터(원거리 마법 평타).
+    // 스프라이트는 전용 시트(sheets/ashen). 역할: 하늘의 창 투척 · 여러 적 동시 표식 폭발
+    id: 'ashen', name: '아셴', title: '붉은 잿더미의 계승자', rarity: 7, type: 'magic', crest: 'flame',
+    lore: '「…이 불꽃은, 이제 나의 것이다.」 모든 것이 타 버린 잿더미 위에서 마지막 불씨를 이어받은 계승자. 그가 손을 들면 하늘에서 붉은 창이 쏟아진다.',
+    atk: 70, hp: 300, speed: 2.15, fx: '#ff3050',
+    look: { skin: '#f4e8ec', hair: '#e8e0e8', hairStyle: 'hood', body: '#1a0a10', trim: '#ff3050', legs: '#140810', boots: '#c02040', cape: '#2a0a14', eye: '#ff3050', weapon: 'orb', wcol: '#ff3050', wcol2: '#3a0a18', build: 'slim', glow: '#ff3050' },
+    combo: [
+      // 평타: 붉은 성흔 구체에서 잿불탄 → 두 갈래 → 초승달 불꽃 베기(관통)
+      shot({ dur: 14, t: 5, m: 0.85, p: { spr: 'orb', spd: 6.5, life: 55, w: 10, h: 10, col: '#ff3050', el: 'fire', pic: { name: 'ashen:orb', w: 16, spin: 0.25 } }, w: 'windHigh', s: 'slashDown', sfx: 'cast' }),
+      shot({ dur: 14, t: 5, m: 0.6, n: 2, spread: 12, p: { spr: 'orb', spd: 6.5, life: 55, w: 10, h: 10, col: '#ff3050', el: 'fire', pic: { name: 'ashen:orb', w: 14, spin: 0.25 } }, w: 'windLow', s: 'slashUp', sfx: 'cast' }),
+      {
+        dur: 26,
+        pose: [[0, 'windHigh'], [6, 'slashDown']],
+        cancel: 20,
+        ev: [
+          { t: 4, k: 'sfx', s: 'swing_heavy' },
+          { t: 6, k: 'proj', p: { spr: 'crescent', spd: 6, life: 46, w: 24, h: 34, col: '#ff3050', el: 'fire', st: 'burn', pierce: 99, pic: { name: 'ashen:arc', w: 40 } }, m: 1.5, dx: 10, dy: -6 },
+        ],
+      },
+    ],
+    air: shot({ dur: 16, t: 5, m: 0.8, p: { spr: 'orb', spd: 6.5, life: 50, w: 10, h: 10, col: '#ff3050', el: 'fire', pic: { name: 'ashen:orb', w: 16, spin: 0.25 } }, w: 'windHigh', s: 'slashDown', sfx: 'cast', air: true }),
+    dashAtk: melee({ dur: 20, t: 6, m: 1.3, box: [-6, -18, 50, 30], w: 'thrustWind', s: 'thrust', fx: { arc: 'h', r: 40, col: '#ff3050' }, lunge: 6, hs: 4, el: 'fire', inv: [0, 10] }),
+    skills: [
+      {
+        name: '잿불 창우',
+        desc: '하늘에서 붉은 창 7자루를 대각선으로 내리꽂는다. 창은 가까운 적들에게 나눠 날아가 꿰뚫고 폭발한다 (각 110% + 폭발 60%, 화상).',
+        cd: 8,
+        act: {
+          dur: 38,
+          pose: [[0, 'castUp'], [26, 'cast']],
+          inv: [0, 12],
+          ev: [
+            { t: 2, k: 'sfx', s: 'cast' },
+            { t: 2, k: 'pic', name: 'ashen:emblem', dx: -20, dy: -60, s0: 20, s1: 70, life: 32, spin: 0.05 },
+            ...Array.from({ length: 7 }, (_, i): ActEvent => ({
+              t: 6 + i * 4,
+              k: 'proj',
+              aim: true,
+              dx: -40 + (i % 3) * 22,
+              dy: -84 - (i % 2) * 10,
+              m: 1.1,
+              p: { spr: 'spear', spd: 8, life: 70, w: 12, h: 12, col: '#ff3050', el: 'fire', st: 'burn', pierce: 2, boom: { r: 22, m: 0.6, el: 'fire', col: '#ff3050' }, boomPic: { name: 'ashen:burst', s0: 10, s1: 44, life: 12 }, pic: { name: 'ashen:spears', w: 26, rot: Math.PI / 2 } },
+            })),
+            { t: 6, k: 'sfx', s: 'throw' },
+            { t: 18, k: 'sfx', s: 'throw' },
+          ],
+        },
+      },
+      {
+        name: '성흔 폭쇄',
+        desc: '주변의 적 최대 5명의 발밑에 붉은 성흔 마법진을 새기고, 잠시 뒤 한꺼번에 터뜨린다 (각 260%, 화상).',
+        cd: 10,
+        act: {
+          dur: 30,
+          pose: [[0, 'cast'], [10, 'castUp']],
+          ev: [
+            { t: 4, k: 'sfx', s: 'gem' },
+            { t: 6, k: 'marks', n: 5, range: 260, r: 34, m: 2.6, delay: 40, pic: 'ashen:sigil', boom: 'ashen:burst', el: 'fire', st: 'burn', col: '#ff3050' },
+          ],
+        },
+      },
+    ],
+    swap: {
+      name: '교대: 잿더미의 계승',
+      desc: '등장과 함께 성흔을 터뜨려 주변을 불태운다 (공격력 380%, 화상).',
+      act: {
+        dur: 30,
+        pose: [[0, 'castUp'], [14, 'cast']],
+        inv: [0, 18],
+        ev: [
+          { t: 2, k: 'sfx', s: 'cast' },
+          { t: 2, k: 'pic', name: 'ashen:sigil', dx: 0, dy: -8, s0: 40, s1: 130, life: 22, spin: 0.04 },
+          { t: 14, k: 'pic', name: 'ashen:burst', dx: 0, dy: -10, s0: 50, s1: 160, life: 20, spin: 0.03 },
+          { t: 14, k: 'nova', r: 80, m: 3.8, el: 'fire', st: 'burn', up: -3, col: '#ff3050' },
+          { t: 14, k: 'shake', v: 6 },
+          { t: 14, k: 'sfx', s: 'explode' },
+        ],
+      },
+    },
+    passive: {
+      name: '꺼지지 않는 불씨',
+      desc: '스킬 피해 +25%, 화상 대상에게 주는 피해 +20%. 5초마다 가장 가까운 적에게 붉은 창이 떨어진다 (공격력 200%).',
+      effects: [
+        { stats: { skillDmg: 0.25, vsBurn: 0.2 } },
+        { on: 'interval', every: 5, do: [{ k: 'meteor', m: 2, spr: 'spear' }] },
+      ],
+    },
+    awaken: [
+      { desc: '잿불 창우 피해 +40%', mods: [{ target: 'skill1', dmg: 0.4 }] },
+      { desc: '성흔 폭쇄 범위 +30%', mods: [{ target: 'skill2', size: 0.3 }] },
+      { desc: '성흔 폭쇄 표식 +2', mods: [{ target: 'skill2', count: 2 }] },
+      { desc: '잿더미의 계승 피해 +60%', mods: [{ target: 'swap', dmg: 0.6 }] },
+      { desc: '모든 기술 피해 +40%, 스킬 쿨타임 -10%', mods: [{ target: 'all', dmg: 0.4 }], effects: [{ stats: { cdr: 0.1 } }] },
+    ],
+  },
+  {
+    // 컨셉아트: 「타락한 성역의 검」 — 검은 후드, 성흔의 검·신성의 문장. 파워 검사.
+    // 스프라이트는 전용 시트(sheets/luciel). 역할: 정면 종베기 + 긴 빛기둥 검격 · 정면 난도질 + 검기 방출
+    id: 'luciel', name: '루시엘', title: '타락한 성역의 검', rarity: 6, type: 'power', crest: 'fury',
+    lore: '「…신성은 여전히 남아 있다. 단지, 내 손에 있을 뿐.」 무너진 성역을 지키던 마지막 성기사. 빛을 잃은 성흔의 검은 이제 그의 뜻대로만 빛난다.',
+    atk: 58, hp: 250, speed: 2.05, fx: '#ffd060',
+    look: { skin: '#f4ecf0', hair: '#e8e8f0', hairStyle: 'hood', body: '#14141c', trim: '#ffd060', legs: '#101018', boots: '#2a2a34', cape: '#18181e', eye: '#ffc040', weapon: 'greatsword', wcol: '#ffe8a0', wcol2: '#3a3020', build: 'normal', glow: '#ffd060' },
+    combo: [
+      melee({ dur: 13, t: 4, m: 0.85, box: [0, -18, 40, 26], w: 'windHigh', s: 'slashDown', fx: { arc: 'down', r: 30, col: '#ffd060' }, hs: 3, lunge: 2.5, el: 'holy' }),
+      melee({ dur: 13, t: 4, m: 0.85, box: [0, -20, 40, 28], w: 'windLow', s: 'slashUp', fx: { arc: 'up', r: 30, col: '#ffe8a0' }, hs: 3, lunge: 2.5, el: 'holy' }),
+      melee({ dur: 15, t: 5, m: 1.0, box: [0, -12, 46, 18], w: 'thrustWind', s: 'thrust', fx: { arc: 'thrust', r: 38, col: '#ffd060' }, hs: 4, lunge: 3.5, el: 'holy' }),
+      {
+        // 마무리: 초승달 금빛 베기 + 짧은 검기
+        dur: 28,
+        pose: [[0, 'slamWind'], [6, 'slam']],
+        cancel: 22,
+        move: [[4, 3], [12, 0]],
+        ev: [
+          { t: 4, k: 'sfx', s: 'swing_heavy' },
+          { t: 7, k: 'pic', name: 'luciel:arc3', dx: 22, dy: -12, s0: 44, s1: 60, life: 10 },
+          { t: 7, k: 'hit', box: [-6, -24, 56, 36], m: 1.5, kb: 5, hs: 7, el: 'holy', fin: true, shake: 3 },
+          { t: 9, k: 'proj', p: { spr: 'crescent', spd: 6, life: 30, w: 20, h: 30, col: '#ffd060', el: 'holy', pierce: 99, pic: { name: 'luciel:arc', w: 34 } }, m: 0.8, dx: 14, dy: -6 },
+        ],
+      },
+    ],
+    air: melee({ dur: 16, t: 4, m: 0.9, box: [0, -6, 36, 26], w: 'windHigh', s: 'slashDown', fx: { arc: 'down', r: 30, col: '#ffd060' }, air: true, grav: 0.3, hs: 3, el: 'holy' }),
+    dashAtk: melee({ dur: 20, t: 5, m: 1.4, box: [-10, -14, 56, 18], w: 'thrustWind', s: 'thrust', fx: { arc: 'h', r: 44, col: '#ffd060' }, lunge: 8, hs: 5, el: 'holy', inv: [0, 10] }),
+    skills: [
+      {
+        name: '성역 가르기',
+        desc: '정면을 크게 내려 벤 뒤(180%), 땅을 따라 빛의 기둥이 길게 솟구치며 앞으로 뻗어 나간다 (기둥마다 100%).',
+        cd: 7,
+        act: {
+          dur: 34,
+          pose: [[0, 'slamWind'], [6, 'slam']],
+          inv: [0, 10],
+          ev: [
+            { t: 4, k: 'sfx', s: 'swing_heavy' },
+            { t: 7, k: 'hit', box: [-4, -44, 46, 62], m: 1.8, kb: 4, up: -2, hs: 6, el: 'holy', fx: { arc: 'down', r: 44, col: '#ffe8a0' }, shake: 4 },
+            ...Array.from({ length: 8 }, (_, i): ActEvent[] => [
+              { t: 9 + i * 2, k: 'pic', name: 'luciel:pillar', dx: 38 + i * 26, dy: -16, s0: 40, s1: 54, life: 14 },
+              { t: 9 + i * 2, k: 'hit', box: [24 + i * 26, -46, 28, 60], m: 1.0, kb: 1, up: -2, hs: 1, el: 'holy' },
+            ]).flat(),
+            { t: 9, k: 'sfx', s: 'explode' },
+          ],
+        },
+      },
+      {
+        name: '타락한 검무',
+        desc: '정면을 쉬지 않고 난도질한 뒤(8회, 각 50%), 금빛 검기 5개를 한꺼번에 날린다 (각 120%, 관통).',
+        cd: 9,
+        act: {
+          dur: 48,
+          pose: [[0, 'windHigh'], ...Array.from({ length: 8 }, (_, i): [number, PoseName] => [3 + i * 4, (['slashDown', 'slashUp', 'thrust', 'spin'] as PoseName[])[i % 4]]), [36, 'slam']],
+          armor: true,
+          inv: [0, 40],
+          ev: [
+            ...Array.from({ length: 8 }, (_, i): ActEvent => ({ t: 4 + i * 4, k: 'hit', box: [0, -24, 52, 36], m: 0.5, kb: 0, hs: 1, el: 'holy', fx: { arc: (['down', 'up', 'x', 'h'] as const)[i % 4], r: 30, col: i % 2 ? '#ffd060' : '#fff0c0' } })),
+            ...[4, 12, 20, 28].map((t): ActEvent => ({ t, k: 'sfx', s: 'swing' })),
+            { t: 38, k: 'sfx', s: 'swing_heavy' },
+            { t: 38, k: 'pic', name: 'luciel:arc3', dx: 18, dy: -12, s0: 44, s1: 64, life: 10 },
+            { t: 38, k: 'proj', n: 5, spread: 12, p: { spr: 'crescent', spd: 6.5, life: 50, w: 20, h: 30, col: '#ffd060', el: 'holy', pierce: 99, pic: { name: 'luciel:arc2', w: 32 } }, m: 1.2, dx: 12, dy: -8 },
+          ],
+        },
+      },
+    ],
+    swap: {
+      name: '교대: 신성의 문장',
+      desc: '신성의 문장을 펼치며 내려와 주변을 금빛으로 폭발시킨다 (공격력 360%).',
+      act: {
+        dur: 30,
+        pose: [[0, 'slamWind'], [12, 'slam']],
+        inv: [0, 18],
+        ev: [
+          { t: 2, k: 'pic', name: 'luciel:emblem', dx: 0, dy: -12, s0: 30, s1: 100, life: 22, spin: 0.04 },
+          { t: 12, k: 'pic', name: 'luciel:burst', dx: 0, dy: -10, s0: 50, s1: 150, life: 20, spin: 0.03 },
+          { t: 12, k: 'nova', r: 74, m: 3.6, el: 'holy', up: -3, col: '#ffd060' },
+          { t: 12, k: 'shake', v: 6 },
+          { t: 12, k: 'sfx', s: 'explode' },
+        ],
+      },
+    },
+    passive: {
+      name: '꺼지지 않은 신성',
+      desc: '치명타 확률 +12%, 치명타 피해 +30%. 콤보 마지막 타격 시 충격파 (공격력 100%).',
+      effects: [
+        { stats: { crit: 0.12, critDmg: 0.3 } },
+        { on: 'finisher', do: [{ k: 'wave', m: 1.0 }] },
+      ],
+    },
+    awaken: [
+      { desc: '성역 가르기 피해 +40%', mods: [{ target: 'skill1', dmg: 0.4 }] },
+      { desc: '타락한 검무 쿨타임 -2초', mods: [{ target: 'skill2', cd: 2 }] },
+      { desc: '공격력 +10%', effects: [{ stats: { atk: 0.1 } }] },
+      { desc: '신성의 문장 피해 +60%', mods: [{ target: 'swap', dmg: 0.6 }] },
+      { desc: '모든 기술 피해 +35%, 스킬 쿨타임 -10%', mods: [{ target: 'all', dmg: 0.35 }], effects: [{ stats: { cdr: 0.1 } }] },
+    ],
+  },
   // ───────────────────────── ★5 ─────────────────────────
   {
     id: 'marionne', name: '마리오네', title: '망각의 인형술사', rarity: 5, type: 'magic', crest: 'soul',

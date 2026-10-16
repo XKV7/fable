@@ -204,7 +204,9 @@ export type ActEvent =
   | { t: number; k: 'shake'; v: number }
   | { t: number; k: 'plunge'; vy: number; m: number; r: number; el?: Element; st?: StatusId }
   | { t: number; k: 'nova'; r: number; m: number; el?: Element; st?: StatusId; up?: number; pull?: boolean; col?: string }
-  | { t: number; k: 'chain'; n: number; m: number };
+  | { t: number; k: 'chain'; n: number; m: number }
+  /** 가까운 적 n명의 자리에 마법진(pic)을 새기고 delay 프레임 뒤 그 자리에서 폭발(반경 r, 공격력 m) */
+  | { t: number; k: 'marks'; n: number; range: number; r: number; m: number; delay: number; pic: string; boom?: string; el?: Element; st?: StatusId; col?: string };
 
 export interface ActionDef {
   dur: number;

@@ -744,8 +744,19 @@ export class Room {
         const sp = ((ev.spread ?? 8) * Math.PI) / 180;
         for (let i = 0; i < n; i++) {
           const a = base + (i - (n - 1) / 2) * sp;
-          const ang = f > 0 ? a : Math.PI - a;
-          this.addProj('player', ev.p, p.cx + f * (ev.dx ?? 8), p.cy + (ev.dy ?? -4), ang, ev.m * dm, this.kindOf(k));
+          const sx = p.cx + f * (ev.dx ?? 8);
+          const sy = p.cy + (ev.dy ?? -4);
+          let ang = f > 0 ? a : Math.PI - a;
+          if (ev.aim) {
+            // 가까운 적(최대 3명)을 향해 — 이벤트 시각마다 번갈아 겨눠 여러 적에게 나눠 꽂힌다 (적이 없으면 원래 각도)
+            const tg = this.allEnemies()
+              .filter((e) => !e.dead && e.state !== 'spawn' && Math.hypot(e.cx - p.cx, e.cy - p.cy) <= 300)
+              .sort((a, b) => Math.hypot(a.cx - p.cx, a.cy - p.cy) - Math.hypot(b.cx - p.cx, b.cy - p.cy))
+              .slice(0, 3);
+            const e = tg[Math.floor(ev.t / 4) % Math.max(1, tg.length)];
+            if (e) ang = Math.atan2(e.cy - sy, e.cx - sx) + (i - (n - 1) / 2) * sp;
+          }
+          this.addProj('player', ev.p, sx, sy, ang, ev.m * dm, this.kindOf(k));
         }
         break;
       }
@@ -855,6 +866,26 @@ export class Room {
       case 'chain':
         this.chain(p.cx, p.cy, ev.n + mod.count, ev.m * dm, this.kindOf(k));
         break;
+      case 'marks': {
+        // 가까운 적 n명 자리에 마법진 → delay 뒤 그 자리 폭발 (적이 없으면 전방 한 곳)
+        const kind = this.kindOf(k);
+        const tg = this.allEnemies()
+          .filter((e) => !e.dead && e.state !== 'spawn' && Math.hypot(e.cx - p.cx, e.cy - p.cy) <= ev.range)
+          .sort((a, b) => Math.hypot(a.cx - p.cx, a.cy - p.cy) - Math.hypot(b.cx - p.cx, b.cy - p.cy))
+          .slice(0, ev.n + mod.count);
+        const spots = tg.length ? tg.map((e) => ({ x: e.cx, y: e.cy })) : [{ x: p.cx + f * 70, y: p.cy }];
+        const r = ev.r * sz;
+        for (const sp of spots) {
+          this.fx.pic(ev.pic, sp.x, sp.y, r * 0.5, r * 2, ev.delay, 0.06, false);
+          this.later(ev.delay, () => {
+            this.nova(sp.x, sp.y, r, ev.m * dm, kind, ev.el, ev.st, -2, ev.col);
+            if (ev.boom) this.fx.pic(ev.boom, sp.x, sp.y, r, r * 3, 16, 0.04, false);
+            this.cam.shake(3, 10);
+          });
+        }
+        if (spots.length) this.later(ev.delay, () => audio.play('explode'));
+        break;
+      }
     }
   }
 

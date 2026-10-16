@@ -2,6 +2,7 @@ import type { SlashFx } from './types';
 import { FONT } from '../gfx/renderer';
 import { rgba } from '../gfx/pixel';
 import { tinted } from '../gfx/sprites';
+import { hdFx, type HDFxName } from '../gfx/hd';
 
 export interface Particle {
   x: number;
@@ -66,6 +67,8 @@ export class Fx {
   slashes: Slash[] = [];
   ghosts: Ghost[] = [];
   lights: Light[] = [];
+  /** 컨셉아트 이펙트 그림 (고해상도 층): 크기 s0→s1로 커지며 사라진다 */
+  pics: { name: HDFxName; x: number; y: number; s0: number; s1: number; life: number; max: number; spin: number; flip: boolean }[] = [];
   bolts: { pts: [number, number][]; life: number; max: number; col: string }[] = [];
   showNumbers = true;
 
@@ -171,6 +174,8 @@ export class Fx {
     this.slashes = this.slashes.filter((s) => s.life < s.max);
     for (const g of this.ghosts) g.life++;
     this.ghosts = this.ghosts.filter((g) => g.life < g.max);
+    for (const p of this.pics) p.life++;
+    this.pics = this.pics.filter((p) => p.life < p.max);
     for (const b of this.bolts) b.life++;
     this.bolts = this.bolts.filter((b) => b.life < b.max);
     for (const l of this.lights) l.life++;
@@ -194,7 +199,28 @@ export class Fx {
     }
   }
 
+  pic(name: HDFxName, x: number, y: number, s0: number, s1: number, max: number, spin = 0, flip = false): void {
+    this.pics.push({ name, x, y, s0, s1, life: 0, max, spin, flip });
+  }
+
   renderFront(g: CanvasRenderingContext2D, cx: number, cy: number): void {
+    for (const p of this.pics) {
+      const k = p.life / p.max;
+      const ease = 1 - (1 - k) * (1 - k);
+      const w = p.s0 + (p.s1 - p.s0) * ease;
+      const alpha = Math.min(1, (1 - k) * 2.2, p.life / 3 + 0.3);
+      if (!hdFx(p.name, Math.round(p.x - cx), Math.round(p.y - cy), w, { ang: p.life * p.spin, flip: p.flip, alpha })) {
+        // 이펙트 그림을 못 쓰는 화면: 원으로 대신
+        g.save();
+        g.globalAlpha = alpha * 0.8;
+        g.strokeStyle = '#9a8aff';
+        g.lineWidth = 2;
+        g.beginPath();
+        g.arc(Math.round(p.x - cx), Math.round(p.y - cy), w / 2, 0, Math.PI * 2);
+        g.stroke();
+        g.restore();
+      }
+    }
     // 베기 궤적
     for (const s of this.slashes) this.drawSlash(g, s, cx, cy);
     for (const b of this.bolts) {

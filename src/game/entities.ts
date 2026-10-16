@@ -3,6 +3,7 @@ import type { Room } from './room';
 import { newBody, type Body } from './world';
 import { rgba, shade } from '../gfx/pixel';
 import { audio } from '../core/audio';
+import { hdFx } from '../gfx/hd';
 
 export type DmgKind = 'normal' | 'skill' | 'swap' | 'finisher' | 'air' | 'dash' | 'dot' | 'proc';
 
@@ -103,7 +104,7 @@ export class Projectile {
     this.dead = true;
     const b = this.def.boom;
     if (b) {
-      if (this.team === 'player') room.explode(this.x, this.y, b.r, this.mult * b.m, this.kind === 'normal' ? 'proc' : this.kind, b.el, b.st);
+      if (this.team === 'player') room.explode(this.x, this.y, b.r, this.mult * b.m, this.kind === 'normal' ? 'proc' : this.kind, b.el, b.st, undefined, b.col);
       else room.enemyExplode(this.x, this.y, b.r, this.mult * b.m, b.st);
       if (b.field) room.addField(this.team, b.field, this.x - b.field.w / 2, this.y - b.field.h / 2, this.mult, 'proc');
     } else {
@@ -117,6 +118,13 @@ export class Projectile {
     const y = Math.round(this.y - cy);
     const col = d.col ?? '#ffffff';
     const ang = Math.atan2(this.vy, this.vx);
+    // 카일루스 컨셉아트 그림 (고해상도 층). 그림 속 결정 파편은 오른쪽 위(-0.58rad), 장검 끝은 왼쪽 아래(2.3rad)를 향한다
+    if (d.spr === 'crystal') {
+      const left = this.vx < 0;
+      if (hdFx('slash', x, y, 40, { ang: left ? ang - Math.PI - 0.58 : ang + 0.58, flip: left })) return;
+    } else if (d.spr === 'starsword') {
+      if (hdFx('sword', x, y, 32, { ang: ang - 2.3 })) return;
+    }
     g.save();
     g.translate(x, y);
     switch (d.spr) {
@@ -157,7 +165,9 @@ export class Projectile {
         break;
       }
       case 'star':
-      case 'shard': {
+      case 'shard':
+      case 'crystal':
+      case 'starsword': {
         g.rotate(d.spr === 'star' ? time * 0.2 : ang);
         g.fillStyle = col;
         if (d.spr === 'star') {
@@ -338,8 +348,17 @@ export class Field {
     const x = Math.round(this.x - cx);
     const y = Math.round(this.y - cy);
     const fade = Math.min(1, this.life / 20, this.t / 8);
-    const cols: Record<string, string> = { fire: '#ff6a1a', poison: '#8bdc3a', ice: '#a8e4ff', thunder: '#80d8ff', void: '#7a4aff', holy: '#ffe080', time: '#a8c8ff', blood: '#d8203a', trap: '#c0a060', star: '#ffe680' };
+    const cols: Record<string, string> = { fire: '#ff6a1a', poison: '#8bdc3a', ice: '#a8e4ff', thunder: '#80d8ff', void: '#7a4aff', holy: '#ffe080', time: '#a8c8ff', blood: '#d8203a', trap: '#c0a060', star: '#ffe680', crystal: '#a8c0ff', compass: '#9a8aff' };
     const col = cols[d.vis] ?? '#ffffff';
+    // 카일루스 컨셉아트 그림: 결정 기둥은 땅에서 솟구치고, 천구 나침반은 서서 천천히 돈다
+    if (d.vis === 'crystal') {
+      const grow = Math.min(1, 0.35 + this.t / 6);
+      const h = d.h * 1.2 * grow;
+      if (hdFx('spike', x + d.w / 2, y + d.h - h / 2 + 2, (h * 52) / 111, { h, alpha: fade })) return;
+    } else if (d.vis === 'compass') {
+      const D = 92 * Math.min(1, 0.5 + this.t / 10);
+      if (hdFx('circle', x + d.w / 2, y + d.h - D / 2 + 4, D, { ang: time * 0.015, alpha: fade * 0.95 })) return;
+    }
     g.save();
     g.globalAlpha = fade;
     if (d.vis === 'trap') {

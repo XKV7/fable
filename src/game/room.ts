@@ -21,7 +21,7 @@ import type { SaveData } from './save';
 import type { ActEvent, CondKey, Look, EffectDo, Element, FieldDef, ProjDef, Stats, StatusId, SummonDef } from './types';
 import { Tile, TS, World } from './world';
 import { makeCanvas } from '../gfx/pixel';
-import { worldAbove } from '../gfx/hd';
+import { hdState, worldAbove } from '../gfx/hd';
 
 export interface HitOpts {
   m: number;
@@ -734,6 +734,9 @@ export class Room {
       case 'fx':
         this.fx.slash(p.cx, p.cy, f, ev.fx, col);
         break;
+      case 'pic':
+        this.fx.pic(ev.name, p.cx + f * ev.dx, p.cy + ev.dy, ev.s0, ev.s1, ev.life, ev.spin ?? 0, f < 0);
+        break;
       case 'sfx':
         audio.play(ev.s);
         break;
@@ -747,7 +750,7 @@ export class Room {
         p.startPlunge(ev.vy, ev.m * dm, ev.r * sz, ev.el, ev.st);
         break;
       case 'nova':
-        this.nova(p.cx, p.cy, ev.r * sz, ev.m * dm, this.kindOf(k), ev.el, ev.st, ev.up ?? -1.5);
+        this.nova(p.cx, p.cy, ev.r * sz, ev.m * dm, this.kindOf(k), ev.el, ev.st, ev.up ?? -1.5, ev.col);
         break;
       case 'chain':
         this.chain(p.cx, p.cy, ev.n + mod.count, ev.m * dm, this.kindOf(k));
@@ -967,12 +970,13 @@ export class Room {
 
   soulTarget = { x: 0, y: 0 };
 
-  explode(x: number, y: number, r: number, m: number, kind: DmgKind, el?: Element, st?: StatusId, up = -1.5): void {
-    this.nova(x, y, r, m, kind, el, st, up);
+  explode(x: number, y: number, r: number, m: number, kind: DmgKind, el?: Element, st?: StatusId, up = -1.5, colOverride?: string): void {
+    this.nova(x, y, r, m, kind, el, st, up, colOverride);
   }
 
-  nova(x: number, y: number, r: number, m: number, kind: DmgKind, el?: Element, st?: StatusId, up = -1.5): void {
-    const col = ELEM_COL[el ?? 'phys'] ?? '#ffffff';
+  /** colOverride: 속성색 대신 쓸 이펙트 색 (영웅 고유 색 — 예: 카일루스의 별빛 폭발은 금색이 아닌 청보라) */
+  nova(x: number, y: number, r: number, m: number, kind: DmgKind, el?: Element, st?: StatusId, up = -1.5, colOverride?: string): void {
+    const col = colOverride ?? ELEM_COL[el ?? 'phys'] ?? '#ffffff';
     this.fx.ring(x, y, col, r, 16);
     this.fx.glow(x, y, col, r * 0.9, 12);
     this.fx.burst(x, y, col, Math.min(30, Math.floor(r / 2)), r / 16);
@@ -1035,6 +1039,11 @@ export class Room {
     const sx = x - 50;
     const sy = gy - drop;
     const ang = Math.atan2(gy - sy, x - sx);
+    if (spr === 'starsword') {
+      // 카일루스: 하늘에서 별빛 장검이 꽂힌다
+      this.addProj('player', { spr, spd: 8, life: 120, w: 10, h: 10, col: '#a8c0ff', boom: { r: 26, m: 1, el: el ?? 'holy', st, col: '#a8c0ff' }, landY: gy - 4 }, sx, sy, ang, m, kind);
+      return;
+    }
     const r = big ? 70 : 24;
     this.addProj('player', { spr: big ? 'fireball' : 'star', spd: big ? 6 : 7, life: 120, w: big ? 22 : 9, h: big ? 22 : 9, col: el === 'fire' ? '#ff6a1a' : '#ffe680', boom: { r, m: 1, el: el ?? 'holy', st }, landY: gy - (big ? 6 : 3) }, sx, sy, ang, m, kind);
     if (big) this.later(40, () => this.cam.shake(8, 20));
@@ -1372,7 +1381,7 @@ export class Room {
         break;
       case 'meteor': {
         const e = this.nearestEnemy(p.cx, p.cy, 280);
-        if (e) this.meteor(e.cx, d.m, 'holy', undefined, false, undefined, 'proc', e.b.y + e.b.h - 4);
+        if (e) this.meteor(e.cx, d.m, 'holy', undefined, false, d.spr, 'proc', e.b.y + e.b.h - 4);
         break;
       }
       case 'summon':
@@ -1451,6 +1460,7 @@ export class Room {
     const cx = Math.round(this.cam.x);
     const cy = Math.round(this.cam.y);
     const t = this.time;
+    hdState.off = this.demoNoHD;
     if (this.player.b.onGround && this.player.state !== 'dead') this.lastSafe = { x: this.player.b.x, y: this.player.b.y };
     this.soulTarget.x = this.player.cx;
     this.soulTarget.y = this.player.cy;

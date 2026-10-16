@@ -75,7 +75,7 @@ export type EffectDo =
   | { k: 'strike'; m: number; el?: Element }
   | { k: 'nova'; r: number; m: number; el?: Element; st?: StatusId }
   | { k: 'slowTime'; dur: number }
-  | { k: 'meteor'; m: number }
+  | { k: 'meteor'; m: number; spr?: ProjSprite }
   | { k: 'summon'; s: SummonDef };
 
 export type FlagKey =
@@ -128,7 +128,7 @@ export interface SlashFx {
   dy?: number;
 }
 
-export type ProjSprite = 'arrow' | 'orb' | 'fireball' | 'bolt' | 'dagger' | 'star' | 'bone' | 'scythe' | 'flask' | 'spear' | 'wave' | 'soul' | 'shard' | 'blade' | 'spore' | 'rock' | 'crescent';
+export type ProjSprite = 'arrow' | 'orb' | 'fireball' | 'bolt' | 'dagger' | 'star' | 'bone' | 'scythe' | 'flask' | 'spear' | 'wave' | 'soul' | 'shard' | 'blade' | 'spore' | 'rock' | 'crescent' | 'crystal' | 'starsword';
 
 export interface ProjDef {
   spr: ProjSprite;
@@ -146,14 +146,14 @@ export interface ProjDef {
   stn?: number;
   kb?: number;
   up?: number;
-  boom?: { r: number; m: number; el?: Element; st?: StatusId; field?: FieldDef };
+  boom?: { r: number; m: number; el?: Element; st?: StatusId; field?: FieldDef; col?: string };
   ret?: boolean; // 부메랑
   hs?: number;
   ground?: boolean; // 지면을 따라 이동
   landY?: number; // 낙하체(유성·창비): 벽·발판을 무시하고 이 높이에 닿으면 착탄
 }
 
-export type FieldVis = 'fire' | 'poison' | 'ice' | 'thunder' | 'void' | 'holy' | 'time' | 'blood' | 'trap' | 'star';
+export type FieldVis = 'fire' | 'poison' | 'ice' | 'thunder' | 'void' | 'holy' | 'time' | 'blood' | 'trap' | 'star' | 'crystal' | 'compass';
 
 export interface FieldDef {
   vis: FieldVis;
@@ -191,11 +191,13 @@ export type ActEvent =
   | { t: number; k: 'tp'; dx: number; toEnemy?: boolean }
   | { t: number; k: 'meteor'; n: number; m: number; spread: number; el?: Element; st?: StatusId; big?: boolean; spr?: ProjSprite }
   | { t: number; k: 'fx'; fx: SlashFx }
+  /** 컨셉아트 이펙트 그림 (★7 카일루스): 플레이어 기준 (dx, dy)에서 크기 s0→s1, life 프레임 */
+  | { t: number; k: 'pic'; name: 'card' | 'spike' | 'slash' | 'circle' | 'sword'; dx: number; dy: number; s0: number; s1: number; life: number; spin?: number }
   | { t: number; k: 'sfx'; s: string }
   | { t: number; k: 'heal'; v: number }
   | { t: number; k: 'shake'; v: number }
   | { t: number; k: 'plunge'; vy: number; m: number; r: number; el?: Element; st?: StatusId }
-  | { t: number; k: 'nova'; r: number; m: number; el?: Element; st?: StatusId; up?: number; pull?: boolean }
+  | { t: number; k: 'nova'; r: number; m: number; el?: Element; st?: StatusId; up?: number; pull?: boolean; col?: string }
   | { t: number; k: 'chain'; n: number; m: number };
 
 export interface ActionDef {

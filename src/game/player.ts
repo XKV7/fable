@@ -539,7 +539,7 @@ export class Player {
     }
     const hd = this.room.demoNoHD
       ? null
-      : charFrameHD(this.def.id, pose, { t: this.animT, since: lieHD ? this.deadT : this.hdSince++, prev: this.hdPrev, walk: Math.abs(this.b.vx) < 1.2 });
+      : charFrameHD(this.def.id, pose, { t: this.animT, since: lieHD ? this.deadT : this.hdSince++, prev: this.hdPrev });
     const x = Math.round(this.cx - 24 - cx);
     const y = Math.round(this.b.y + this.b.h - 44 - cy);
     g.save();

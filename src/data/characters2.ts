@@ -27,11 +27,12 @@ export const CHARACTERS_EX: CharDef[] = [
           { t: 4, k: 'sfx', s: 'swing_heavy' },
           { t: 6, k: 'hit', box: [-20, -20, 56, 32], m: 1.2, kb: 3, hs: 6, el: 'holy', fx: { arc: 'circle', r: 30, col: '#8a9aff' }, shake: 3 },
           { t: 14, k: 'hit', box: [0, -18, 46, 26], m: 1.4, kb: 5, hs: 7, el: 'holy', fx: { arc: 'down', r: 36, col: '#c8e8ff' }, fin: true },
-          { t: 14, k: 'proj', p: { spr: 'crescent', spd: 5, life: 70, w: 30, h: 54, col: '#8a9aff', el: 'holy', pierce: 99, home: 0.09 }, m: 1.1 },
+          { t: 14, k: 'proj', p: { spr: 'crescent', spd: 5, life: 70, w: 30, h: 54, col: '#8a9aff', el: 'holy', pierce: 99, home: 0.09 }, m: 2.1 }, // 검기 = 함께 나가는 베기(1.4)의 1.5배
         ],
       },
     ],
-    air: melee({ dur: 16, t: 4, m: 0.85, box: [0, -6, 34, 26], w: 'windHigh', s: 'slashDown', fx: { arc: 'down', r: 28, col: '#a8c0ff' }, air: true, grav: 0.3, hs: 3, extra: [{ t: 4, k: 'proj', p: { spr: 'crescent', spd: 5, life: 40, w: 20, h: 34, col: '#a8c0ff', el: 'holy', pierce: 3, home: 0.09 }, m: 0.5, ang: 30 }] }),
+    // 공중 검기 = 공중 베기(0.85)의 1.5배
+    air: melee({ dur: 16, t: 4, m: 0.85, box: [0, -6, 34, 26], w: 'windHigh', s: 'slashDown', fx: { arc: 'down', r: 28, col: '#a8c0ff' }, air: true, grav: 0.3, hs: 3, extra: [{ t: 4, k: 'proj', p: { spr: 'crescent', spd: 5, life: 40, w: 20, h: 34, col: '#a8c0ff', el: 'holy', pierce: 3, home: 0.09 }, m: 1.275, ang: 30 }] }),
     dashAtk: melee({ dur: 20, t: 5, m: 1.5, box: [-10, -14, 56, 18], w: 'thrustWind', s: 'thrust', fx: { arc: 'h', r: 44, col: '#8a9aff' }, lunge: 8, hs: 5, el: 'holy', inv: [0, 10] }),
     skills: [
       {

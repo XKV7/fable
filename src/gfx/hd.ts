@@ -317,7 +317,8 @@ function sheetFrameName(s: Sheet, pose: PoseName, an?: HDAnim): string {
     const i = Math.floor(t / c.tick);
     return c.frames[loop ? i % c.frames.length : Math.min(i, c.frames.length - 1)];
   };
-  if (pose === 'idle0' || pose === 'idle1') return cyc('idle', an.t) ?? base;
+  // 대기: 컨셉아트 대기 칸들은 따로 그려져 윤곽·위치가 조금씩 달라 넘기면 자작거린다 → 한 칸 + 1픽셀 숨쉬기(상체만)
+  if (pose === 'idle0' || pose === 'idle1') return Math.floor(an.t / 40) % 2 ? 'idle0~b' : 'idle0';
   // 걷기 칸은 정면을 보는 그림이 많아 옆으로 이동할 때 어색하다 → 이동은 항상 달리기 순환
   if (pose.startsWith('run')) return cyc('run', an.t) ?? base;
   if (pose === 'hurt') return cyc('hurt', an.since, false) ?? base;
@@ -335,14 +336,23 @@ function sheetFrameName(s: Sheet, pose: PoseName, an?: HDAnim): string {
 }
 
 function fromSheet(s: Sheet, name: string, w: number): HTMLCanvasElement {
-  const f = s.d!.frames[name] ?? s.d!.frames.idle0;
+  const breath = name.endsWith('~b');
+  const f = s.d!.frames[breath ? name.slice(0, -2) : name] ?? s.d!.frames.idle0;
   const c = document.createElement('canvas');
   c.width = w;
   c.height = HD_FW;
   const g = c.getContext('2d')!;
   g.imageSmoothingEnabled = false;
   // 발 기준점(머리 아래 가장 낮은 점)을 칸의 (가운데, 88)에 맞춘다
-  g.drawImage(s.img, f.x, f.y, f.w, f.h, w / 2 - f.ax, FOOT - f.ay, f.w, f.h);
+  const dx = w / 2 - f.ax;
+  const dy = FOOT - f.ay;
+  if (!breath) g.drawImage(s.img, f.x, f.y, f.w, f.h, dx, dy, f.w, f.h);
+  else {
+    // 숨 내쉼: 위쪽 58%(머리·어깨)만 1픽셀 내려 그린다. 다리는 그대로라 발이 미끄러지지 않음
+    const cut = Math.round(f.h * 0.58);
+    g.drawImage(s.img, f.x, f.y + cut, f.w, f.h - cut, dx, dy + cut, f.w, f.h - cut);
+    g.drawImage(s.img, f.x, f.y, f.w, cut, dx, dy + 1, f.w, cut);
+  }
   return c;
 }
 

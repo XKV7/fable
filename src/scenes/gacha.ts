@@ -485,16 +485,22 @@ export class GachaScene implements Scene {
     if (k === 'pickup') {
       const p = currentPickup(save);
       const c5 = CHAR_MAP[p.five];
-      const pose = (['idle0', 'windHigh', 'slashDown', 'castUp', 'thrust', 'spin'] as PoseName[])[Math.floor(this.t / 30) % 6];
+      const pose: PoseName = 'idle0'; // 픽업 영웅은 정지 모습으로
       g.save();
       g.globalCompositeOperation = 'lighter';
-      const gr = g.createRadialGradient(190, 130, 0, 190, 130, 70);
-      gr.addColorStop(0, 'rgba(255,200,80,0.45)');
+      const gr = g.createRadialGradient(176, 112, 0, 176, 112, 56);
+      gr.addColorStop(0, 'rgba(255,200,80,0.4)');
       gr.addColorStop(1, 'rgba(255,200,80,0)');
       g.fillStyle = gr;
-      g.fillRect(120, 60, 140, 140);
+      g.fillRect(120, 56, 112, 104);
       g.restore();
-      g.drawImage(charArt(p.five, pose), 190 - 72, 190 - 132, 144, 144);
+      // 픽업 영웅: 정지 모습, 배너 칸 안(아래 글씨와 겹치지 않게 발끝을 y=152에)
+      g.save();
+      g.beginPath();
+      g.rect(108, 50, 150, 106);
+      g.clip();
+      g.drawImage(charArt(p.five, pose), 176 - 48, 152 - 88, 96, 96);
+      g.restore();
       stars(g, 116, 162, 5, 8);
       text(g, `${c5.title}`, 116, 172, { size: 7, color: '#ffe080' });
       text(g, c5.name, 116, 182, { size: 10, color: '#ffffff', bold: true });
@@ -517,11 +523,23 @@ export class GachaScene implements Scene {
       // 대표 영웅: ★6 이상이 3명 이상이면 최상위 등급만 (자리가 좁아 ★5까지 다 넣으면 확률표와 겹침)
       const top = CHARACTERS.filter((c) => c.rarity >= 6);
       const show = (top.length >= 3 ? top : CHARACTERS.filter((c) => c.rarity >= 5)).sort((a, b) => b.rarity - a.rarity).slice(0, 6);
+      // 정지 모습(대기 자세)으로, 배너 칸 안에 같은 간격으로 (이름도 한 줄에, 칸 너비에 맞춰)
+      const slot = 228 / show.length;
+      g.save();
+      g.beginPath();
+      g.rect(108, 50, 232, 122);
+      g.clip();
       show.forEach((c, i) => {
-        const x = 112 + i * (show.length > 5 ? 38 : 46);
-        g.drawImage(tinted(charArt(c.id, 'idle0'), save.chars[c.id] ? RARITY_COL[c.rarity] : '#1a1028'), x - 39, 62, 96, 96);
-        g.drawImage(charArt(c.id, i === Math.floor(this.t / 60) % show.length ? 'castUp' : 'idle0'), x - 38, 62, 96, 96);
-        text(g, c.name, x + 10, i % 2 ? 168 : 160, { size: 7, align: 'center', color: c.rarity >= 6 ? RARITY_COL[c.rarity] : '#ffe080' });
+        const cx = Math.round(110 + slot * (i + 0.5));
+        g.fillStyle = rgba(RARITY_COL[c.rarity], save.chars[c.id] ? 0.16 : 0.06);
+        g.fillRect(cx - slot / 2 + 3, 72, slot - 6, 84);
+        g.drawImage(charArt(c.id, 'idle0'), cx - 48, 150 - 88, 96, 96);
+      });
+      g.restore();
+      show.forEach((c, i) => {
+        const cx = Math.round(110 + slot * (i + 0.5));
+        text(g, c.name, cx, 159, { size: 7, align: 'center', color: c.rarity >= 6 ? RARITY_COL[c.rarity] : '#ffe080', maxW: slot - 4 });
+        stars(g, cx - (c.rarity * 4) / 2, 168, c.rarity, 4);
       });
       text(g, `영웅 ${CHARACTERS.length}명 · 보유 ${Object.keys(save.chars).length}명`, 116, 180, { size: 7, color: '#c8c0d8' });
     } else {

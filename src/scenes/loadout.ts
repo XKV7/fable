@@ -267,17 +267,23 @@ export class LoadoutScene implements Scene {
       text(g, i === 0 ? '선봉' : '교대', x + 6, y + 4, { size: 7, color: '#8a8098' });
       if (c) {
         const pose = sel ? (['idle0', 'windHigh', 'slashDown', 'thrust'] as const)[Math.floor(this.t / 20) % 4] : 'idle0';
-        g.drawImage(charArt(id, pose), x + 36 - 48, y + 102 - 88, 96, 96);
+        // 그림은 칸 안으로 잘라 그린다 (공격 동작의 큰 검기가 칸 밖으로 나가지 않게)
+        g.save();
+        g.beginPath();
+        g.rect(x + 2, y + 2, 72, 116);
+        g.clip();
+        g.drawImage(charArt(id, pose), x + 38 - 48, y + 102 - 88, 96, 96);
+        g.restore();
         stars(g, x + 76, y + 14, c.rarity, 6);
-        text(g, c.name, x + 76, y + 24, { size: 10, color: '#ffffff', bold: true });
-        text(g, c.title, x + 76, y + 38, { size: 6, color: '#a8a0c0' });
+        text(g, c.name, x + 76, y + 24, { size: 10, color: '#ffffff', bold: true, maxW: 64 });
+        text(g, c.title, x + 76, y + 38, { size: 6, color: '#a8a0c0', maxW: 64 });
         text(g, TYPE_LABEL[c.type], x + 76, y + 48, { size: 7, color: TYPE_COL[c.type] });
         const own = save.chars[id];
         text(g, `Lv.${own?.lv ?? 1} · 각성 ${own?.aw ?? 0}`, x + 76, y + 58, { size: 6, color: '#ffe080' });
         if (c.crest) crestTags(g, [c.crest], x + 76, y + 68);
-        text(g, c.skills[0].name, x + 76, y + 84, { size: 6, color: '#c8c0d8' });
-        text(g, c.skills[1].name, x + 76, y + 93, { size: 6, color: '#c8c0d8' });
-        text(g, c.swap.name.replace('교대: ', '교대 · '), x + 76, y + 102, { size: 6, color: '#a0ffd0', maxW: 66 });
+        text(g, c.skills[0].name, x + 76, y + 84, { size: 6, color: '#c8c0d8', maxW: 64 });
+        text(g, c.skills[1].name, x + 76, y + 93, { size: 6, color: '#c8c0d8', maxW: 64 });
+        text(g, c.swap.name.replace('교대: ', '교대 · '), x + 76, y + 102, { size: 6, color: '#a0ffd0', maxW: 64 });
       } else text(g, '비어 있음', x + 72, y + 56, { size: 9, align: 'center', color: '#6a6078' });
     }
     // 무기

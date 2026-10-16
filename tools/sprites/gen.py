@@ -156,3 +156,18 @@ def stride(run, phase, swing=26, bob=3):
 def make_strides(raw):
     # 달리기 4칸을 번갈아 바탕으로 쓰고(옷자락 움직임), 다리는 8단계로 흔든다
     return {f'stride{i}': stride(raw[f'run{(i // 2) % 4}'], i * np.pi / 4) for i in range(8)}
+
+def detach(img, it=3, frac=1.0):
+    """원본 해상도에서 몸에 번짐으로 붙어 있는 떠 있는 구체·나침반·반짝이를 떼어 낸다.
+    it 픽셀 깎아 가는 다리를 끊고 → 큰 덩어리(frac 이상)만 남긴 뒤 → 깎은 가장자리만 되돌림"""
+    from scipy import ndimage as nd
+    a = np.asarray(img).copy()
+    m = a[:, :, 3] > 127
+    er = nd.binary_erosion(m, structure=np.ones((3, 3)), iterations=it)
+    lab, n = nd.label(er, structure=np.ones((3, 3)))
+    if n == 0: return img
+    sizes = nd.sum(er, lab, range(1, n + 1))
+    ok = np.zeros(n + 1, bool); ok[1:] = sizes >= sizes.max() * frac - 1e-9
+    keep = nd.binary_dilation(ok[lab], structure=np.ones((3, 3)), iterations=it + 1) & m
+    a[:, :, 3] = np.where(keep, a[:, :, 3], 0)
+    return Image.fromarray(a, 'RGBA')

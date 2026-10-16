@@ -34,6 +34,13 @@ def cut(box, flip=False):
     seeds = np.zeros(d.shape, bool); seeds[0] = seeds[-1] = True; seeds[:, 0] = seeds[:, -1] = True
     lab, _ = ndimage.label(near)
     bg = np.isin(lab, np.unique(lab[seeds & near])) & near
+    # 몸과 떠 있는 구체 사이처럼 테두리에서 막힌 배경 주머니도 지운다 (배경색과 아주 가까운 20픽셀 이상 덩어리만)
+    tight = (d <= cfg.get('pocket_tol', max(4, TOL * 0.6))) & ~bg
+    pl, pn = ndimage.label(tight)
+    if pn:
+        ps = ndimage.sum(tight, pl, range(1, pn + 1))
+        okp = np.zeros(pn + 1, bool); okp[1:] = ps >= 20
+        bg |= okp[pl]
     rgba = np.dstack([a, np.where(bg, 0, 255)]).astype(np.uint8)
     img = Image.fromarray(rgba, 'RGBA')
     return img.transpose(Image.FLIP_LEFT_RIGHT) if flip else img
@@ -50,6 +57,16 @@ def clean(keep, frac=0.12):
     ok = np.zeros(len(sizes) + 1, bool); ok[1:] = sizes >= sizes.max() * frac
     return ok[lab]
 
+def body_only(k, frac=1.0, it=None):
+    """몸에 1~2픽셀 번짐으로 붙어 있는 떠 있는 구체·반짝이까지 떼어 낸다:
+    1픽셀 깎아 가는 다리를 끊고 → 큰 덩어리만 남긴 뒤 → 깎은 가장자리만 원래대로 되돌림"""
+    it = it or cfg.get('detach', 1)
+    er = ndimage.binary_erosion(k, structure=np.ones((3, 3)), iterations=it)
+    if not er.any(): return k
+    kept = clean(er, frac) if frac < 1 else largest(er)[0]
+    out = ndimage.binary_dilation(kept, structure=np.ones((3, 3)), iterations=it) & k
+    return largest(out)[0] if frac >= 1 else clean(out, 0.02)
+
 def shrink(img, sc):
     w, h = img.size
     nw, nh = max(1, round(w * sc)), max(1, round(h * sc))
@@ -64,8 +81,14 @@ def shrink(img, sc):
 
 # ── 원본 해상도 칸 + 생성 칸
 raw = {}
+FXF = lambda n: n.split('_')[0].rstrip('0123456789') in ('attack', 'big', 'cast')
 for name, b in cfg['frames'].items():
     raw[name] = cut(b[:4], len(b) > 4 and b[4])
+    # 원본 해상도에서 떠 있는 구체·반짝이 떼기 (공격·시전 칸은 큰 검기·마법진은 남김)
+    if name.startswith('die'):  # 누운 몸은 가늘게 끊기기 쉬워 큰 조각은 모두 남김
+        raw[name] = gen.detach(raw[name], 3, 0.25)
+    else:
+        raw[name] = gen.detach(raw[name], cfg.get('detach_hi', 3), cfg.get('keep_fx', 0.3) if FXF(name) else 1.0)
 if cfg.get('variants', True):
     runs = sorted(k for k in raw if k.startswith('run'))
     r1, rl = raw[runs[min(1, len(runs) - 1)]], raw[runs[-1]]
@@ -85,7 +108,9 @@ print('scale', round(SC, 3), 'body', np.median(bodyh))
 parts = []
 for n, img in raw.items():
     c, k = shrink(img, SC)
-    parts.append((n, c, clean(k, cfg.get('keep', 0.12))))
+    # 몸에서 떨어진 조각(떠 있는 구체·반짝이)은 지운다: 공격·시전 칸은 큰 검기·마법진만 남기고(30%), 나머지는 몸통만
+    fx_frame = n.split('_')[0].rstrip('0123456789') in ('attack', 'big', 'cast')
+    parts.append((n, c, body_only(k, cfg.get('keep_fx', 0.3)) if fx_frame else body_only(k, 0.25) if n.startswith('die') else body_only(k)))
 allpx = np.concatenate([c[k] for _, c, k in parts]).astype(np.uint8)
 NP = 40
 pal = np.array(Image.fromarray(allpx.reshape(-1, 1, 3), 'RGB').quantize(colors=NP, method=Image.Quantize.MEDIANCUT).getpalette()[:NP * 3]).reshape(-1, 3)

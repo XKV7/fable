@@ -35,6 +35,14 @@ def cut(box, flip):
         if y < 0 or x < 0 or y >= h or x >= w or bg[y, x] or not near[y, x]: continue
         bg[y, x] = True
         q.extend([(y + 1, x), (y - 1, x), (y, x + 1), (y, x - 1)])
+    # 막힌 배경 주머니(몸과 나침반 사이 등): 배경색과 아주 가까운(차이 4 이하) 20픽셀 이상 덩어리
+    from scipy import ndimage as _nd
+    tight = (d <= 4) & ~bg
+    pl, pn = _nd.label(tight)
+    if pn:
+        ps = _nd.sum(tight, pl, range(1, pn + 1))
+        okp = np.zeros(pn + 1, bool); okp[1:] = ps >= 20
+        bg |= okp[pl]
     rgba = np.dstack([a, np.where(bg, 0, 255)]).astype(np.uint8)
     img = Image.fromarray(rgba, 'RGBA')
     if flip: img = img.transpose(Image.FLIP_LEFT_RIGHT)
@@ -55,7 +63,15 @@ def shrink(img):
     keep = al >= 0.45
     return col.clip(0, 255), keep
 
-def main_body(keep):
+def main_body(keep, frac=0.12):
+    # 1픽셀 깎아 몸에 가는 번짐으로 붙은 나침반·반짝이를 떼고, 큰 덩어리만 남긴 뒤 가장자리를 되돌린다
+    from scipy import ndimage as _nd
+    er = _nd.binary_erosion(keep, structure=np.ones((3, 3)), iterations=2)
+    if er.any():
+        keep = _nd.binary_dilation(_main_body(er, frac), structure=np.ones((3, 3)), iterations=2) & keep
+    return _main_body(keep, min(frac, 0.02) if frac < 1 else 1.0)
+
+def _main_body(keep, frac=0.12):
     # 몸에서 떨어진 작은 반짝이(별 장식)는 지운다: 가장 큰 덩어리의 12% 미만 조각 제거
     h, w = keep.shape
     lab = np.zeros((h, w), int); sizes = [0]
@@ -72,7 +88,7 @@ def main_body(keep):
                                 lab[yy, xx] = n; q.append((yy, xx))
                 sizes.append(c)
     big = max(sizes)
-    ok = np.array([s >= big * 0.12 for s in sizes]); ok[0] = False
+    ok = np.array([s >= big * frac - 1e-9 for s in sizes]); ok[0] = False
     return ok[lab]
 
 def _unused():
@@ -80,11 +96,17 @@ def _unused():
 
 sys.path.insert(0, __import__("os").path.dirname(__file__)); import gen
 raw = {n: cut(b, fl) for n, b, fl in F}
+# 원본 해상도에서 떠 있는 나침반·반짝이 떼기 (공격·시전 칸은 큰 검기는 남김)
+for n in raw:
+    if n.startswith('fx'): continue
+    if n.startswith('die'): raw[n] = gen.detach(raw[n], 3, 0.25)
+    else: raw[n] = gen.detach(raw[n], 5, 0.3 if n.rstrip('0123456789') in ('attack', 'cast') else 1.0)
 for n, img in gen.make_all(raw).items(): raw[n] = img
 parts = []
 for n, img in raw.items():
     c, k = shrink(img)
-    if not n.startswith('fx'): k = main_body(k)
+    # 몸에서 떨어진 조각(나침반·반짝이)은 지운다: 공격·시전 칸은 큰 검기만 남기고(30%), 나머지는 몸통만
+    if not n.startswith('fx'): k = main_body(k, 0.3 if n.split('_')[0].rstrip('0123456789') in ('attack', 'cast') else 0.25 if n.startswith('die') else 1.0)
     parts.append((n, c, k))
 
 # 공용 팔레트: 모든 프레임의 불투명 픽셀로 28색

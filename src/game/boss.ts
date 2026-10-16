@@ -32,6 +32,16 @@ const EXEC_TXT: Record<string, { name: string; shout: string; col: string }> = {
 };
 /** 즉사기 재사용 대기 (프레임) */
 const EXECUTE_CD = 900;
+// 스토리 5~6: 새 원거리·광역 패턴(보조로 동시 사용 가능)과 즉사기
+for (const n of ['galeWaves', 'floorSweep', 'checkerFloor', 'beamGrid', 'skyCurtain', 'bladeHalo']) REMOTE.add(n);
+for (const n of ['eclipseDive', 'worldSever']) EXECUTE.add(n);
+/** 스토리 5~6 즉사기 대사·이름 */
+const EXEC56: Record<string, { name: string; shout: string; col: string }> = {
+  kalais: { name: '폭풍의 낙인', shout: '하늘이 너를 표시했다! — 그림자 밖으로 벗어나라!', col: '#c0e0ff' },
+  noctis: { name: '극야의 낙하', shout: '밤의 날개가 너를 덮는다… 그림자에서 벗어나라!', col: '#80ffc0' },
+  sever: { name: '세계 절단', shout: '하늘과 땅을 갈라 놓겠다! — 땅에 엎드려라!', col: '#e0c0ff' },
+  iska: { name: '바깥의 해일', shout: '바다가 하늘을 덮는다… 땅에 붙어 있어라!', col: '#a0ffe0' },
+};
 
 interface Clone {
   x: number;
@@ -85,12 +95,17 @@ export class Boss extends Enemy {
   private safe: { x: number; y: number }[] = [];
   private clones: Clone[] = [];
   private side = 0;
+  /** 스토리 5~6 패턴 상태 (급강하 시작점·활강·즉사 기둥·바닥 쓸기 방향 등) */
+  private air = { x: 0, y: 0, tx: 0, ty: 0, dir: 1, hit: false, mk: null as { end: () => void } | null };
+  /** 분열 보스: 이미 분열했는지 / 분열체인지 */
+  private splitDone = false;
+  twin = false;
   /** 거울의 계약자: 플레이어의 현재 영웅 모습을 비춘다 */
   mirrorOf = '';
 
   constructor(id: string, x: number, y: number, curse: number, power = { hp: 1, atk: 1 }) {
     const bd = BOSS_MAP[id];
-    const fake: EnemyDef = { id, name: bd.name, chapter: bd.chapter, ai: 'boss', hp: bd.hp, atk: bd.atk, speed: 1, w: bd.w, h: bd.h, range: 0, windup: 0, cd: 0, kbRes: 1, gold: 0, col: bd.col, eliteSkill: 'enrage', weight: 0 };
+    const fake: EnemyDef = { id, name: bd.name, chapter: bd.chapter, ai: 'boss', hp: bd.hp, atk: bd.atk, speed: 1, w: bd.w, h: bd.h, range: 0, windup: 0, cd: 0, kbRes: 1, gold: 0, col: bd.col, eliteSkill: 'enrage', weight: 0, flying: bd.flying };
     super(fake, x, y, false, 1, 0, 0);
     this.bd = bd;
     this.isBoss = true;
@@ -131,6 +146,7 @@ export class Boss extends Enemy {
       this.anim = 'wind';
       this.pose = 'castUp';
       if (this.phaseT % 10 === 0) room.fx.ring(this.cx, this.cy, this.bd.col, 60);
+      if (this.phaseT === 60 && this.bd.split === this.phase && !this.splitDone) this.doSplit(room);
       if (this.phaseT === 0) {
         this.idleT = 30;
         this.pattern = '';
@@ -156,13 +172,15 @@ export class Boss extends Enemy {
     }
     if (this.execCd > 0) this.execCd--;
     this.runSubs(room);
+    if (this.pattern && !EXECUTE.has(this.pattern)) this.fillSubs();
     if (!this.pattern) {
       this.anim = 'idle';
       this.pose = 'idle0';
       this.state = 'idle';
       this.face(room);
       const dx = room.player.cx - this.cx;
-      if (this.bd.id !== 'mycora' && !this.bd.still) {
+      if (this.bd.flying) this.hover(room);
+      else if (this.bd.id !== 'mycora' && !this.bd.still) {
         if (Math.abs(dx) > 50 && this.b.onGround) {
           this.b.vx = Math.sign(dx) * (this.bd.id === 'ignis' ? 0.5 : this.bd.id === 'libra' ? 0.7 : 0.9);
           this.anim = 'move';
@@ -199,6 +217,10 @@ export class Boss extends Enemy {
       this.execCd = EXECUTE_CD;
       return; // 즉사기 중에는 다른 패턴을 겹치지 않는다
     }
+    if (this.bd.multi) {
+      this.fillSubs();
+      return;
+    }
     const heavy = this.bd.id === 'king' || this.bd.id === 'oblivion';
     const chance = ([0.4, 0.65, 0.85][this.phase] ?? 0.85) + (heavy ? 0.15 : 0);
     const maxSubs = this.phase >= 1 ? 2 : 1;
@@ -208,6 +230,53 @@ export class Boss extends Enemy {
       if (!cands.length) break;
       this.subs.push({ name: cands[Math.floor(Math.random() * cands.length)], t: 0 });
     }
+  }
+
+  /** multi 보스: 주 패턴과 함께 항상 (multi[페이즈] - 1)개의 보조 패턴이 돌아가도록 채운다 */
+  private fillSubs(): void {
+    const need = (this.bd.multi?.[this.phase] ?? 0) - 1;
+    if (need <= 0) return;
+    const all = this.bd.patterns[this.phase];
+    while (this.subs.length < need) {
+      const cands = all.filter((p) => REMOTE.has(p) && p !== this.pattern && !this.subs.some((s) => s.name === p));
+      if (!cands.length) break;
+      this.subs.push({ name: cands[Math.floor(Math.random() * cands.length)], t: 0 });
+    }
+  }
+
+  /** 비행 보스: 플레이어 위쪽 비스듬히 맴돈다 (점프 + 공중 공격이 닿는 높이) */
+  private hover(room: Room): void {
+    const p = room.player;
+    const gy = room.world.groundBelow(this.cx, this.b.y + this.b.h - 4);
+    const side = Math.floor(room.time / 240) % 2 ? 1 : -1;
+    const tx = Math.max(40, Math.min(room.world.pxW - 40, p.cx + side * 60));
+    const ty = gy - 58 - this.b.h + Math.sin(room.time * 0.05) * 8;
+    this.b.vx = Math.max(-1.8, Math.min(1.8, (tx - this.cx) * 0.04));
+    this.b.vy = Math.max(-1.6, Math.min(1.6, (ty - this.b.y) * 0.05));
+    this.anim = Math.abs(this.b.vx) > 0.4 ? 'move' : 'idle';
+  }
+
+  /** 한 번 분열: 본체의 50% 체력·공격력을 가진 분열체 (페이즈 전환 없음, 즉사기 없음, 동시 패턴 2개) */
+  private doSplit(room: Room): void {
+    this.splitDone = true;
+    const W = room.world.pxW;
+    const x = Math.max(40, Math.min(W - 40, this.cx + (this.cx < W / 2 ? 140 : -140)));
+    const gy = room.world.groundBelow(x, this.b.y);
+    const tw = new Boss(this.bd.id, x, gy, 0);
+    tw.bd = { ...this.bd, name: `${this.bd.name}의 분열체`, phases: [], patterns: [this.bd.patterns[this.phase].filter((p) => !EXECUTE.has(p))], multi: [2], split: undefined };
+    tw.twin = true;
+    tw.name = tw.bd.name;
+    tw.maxHp = tw.hp = Math.round(this.maxHp * 0.5);
+    tw.atk = Math.round(this.atk * 0.5);
+    tw.intro = 70;
+    tw.idleT = 60;
+    tw.facing = -this.facing;
+    room.enemies.push(tw);
+    room.bossShout(`${this.bd.name.split(' ').pop()}의 몸이 둘로 갈라졌다! 두 몸을 모두 쓰러뜨려라!`, this.bd.col);
+    room.fx.burst(this.cx, this.cy, this.bd.col, 40, 4);
+    room.fx.burst(x, gy - 20, this.bd.col, 40, 4);
+    room.flash(this.bd.col, 0.5);
+    audio.play('boss_roar', 1.2);
   }
 
   /** 보조 패턴 진행: 몸 상태를 저장했다가 되돌려 주 패턴의 동작·예고와 섞이지 않게 한다 */
@@ -859,15 +928,15 @@ export class Boss extends Enemy {
           audio.play('warn');
           const x = p.cx;
           const gy = room.world.groundBelow(x, p.b.y);
-          this.aim = { x, y: gy };
           room.marker(x - 60, gy - 50, 120, 50, 40, E.col, true);
-        }
-        if (t === 40) {
-          room.addField('enemy', { vis: E.vis, w: 120, h: 50, life: 150, tick: 24, m: 1, pull: 1.6, st: E.st }, this.aim.x - 60, this.aim.y - 50, Math.round(this.atk * 0.45), 'normal');
-          audio.play('cast');
-        }
-        if (p2 && t === 80) {
-          for (let i = 0; i < 8; i++) room.addProj('enemy', { spr: E.proj, spd: 2.2, life: 160, w: 9, h: 9, col: E.col, st: E.st }, this.aim.x, this.aim.y - 25, (i / 8) * Math.PI * 2, Math.round(this.atk * 0.5), 'normal');
+          // 위치는 지역 변수로 고정 (다른 패턴과 동시에 쓰여도 this.aim이 덮어써지지 않게)
+          room.enemyLater(40, () => {
+            room.addField('enemy', { vis: E.vis, w: 120, h: 50, life: 150, tick: 24, m: 1, pull: 1.6, st: E.st }, x - 60, gy - 50, Math.round(this.atk * 0.45), 'normal');
+            audio.play('cast');
+          });
+          if (p2) room.enemyLater(80, () => {
+            for (let i = 0; i < 8; i++) room.addProj('enemy', { spr: E.proj, spd: 2.2, life: 160, w: 9, h: 9, col: E.col, st: E.st }, x, gy - 25, (i / 8) * Math.PI * 2, Math.round(this.atk * 0.5), 'normal');
+          });
         }
         return t > 120;
       }
@@ -1022,19 +1091,19 @@ export class Boss extends Enemy {
           audio.play('warn');
           const x = p.cx;
           const gy = room.world.groundBelow(x, p.b.y);
-          this.aim = { x, y: gy };
           room.marker(x - 70, gy - 70, 140, 70, T, E.col, true);
-        }
-        if (t > T - 16 && t < T) {
-          const k = (T - t) / 16;
-          room.fx.parts.push({ x: this.aim.x + k * 60, y: this.aim.y - 40 - k * 200, vx: 0, vy: 0, life: 0, max: 6, col: E.col, size: 6, grav: 0, kind: 'px', drag: 1 });
-        }
-        if (t === T) {
-          room.enemyExplode(this.aim.x, this.aim.y - 20, 70, this.atk * 1.6, E.st);
-          room.fx.burst(this.aim.x, this.aim.y - 10, E.col, 40, 5);
-          room.flash(E.col, 0.5);
-          room.cam.shake(10, 30);
-          audio.play('explode', 0.6);
+          // 위치는 지역 변수로 고정 (다른 패턴과 동시에 쓰여도 this.aim이 덮어써지지 않게)
+          for (let i = 1; i < 16; i++) {
+            const k = (16 - i) / 16;
+            room.enemyLater(T - 16 + i, () => room.fx.parts.push({ x: x + k * 60, y: gy - 40 - k * 200, vx: 0, vy: 0, life: 0, max: 6, col: E.col, size: 6, grav: 0, kind: 'px', drag: 1 }));
+          }
+          room.enemyLater(T, () => {
+            room.enemyExplode(x, gy - 20, 70, this.atk * 1.6, E.st);
+            room.fx.burst(x, gy - 10, E.col, 40, 5);
+            room.flash(E.col, 0.5);
+            room.cam.shake(10, 30);
+            audio.play('explode', 0.6);
+          });
         }
         return t > T + 30;
       }

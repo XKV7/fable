@@ -4,7 +4,7 @@ import { enemyFrame, tinted, white } from '../gfx/sprites';
 import { rgba } from '../gfx/pixel';
 import type { Room } from './room';
 import type { StatusId } from './types';
-import { newBody, type Body } from './world';
+import { newBody, Tile, type Body } from './world';
 
 export type EState = 'spawn' | 'idle' | 'move' | 'wind' | 'atk' | 'recover' | 'hurt' | 'stun' | 'skill' | 'tele';
 
@@ -16,6 +16,8 @@ export class Enemy {
   b: Body;
   hp: number;
   maxHp: number;
+  /** 함정 피해 재사용 대기 */
+  hazCd = 0;
   atk: number;
   dead = false;
   deadT = 0;
@@ -234,6 +236,12 @@ export class Enemy {
       this.b.vx *= 0.8;
     }
     room.world.move(this.b, this.flying);
+    // 함정: 가시·용암에 닿으면 적도 피해 (보스·날아다니는 적은 제외, 0.67초마다)
+    if (this.hazCd > 0) this.hazCd--;
+    else if (!this.isBoss && !this.flying) {
+      const hz = room.world.hazardAt(this.b);
+      if (hz === Tile.Spike || hz === Tile.Lava) room.enemyHazard(this, hz);
+    }
     if (this.b.y > room.world.pxH + 40) {
       this.hp = 0;
       room.killEnemy(this);

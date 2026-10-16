@@ -1,11 +1,11 @@
 import { app, type Scene } from '../app';
-import { ACTIONS, ACTION_LABELS, keyName, padName } from '../core/input';
+import { ACTIONS, ACTION_LABELS, keyName } from '../core/input';
 import { text } from '../gfx/renderer';
 import { keyHint, panel } from '../ui/widgets';
 
 const EXTRA: [string, string][] = [
   ['콤보', '기본 공격을 연타 (캐릭터마다 3~5타). 마지막 타격은 강력한 피니시'],
-  ['대시 캔슬', '공격 도중 언제든 대시로 끊을 수 있다. 대시 중에는 무적'],
+  ['대시 캔슬', '공격 도중 언제든 대시로 끊을 수 있다. 대시 중과 끝난 직후 잠깐 무적'],
   ['대시 공격', '대시 중/직후에 공격 키'],
   ['공중', '2단 점프 + 공중 대시 1회. 공중 공격 가능'],
   ['발판', '아래 + 점프로 일방향 발판 아래로'],
@@ -26,14 +26,12 @@ export class ControlsScene implements Scene {
     text(g, '조작법', 240, 10, { size: 14, align: 'center', color: '#e0d0ff', bold: true });
     panel(g, 16, 32, 210, 220);
     text(g, '행동', 26, 38, { size: 7, color: '#8a8098' });
-    text(g, '키보드', 140, 38, { size: 7, color: '#8a8098' });
-    text(g, '패드', 196, 38, { size: 7, color: '#8a8098' });
+    text(g, '키보드', 120, 38, { size: 7, color: '#8a8098' });
     ACTIONS.forEach((a, i) => {
       const b = app.input.bindings[a];
       const y = 52 + i * 14;
       text(g, ACTION_LABELS[a], 26, y, { size: 7, color: '#f0e8d8' });
-      text(g, b.keys.map(keyName).join(' / '), 140, y, { size: 7, color: '#ffe080' });
-      text(g, b.pad.map(padName).join('/'), 196, y, { size: 7, color: '#a0d0ff' });
+      text(g, b.keys.map(keyName).join(' / '), 120, y, { size: 7, color: '#ffe080', maxW: 100 });
     });
     panel(g, 234, 32, 230, 220);
     text(g, '전투 요령', 244, 38, { size: 8, color: '#e0d0ff', bold: true });

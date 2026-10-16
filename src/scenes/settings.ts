@@ -1,6 +1,6 @@
 import { app, type Scene } from '../app';
 import { audio } from '../core/audio';
-import { ACTIONS, ACTION_LABELS, cloneBindings, DEFAULT_BINDINGS, keyName, padName, ARROW_BINDINGS, type Action } from '../core/input';
+import { ACTIONS, ACTION_LABELS, cloneBindings, DEFAULT_BINDINGS, keyName, ARROW_BINDINGS, type Action } from '../core/input';
 import { text } from '../gfx/renderer';
 import { newSave, sanitize } from '../game/save';
 import { button, hot, keyHint, Menu, panel } from '../ui/widgets';
@@ -223,8 +223,7 @@ export class SettingsScene implements Scene {
         if (i < ACTIONS.length) {
           const a = ACTIONS[i];
           const cap = this.mode === 'capture' && a === this.capAction;
-          text(g, cap ? '키 또는 패드 버튼을 누르세요…' : b[a].keys.map(keyName).join(' / '), 260, y, { size: 7, color: cap ? '#ff8080' : '#ffe080' });
-          text(g, b[a].pad.map(padName).join('/'), 400, y, { size: 7, align: 'right', color: '#a0d0ff' });
+          text(g, cap ? '키를 누르세요…' : b[a].keys.map(keyName).join(' / '), 260, y, { size: 7, color: cap ? '#ff8080' : '#ffe080', maxW: 140 });
         }
       });
       keyHint(g, [['↑↓', '선택'], ['Enter', '변경'], ['Esc', '돌아가기']], 260);

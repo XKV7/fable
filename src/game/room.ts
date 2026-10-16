@@ -19,7 +19,7 @@ import { NO_INPUT, Player, type ActKind, type PlayerInput } from './player';
 import type { PartyMember, RunState } from './run';
 import type { SaveData } from './save';
 import type { ActEvent, CondKey, Look, EffectDo, Element, FieldDef, ProjDef, Stats, StatusId, SummonDef } from './types';
-import { Tile, TS, World } from './world';
+import { Tile, TS, World, type Body } from './world';
 import { makeCanvas } from '../gfx/pixel';
 import { hdState, worldAbove } from '../gfx/hd';
 
@@ -219,6 +219,7 @@ export class Room {
       for (let x = 0; x < w; x++) if (rows[h - 2]?.[x] === '^') for (let y = h - 2; y < h; y++) this.world.set(x, y, Tile.Empty);
     }
     this.player = new Player(this, px, py);
+    this.unstick(this.player.b);
     this.light = makeCanvas(W, H);
     this.lightG = this.light.getContext('2d')!;
     this.build.exec = (d, ctx) => this.execEffect(d, ctx);
@@ -361,6 +362,51 @@ export class Room {
     if (w2.length) this.waves.push(w2);
   }
 
+  /** 몸이 벽·블록 안에 겹쳐 있으면 가장 가까운 빈자리(아래 → 위 → 좌우 순)로 옮긴다 (방 시작 끼임 방지) */
+  unstick(b: Body): void {
+    const hit = (x: number, y: number): boolean => {
+      for (const [ox, oy] of [[1, 1], [b.w - 1, 1], [1, b.h - 1], [b.w - 1, b.h - 1], [b.w / 2, b.h / 2]]) if (this.world.solidPx(x + ox, y + oy)) return true;
+      return false;
+    };
+    if (!hit(b.x, b.y)) return;
+    for (let d = 1; d <= 48; d++)
+      for (const [dx, dy] of [[0, d], [0, -d], [d, 0], [-d, 0], [d, -d], [-d, -d]]) {
+        if (!hit(b.x + dx, b.y + dy)) {
+          b.x += dx;
+          b.y += dy;
+          return;
+        }
+      }
+  }
+
+  /**
+   * 적이 서 있어도 되는 자리인가: 발밑 가까이에 단단한 바닥(가시·용암·허공 아님)이 있고 몸이 벽 속이 아님.
+   * 날아다니는 적은 벽 속만 아니면 된다.
+   */
+  private spawnOk(x: number, y: number, flying: boolean): boolean {
+    const w = this.world;
+    if (x < 20 || x > w.pxW - 20) return false;
+    if (w.solidPx(x, y - 6) || w.solidPx(x, y - 18)) return false;
+    if (flying) return true;
+    const gy = w.groundBelow(x, y - 4, 160);
+    if (gy > y + 150) return false; // 아래에 바닥이 없음 = 허공(구덩이). 조금 위에서 떨어져 내려앉는 소환 지점은 허용
+    const ft = w.get(Math.floor(x / TS), Math.floor((gy - 1) / TS));
+    const ft2 = w.get(Math.floor(x / TS), Math.floor((gy - 17) / TS));
+    if (ft === Tile.Spike || ft === Tile.Lava || ft2 === Tile.Spike || ft2 === Tile.Lava) return false;
+    const gt = w.get(Math.floor(x / TS), Math.floor(gy / TS));
+    return gt !== Tile.Spike && gt !== Tile.Lava && gt !== Tile.Empty;
+  }
+
+  /** 가까운 안전한 자리 찾기 (좌우로 16px씩 넓혀 가며) */
+  private safeSpot(x: number, y: number, flying: boolean): { x: number; y: number } | null {
+    for (let d = 0; d <= 200; d += 8)
+      for (const s of d ? [1, -1] : [1]) {
+        const xx = x + s * d;
+        if (this.spawnOk(xx, y, flying)) return { x: xx, y };
+      }
+    return null;
+  }
+
   private spawnWave(): void {
     const wave = this.waves.shift();
     if (!wave) return;
@@ -377,6 +423,10 @@ export class Room {
       // 플레이어 바로 옆 소환 방지
       if (Math.abs(spot.x - this.player.cx) < 60) spot = { x: spot.x + (spot.x < this.player.cx ? -60 : 60), y: spot.y };
       spot.x = Math.max(24, Math.min(this.world.pxW - 24, spot.x + (ei > eSpots.length ? (rng.next() - 0.5) * 40 : 0)));
+      // 함정(가시·용암)·허공 위나 벽 속에는 소환하지 않는다 → 가까운 안전한 자리로, 없으면 원래 소환 지점
+      const safe = this.safeSpot(spot.x, spot.y, !!w.flying);
+      if (safe) spot = safe;
+      else if (eSpots.length) spot = eSpots.find((p) => this.spawnOk(p.x, p.y, !!w.flying)) ?? eSpots[0];
       const e = this.makeEnemy(w.def, spot.x, w.flying ? spot.y - 20 : spot.y, w.elite);
       e.st = 40 + Math.floor(rng.next() * 30);
       this.enemies.push(e);
@@ -1192,6 +1242,21 @@ export class Room {
     this.hurtVignette = 30;
     if (t === Tile.Lava) p.dot.burn = 90;
     if (this.run.hp <= 0) this.playerDown(t === Tile.Lava ? '용암' : '가시 함정');
+  }
+
+  /** 적이 가시·용암에 닿음: 최대 체력의 15%(용암 20% + 화상), 위로 튕김 */
+  enemyHazard(e: Enemy, t: Tile): void {
+    if (e.dead) return;
+    const dmg = Math.max(1, Math.round(e.maxHp * (t === Tile.Lava ? 0.2 : 0.15)));
+    e.hp -= dmg;
+    e.hazCd = 40;
+    e.flash = 8;
+    e.b.vy = -4.5;
+    this.fx.number(e.cx, e.b.y, dmg, '#ff9a4a');
+    this.fx.burst(e.cx, e.b.y + e.b.h, t === Tile.Lava ? '#ff6a1a' : '#c8c0b0', 6, 1.5);
+    audio.play(t === Tile.Lava ? 'burn' : 'spike', 1.2);
+    if (t === Tile.Lava) e.applyStatus('burn', 1, this);
+    if (e.hp <= 0) this.killEnemy(e);
   }
 
   fellOut(): void {

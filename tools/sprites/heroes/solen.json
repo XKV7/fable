@@ -399,5 +399,16 @@
   }
  },
  "detach": 2,
- "detach_hi": 5
+ "detach_hi": 5,
+ "erase": {
+  "run": [
+   0,
+   0,
+   31,
+   36
+  ]
+ },
+ "level": [
+  "run"
+ ]
 }

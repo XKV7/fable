@@ -64,6 +64,8 @@ export class Player {
   swapCd = 0;
   swapMax = 7;
   inv = 0;
+  /** 대시 무적: 대시(11프레임)와 끝난 뒤 조금 더 (깜빡임 없이) */
+  dashInv = 0;
   hurtT = 0;
   flash = 0;
   animT = 0;
@@ -128,7 +130,7 @@ export class Player {
   }
 
   invulnerable(): boolean {
-    return this.inv > 0 || this.state === 'dash' || this.state === 'dead' || (this.act !== null && this.act.inv !== undefined && this.actF >= this.act.inv[0] && this.actF < this.act.inv[1]);
+    return this.inv > 0 || this.dashInv > 0 || this.state === 'dash' || this.state === 'dead' || (this.act !== null && this.act.inv !== undefined && this.actF >= this.act.inv[0] && this.actF < this.act.inv[1]);
   }
 
   // ───────── 업데이트 ─────────
@@ -138,6 +140,7 @@ export class Player {
     this.animT++;
     if (this.flash > 0) this.flash--;
     if (this.inv > 0) this.inv--;
+    if (this.dashInv > 0) this.dashInv--;
     if (this.comboWin > 0) this.comboWin--;
     else this.comboIdx = 0;
     if (this.jumpBuf > 0) this.jumpBuf--;
@@ -299,6 +302,7 @@ export class Player {
     this.endAct();
     this.state = 'dash';
     this.dashT = 11;
+    this.dashInv = 22;
     this.dashCharges--;
     this.dashRegen = 0.55 * (1 - Math.min(0.6, this.room.stats.dashCdr ?? 0));
     if (!this.b.onGround) this.airDashes++;

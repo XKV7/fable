@@ -84,6 +84,10 @@ raw = {}
 FXF = lambda n: n.split('_')[0].rstrip('0123456789') in ('attack', 'big', 'cast')
 for name, b in cfg['frames'].items():
     raw[name] = cut(b[:4], len(b) > 4 and b[4])
+    # erase: {칸 이름 접두어: [x0,y0,x1,y1]} — 칸 안 좌표의 사각형을 지운다 (늘 같은 자리에 떠 있는 구체 등)
+    for pre, (ex0, ey0, ex1, ey1) in cfg.get('erase', {}).items():
+        if name.rstrip('0123456789') == pre:
+            arr = np.asarray(raw[name]).copy(); arr[ey0:ey1, ex0:ex1, 3] = 0; raw[name] = Image.fromarray(arr, 'RGBA')
     # 원본 해상도에서 떠 있는 구체·반짝이 떼기 (공격·시전 칸은 큰 검기·마법진은 남김)
     if name.startswith('die'):  # 누운 몸은 가늘게 끊기기 쉬워 큰 조각은 모두 남김
         raw[name] = gen.detach(raw[name], 3, 0.25)
@@ -135,7 +139,18 @@ for name, col, keep in parts:
     band = body[:, max(0, cx - 9): cx + 10]
     fy = int(np.where(band.any(1))[0].max()) + 1
     frames[name] = {'w': W, 'h': H, 'ax': cx, 'ay': fy}
+    frames[name]['_top'] = int(by.min())
     tiles.append((name, Image.fromarray(out, 'RGBA')))
+
+# level: [칸 접두어] — 그 칸들의 머리 높이를 고르게 맞추고 1픽셀씩 규칙적으로 출렁이게 (그림마다 키가 달라 생기는 떨림 제거)
+for pre in cfg.get('level', []):
+    names = sorted((n for n in frames if n.rstrip('0123456789') == pre), key=lambda n: int(n[len(pre):]))
+    if not names: continue
+    hs = [frames[n]['ay'] - frames[n]['_top'] for n in names]
+    med = int(np.median(hs))
+    for i, n in enumerate(names):
+        frames[n]['ay'] = frames[n]['_top'] + med + (1 if i % 2 else 0)
+for f in frames.values(): f.pop('_top', None)
 
 def pack(tl):
     W = sum(t.width for _, t in tl) + len(tl); H = max(t.height for _, t in tl)

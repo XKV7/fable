@@ -358,16 +358,17 @@ export const CHARACTERS: CharDef[] = [
     ],
   },
   {
-    id: 'astera', name: '아스테라', title: '별을 떨어뜨리는 점성술사', rarity: 6, type: 'magic', crest: 'soul',
+    id: 'astera', name: '아스테라', title: '별을 떨어뜨리는 점성술사', rarity: 5, type: 'magic', crest: 'soul',
     lore: '천문탑의 마지막 점성술사. 왕국의 멸망을 예언했으나 아무도 믿지 않았다. 이제 그녀는 별을 직접 떨어뜨린다.',
     atk: 25, hp: 95, speed: 1.95, fx: '#ffe680',
     look: { skin: '#f8e8d8', hair: '#3a3a8a', hairStyle: 'long', body: '#1a1a4a', trim: '#ffe680', legs: '#14143a', boots: '#0a0a2a', cape: '#2a2a6a', eye: '#ffe680', weapon: 'orb', wcol: '#ffe680', wcol2: '#a0a0ff', build: 'slim', glow: '#ffe680', extra: 'halo' },
     combo: [
-      shot({ dur: 15, t: 5, m: 0.75, p: P.star(), s: 'cast', sfx: 'cast' }),
-      shot({ dur: 15, t: 5, m: 0.75, p: P.star(), s: 'cast', sfx: 'cast' }),
+      // 유도는 마지막 타(별 3발)에만
+      shot({ dur: 15, t: 5, m: 0.75, p: P.star('#ffe680', { home: 0 }), s: 'cast', sfx: 'cast' }),
+      shot({ dur: 15, t: 5, m: 0.75, p: P.star('#ffe680', { home: 0 }), s: 'cast', sfx: 'cast' }),
       shot({ dur: 26, t: 8, m: 0.65, n: 3, spread: 16, p: P.star('#fff0b0', { pierce: 1 }), w: 'castUp', s: 'cast', sfx: 'cast' }),
     ],
-    air: shot({ dur: 16, t: 4, m: 0.75, ang: 40, air: true, grav: 0.35, p: P.star(), s: 'cast' }),
+    air: shot({ dur: 16, t: 4, m: 0.75, ang: 40, air: true, grav: 0.35, p: P.star('#ffe680', { home: 0 }), s: 'cast' }),
     dashAtk: { dur: 18, pose: [[0, 'dash'], [6, 'cast']], move: [[0, 4], [10, 0]], inv: [0, 8], ev: [{ t: 6, k: 'nova', r: 32, m: 0.9, el: 'holy' }, { t: 6, k: 'sfx', s: 'cast' }] },
     skills: [
       { name: '유성우', desc: '전방 넓은 범위에 유성 일곱 개를 떨어뜨린다.', cd: 9, act: { dur: 30, pose: [[0, 'castUp']], ev: [{ t: 8, k: 'sfx', s: 'cast' }, { t: 10, k: 'meteor', n: 7, m: 1.1, spread: 110, el: 'holy' }] } },

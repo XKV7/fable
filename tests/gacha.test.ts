@@ -13,14 +13,14 @@ const pool: BannerPool = {
 };
 const pickupPool: BannerPool = { ...pool, kind: 'pickup', pickup5: ['a5'], pickup4: ['a4'] };
 
-describe('희귀도 확률표 (★7 0.01% · ★6 0.1% · ★5 0.5% · ★4 19.39% · ★3 80%)', () => {
+describe('희귀도 확률표 (★7 0.01% · ★6 0.1% · ★5 0.5% · ★4 9.39% · ★3 90%)', () => {
   it('수치와 합계', () => {
     expect(RATE_TABLE).toEqual([
       [7, 0.0001],
       [6, 0.001],
       [5, 0.005],
-      [4, 0.1939],
-      [3, expect.closeTo(0.8, 10)],
+      [4, 0.0939],
+      [3, expect.closeTo(0.9, 10)],
     ]);
     expect(RATE_TABLE.reduce((a, [, p]) => a + p, 0)).toBeCloseTo(1, 10);
   });
@@ -29,7 +29,8 @@ describe('희귀도 확률표 (★7 0.01% · ★6 0.1% · ★5 0.5% · ★4 19.3
     expect(at(0.00005)).toBe(7);
     expect(at(0.0005)).toBe(6);
     expect(at(0.003)).toBe(5);
-    expect(at(0.1)).toBe(4);
+    expect(at(0.05)).toBe(4);
+    expect(at(0.1)).toBe(3);
     expect(at(0.5)).toBe(3);
   });
   it('★6·★7 영웅이 있는 풀: 실제 비율과 천장 초기화', () => {
@@ -85,8 +86,8 @@ describe('10만 회 시뮬레이션 (천장 100회)', () => {
     }
     expect(Math.abs(n5 / N - 1 / e) / (1 / e)).toBeLessThan(0.08);
   });
-  it('★4 ≈ 19.39%', () => {
-    expect(GACHA.rate4).toBe(0.1939);
+  it('★4 ≈ 9.39%', () => {
+    expect(GACHA.rate4).toBe(0.0939);
     expect(Math.abs(n4 / N - GACHA.rate4)).toBeLessThan(0.006);
   });
   it('천장: ★5 간격은 100회를 넘지 않고, 천장까지 가는 경우가 존재', () => {

@@ -11,7 +11,7 @@ export const CHARACTERS_EX: CharDef[] = [
     // 컨셉아트: 검은 후드(흰 삼각 문양)·은발·보라 눈, 흰-청 줄무늬 롱코트, 푸른 별빛 장검, 등 뒤에 떠 있는 별의 나침반
     id: 'caelus', name: '카일루스', title: '별의 나침반을 쥔 검사', rarity: 7, type: 'speed', crest: 'soul',
     lore: '하늘에서 떨어진 별의 나침반을 주운 검사. 나침반이 가리키는 곳마다 별빛이 칼날이 되어 내려앉는다.',
-    atk: 36, hp: 150, speed: 2.25, fx: '#8a9aff',
+    atk: 56, hp: 240, speed: 2.25, fx: '#8a9aff',
     look: { skin: '#f4ecf0', hair: '#d8d8ec', hairStyle: 'starhood', body: '#1c1a2c', trim: '#a8c4ff', legs: '#15131f', boots: '#c8c8dc', cape: '#16141f', eye: '#a070ff', weapon: 'starblade', wcol: '#6a86ff', wcol2: '#26244a', build: 'normal', glow: '#9a8aff', extra: 'compass' },
     combo: [
       melee({ dur: 12, t: 4, m: 0.75, box: [0, -16, 36, 22], w: 'windHigh', s: 'slashDown', fx: { arc: 'down', r: 28, col: '#a8c0ff' }, hs: 3, lunge: 2.5 }),
@@ -27,11 +27,11 @@ export const CHARACTERS_EX: CharDef[] = [
           { t: 4, k: 'sfx', s: 'swing_heavy' },
           { t: 6, k: 'hit', box: [-20, -20, 56, 32], m: 1.2, kb: 3, hs: 6, el: 'holy', fx: { arc: 'circle', r: 30, col: '#8a9aff' }, shake: 3 },
           { t: 14, k: 'hit', box: [0, -18, 46, 26], m: 1.4, kb: 5, hs: 7, el: 'holy', fx: { arc: 'down', r: 36, col: '#c8e8ff' }, fin: true },
-          { t: 14, k: 'proj', p: { spr: 'crescent', spd: 5.5, life: 46, w: 20, h: 30, col: '#8a9aff', el: 'holy', pierce: 99 }, m: 1.1 },
+          { t: 14, k: 'proj', p: { spr: 'crescent', spd: 5, life: 70, w: 30, h: 54, col: '#8a9aff', el: 'holy', pierce: 99, home: 0.09 }, m: 1.1 },
         ],
       },
     ],
-    air: melee({ dur: 16, t: 4, m: 0.85, box: [0, -6, 34, 26], w: 'windHigh', s: 'slashDown', fx: { arc: 'down', r: 28, col: '#a8c0ff' }, air: true, grav: 0.3, hs: 3, extra: [{ t: 4, k: 'proj', p: { spr: 'crescent', spd: 5, life: 26, w: 14, h: 20, col: '#a8c0ff', el: 'holy', pierce: 3 }, m: 0.5, ang: 30 }] }),
+    air: melee({ dur: 16, t: 4, m: 0.85, box: [0, -6, 34, 26], w: 'windHigh', s: 'slashDown', fx: { arc: 'down', r: 28, col: '#a8c0ff' }, air: true, grav: 0.3, hs: 3, extra: [{ t: 4, k: 'proj', p: { spr: 'crescent', spd: 5, life: 40, w: 20, h: 34, col: '#a8c0ff', el: 'holy', pierce: 3, home: 0.09 }, m: 0.5, ang: 30 }] }),
     dashAtk: melee({ dur: 20, t: 5, m: 1.5, box: [-10, -14, 56, 18], w: 'thrustWind', s: 'thrust', fx: { arc: 'h', r: 44, col: '#8a9aff' }, lunge: 8, hs: 5, el: 'holy', inv: [0, 10] }),
     skills: [
       {

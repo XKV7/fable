@@ -379,8 +379,9 @@ export class Player {
     if (this.state === 'dash') return false;
     let act: ActionDef;
     if (kind === 'combo') {
-      if (this.actKind === 'combo' && this.state === 'act') this.comboIdx = (this.comboIdx + 1) % d.combo.length;
-      else if (this.comboWin <= 0) this.comboIdx = 0;
+      // 콤보 중이거나, 끝난 직후 연계 시간(comboWin) 안이면 다음 타. 공격 속도가 빨라 동작이 먼저 끝나도 이어진다
+      if ((this.actKind === 'combo' && this.state === 'act') || this.comboWin > 0) this.comboIdx = (this.comboIdx + 1) % d.combo.length;
+      else this.comboIdx = 0;
       act = d.combo[this.comboIdx];
     } else if (kind === 'air') {
       if (this.airAtks >= 3) return false;

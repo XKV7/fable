@@ -47,7 +47,19 @@ export class Projectile {
     this.t++;
     const d = this.def;
     if (d.home) {
-      const tgt = this.team === 'player' ? room.nearestEnemy(this.x, this.y, 220) : room.player;
+      // 관통 투사체가 이미 맞힌 적 주위를 맴돌지 않도록, 아직 안 맞힌 가장 가까운 적을 쫓는다 (없으면 직진)
+      let tgt: unknown = this.team === 'player' ? null : room.player;
+      if (this.team === 'player') {
+        let best = 220;
+        for (const e of room.allEnemies()) {
+          if (e.dead || e.state === 'spawn' || this.hit.has(e)) continue;
+          const dd = Math.hypot(e.cx - this.x, e.cy - this.y);
+          if (dd < best) {
+            best = dd;
+            tgt = e;
+          }
+        }
+      }
       if (tgt) {
         const tx = tgt === room.player ? room.player.cx : (tgt as { cx: number }).cx;
         const ty = tgt === room.player ? room.player.cy : (tgt as { cy: number }).cy;
@@ -237,7 +249,7 @@ export class Projectile {
         g.rotate(ang);
         g.globalCompositeOperation = 'lighter';
         g.strokeStyle = rgba(col, 0.85);
-        g.lineWidth = 3;
+        g.lineWidth = Math.max(3, Math.round(r / 6));
         g.beginPath();
         g.arc(-r * 0.4, 0, r, -Math.PI / 2.4, Math.PI / 2.4);
         g.stroke();

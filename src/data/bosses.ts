@@ -1,5 +1,6 @@
 import type { FieldVis, ProjSprite, StatusId } from '../game/types';
 import { STORY_BOSSES } from './bosses2';
+import { STORY_BOSSES_56 } from './bosses3';
 
 /** 범용 패턴용 속성 (색·장판 모양·낙하체·탄) */
 export interface BossElem {
@@ -26,6 +27,9 @@ export interface BossDef {
   mult?: number; // 체력·공격력 배율 (기본 BOSS_TUNE)
   elem?: BossElem;
   still?: boolean; // 제자리에서 움직이지 않는다
+  flying?: boolean; // 날아다닌다 (중력 없음, 공중에 떠서 맴돌다가 급강하 패턴 뒤 잠시 땅에 머문다)
+  multi?: number[]; // 페이즈별 최소 동시 사용 패턴 수 (주 패턴 + 보조 패턴). 없으면 확률로 0~2개 보조
+  split?: number; // 이 페이즈에 들어설 때 한 번 분열: 본체의 50% 체력·공격력을 가진 분열체가 나온다
 }
 
 /** 보스 기본 체력·공격력 배율. 끝없는 왕 3배, 망각 4배는 각 정의의 mult로 지정. */
@@ -100,7 +104,7 @@ export const BOSSES: BossDef[] = [
   },
 ];
 
-BOSSES.push(...STORY_BOSSES);
+BOSSES.push(...STORY_BOSSES, ...STORY_BOSSES_56);
 
 export const BOSS_MAP: Record<string, BossDef> = Object.fromEntries(BOSSES.map((b) => [b.id, b]));
 

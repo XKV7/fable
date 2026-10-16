@@ -426,6 +426,150 @@ function storyFar(g: CanvasRenderingContext2D, kind: number, bg: [string, string
         g.fillRect(x - 3, LH - h, 24, 5);
       }
       break;
+    case 41: // 떠 있는 부두와 돛대, 구름
+    case 45: // 하늘 회랑: 떠 있는 아치와 구름
+      g.fillStyle = 'rgba(255,255,255,0.1)';
+      for (let i = 0; i < 12; i++) {
+        g.beginPath();
+        g.ellipse(r() * LW, 60 + r() * 170, 50 + r() * 60, 10 + r() * 12, 0, 0, Math.PI * 2);
+        g.fill();
+      }
+      g.fillStyle = bg[1];
+      for (let x = 10; x < LW; x += 120 + r() * 70) {
+        const y = 90 + r() * 110;
+        if (kind === 41) {
+          g.fillRect(x, y, 70, 8);
+          g.fillRect(x + 30, y - 70, 3, 70);
+          g.beginPath();
+          g.moveTo(x + 33, y - 66);
+          g.lineTo(x + 58, y - 30);
+          g.lineTo(x + 33, y - 24);
+          g.fill();
+          for (let k = 0; k < 4; k++) g.fillRect(x + 6 + k * 18, y + 8, 3, 18 + r() * 20);
+        } else {
+          g.fillRect(x, y, 10, LH - y);
+          g.fillRect(x + 60, y, 10, LH - y);
+          g.beginPath();
+          g.arc(x + 35, y, 35, Math.PI, 0);
+          g.lineWidth = 8;
+          g.strokeStyle = bg[1];
+          g.stroke();
+        }
+      }
+      break;
+    case 42: // 위로 거슬러 오르는 물줄기
+      g.fillStyle = bg[1];
+      for (let x = 0; x < LW; x += 60 + r() * 50) {
+        const w = 14 + r() * 20;
+        g.fillRect(x, 0, w, LH);
+        g.fillStyle = 'rgba(200,250,255,0.12)';
+        for (let y = 0; y < LH; y += 10 + r() * 16) g.fillRect(x + r() * w, y, 2, 6);
+        g.fillStyle = bg[1];
+      }
+      break;
+    case 43: // 거대한 고래 갈비뼈
+      for (let i = 0; i < 9; i++) {
+        const x = 40 + i * 70;
+        g.strokeStyle = bg[1];
+        g.lineWidth = 9;
+        g.beginPath();
+        g.arc(x + 60, LH + 20, 120 + (i % 3) * 10, Math.PI * 1.05, Math.PI * 1.45);
+        g.stroke();
+      }
+      g.fillStyle = bg[1];
+      g.fillRect(0, LH - 24, LW, 24);
+      break;
+    case 44: // 깃털 첨탑의 사원
+      for (let x = 0; x < LW; x += 80 + r() * 40) {
+        const h = 90 + r() * 110;
+        g.fillRect(x, LH - h, 26, h);
+        g.beginPath();
+        g.moveTo(x - 6, LH - h);
+        g.quadraticCurveTo(x + 13, LH - h - 60, x + 32, LH - h);
+        g.fill();
+      }
+      g.fillStyle = 'rgba(255,240,208,0.15)';
+      for (let i = 0; i < 20; i++) g.fillRect(r() * LW, r() * LH, 2, 5);
+      break;
+    case 46: // 하늘을 가르는 상처
+    case 56: // 바깥의 문
+      stars(60, kind === 46 ? 'rgba(224,192,255,A)' : 'rgba(160,255,224,A)');
+      g.strokeStyle = kind === 46 ? 'rgba(224,192,255,0.5)' : 'rgba(160,255,224,0.45)';
+      g.lineWidth = 3;
+      g.beginPath();
+      if (kind === 46) {
+        g.moveTo(80, 10);
+        for (let k = 1; k <= 8; k++) g.lineTo(80 + k * 60 + (r() - 0.5) * 30, 10 + k * 22);
+      } else {
+        g.rect(270, 40, 100, 170);
+        g.moveTo(320, 40);
+        g.lineTo(320, 210);
+      }
+      g.stroke();
+      g.fillStyle = bg[1];
+      for (let i = 0; i < 26; i++) g.fillRect(r() * LW, 120 + r() * 150, 3 + r() * 10, 2 + r() * 6);
+      break;
+    case 51: // 기울어진 등대와 수면
+      g.fillStyle = 'rgba(255,232,160,0.08)';
+      g.beginPath();
+      g.moveTo(330, 70);
+      g.lineTo(640, 30);
+      g.lineTo(640, 120);
+      g.fill();
+      g.fillStyle = bg[1];
+      g.fillRect(310, 70, 40, LH - 70);
+      g.fillRect(304, 60, 52, 12);
+      for (let x = 0; x < LW; x += 70 + r() * 60) {
+        const h = 40 + r() * 70;
+        g.fillRect(x, LH - h, 30, h);
+      }
+      g.fillStyle = 'rgba(160,220,255,0.06)';
+      g.fillRect(0, 40, LW, 4);
+      break;
+    case 52: // 산호와 묘비
+      for (let x = 0; x < LW; x += 40 + r() * 40) {
+        const h = 50 + r() * 100;
+        g.fillRect(x, LH - h, 6, h);
+        for (let k = 0; k < 3; k++) g.fillRect(x + (k % 2 ? 6 : -8), LH - h + 10 + k * 20, 8, 4);
+        if (r() < 0.5) {
+          g.fillRect(x + 16, LH - 30, 14, 30);
+          g.beginPath();
+          g.arc(x + 23, LH - 30, 7, Math.PI, 0);
+          g.fill();
+        }
+      }
+      break;
+    case 53: // 해구의 절벽
+      for (let x = 0; x < LW; x += 30 + r() * 30) {
+        const h = 160 + r() * 100;
+        g.fillRect(x, LH - h, 26, h);
+      }
+      g.fillStyle = 'rgba(112,144,255,0.12)';
+      for (let i = 0; i < 14; i++) g.fillRect(r() * LW, r() * LH, 2, 2);
+      break;
+    case 54: // 거꾸로 매달린 도시
+      for (let x = 0; x < LW; x += 46 + r() * 30) {
+        const h = 60 + r() * 120;
+        g.fillRect(x, 0, 34, h);
+        tri(x - 2, h, 38, -16);
+        g.fillStyle = 'rgba(255,208,128,0.2)';
+        for (let y = 10; y < h - 10; y += 16) g.fillRect(x + 8, y, 5, 6);
+        g.fillStyle = bg[1];
+        const h2 = 40 + r() * 60;
+        g.fillRect(x + 6, LH - h2, 26, h2);
+      }
+      break;
+    case 55: // 검은 오로라와 빙산
+      for (let k = 0; k < 3; k++) {
+        g.strokeStyle = `rgba(128,255,192,${0.12 + k * 0.05})`;
+        g.lineWidth = 10 - k * 3;
+        g.beginPath();
+        for (let x = 0; x <= LW; x += 20) g.lineTo(x, 50 + k * 18 + Math.sin(x * 0.015 + k) * 24);
+        g.stroke();
+      }
+      g.fillStyle = bg[1];
+      for (let x = -20; x < LW; x += 90 + r() * 60) tri(x, LH, 70 + r() * 40, 50 + r() * 70);
+      break;
     default: // 36 계약의 근원: 동심원과 빛줄기
       g.strokeStyle = 'rgba(255,240,192,0.18)';
       g.lineWidth = 1;
@@ -449,7 +593,8 @@ function storyMid(g: CanvasRenderingContext2D, kind: number, col: string, alpha:
     const h = 110 + r() * 80;
     switch (kind) {
       case 14:
-      case 31: // 덩굴 기둥 / 산호 기둥
+      case 31:
+      case 52: // 덩굴 기둥 / 산호 기둥
         g.fillRect(x, LH - h, 12, h);
         for (let y = LH - h; y < LH; y += 14) g.fillRect(x + (y % 28 ? -6 : 12), y, 6, 4);
         break;
@@ -459,12 +604,15 @@ function storyMid(g: CanvasRenderingContext2D, kind: number, col: string, alpha:
         g.fillRect(x + 18, LH - h + 10, 22, 4);
         g.fillRect(x - 18, LH - h + 30, 18, 4);
         break;
-      case 23: // 늘어진 쇠사슬
+      case 23:
+      case 41:
+      case 51: // 늘어진 쇠사슬 / 닻줄
         g.fillRect(x, 0, 10, LH);
         for (let y = 0; y < 80 + r() * 60; y += 6) g.fillRect(x + 40, y, 2, 4);
         break;
       case 15:
-      case 35: // 톱니바퀴
+      case 35:
+      case 54: // 톱니바퀴
         g.beginPath();
         g.arc(x + 30, LH - h + 30, 26, 0, Math.PI * 2);
         g.fill();

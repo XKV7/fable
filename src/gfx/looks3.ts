@@ -1,0 +1,42 @@
+import type { Look } from '../game/types';
+
+/** 스토리 5~6 인간형 적·보스 외형 (looks2.ts의 STORY_LOOKS에 합쳐진다) */
+
+export const STORY_LOOKS_56: Record<string, Look> = {
+  // ───────── 스토리 5: 찢어진 하늘 ─────────
+  sky_pirate: { skin: '#c09a7a', hair: '#3a2a1a', hairStyle: 'short', body: '#5a4a3a', trim: '#a0d0f0', legs: '#3a3a4a', boots: '#2a2018', eye: '#ffd080', weapon: 'sword', wcol: '#c0c0c8', wcol2: '#5a4030', build: 'normal', cape: '#3a5a7a', extra: 'scarf' },
+  harpoon_gunner: { skin: '#b09a80', hair: '#5a4a3a', hairStyle: 'hood', body: '#4a5a6a', trim: '#d0e0f0', legs: '#2a3440', boots: '#1a1a20', eye: '#a0d0ff', weapon: 'spear', wcol: '#d0e0f0', wcol2: '#5a4a3a', build: 'normal', cape: '#3a4a5a' },
+  mist_maiden: { skin: '#e0f0f8', hair: '#a0e0f0', hairStyle: 'veil', body: '#5a9ab0', trim: '#e0ffff', legs: '#3a6a80', boots: '#1a3440', eye: '#a0f0ff', weapon: 'orb', wcol: '#a0f0ff', wcol2: '#3a6a80', build: 'slim', glow: '#a0f0ff' },
+  torrent_monk: { skin: '#a0b8c0', hair: '#2a4a5a', hairStyle: 'bald', body: '#2a5a6a', trim: '#a0f0ff', legs: '#1a3a48', boots: '#0e1e26', eye: '#a0f0ff', weapon: 'fists', wcol: '#a0f0ff', wcol2: '#2a5a6a', build: 'slim', extra: 'scarf' },
+  whalebone_warrior: { skin: '#a0a8a8', hair: '#e0e0d0', hairStyle: 'skull', body: '#5a6a6a', trim: '#e0e0d0', legs: '#3a4444', boots: '#202828', eye: '#80e0ff', weapon: 'lance', wcol: '#e0e0d0', wcol2: '#5a6a6a', build: 'normal', cape: '#3a4a4a' },
+  feather_monk: { skin: '#e0c8a8', hair: '#fff0d0', hairStyle: 'hood', body: '#c0a070', trim: '#ffffff', legs: '#8a7050', boots: '#4a3a28', eye: '#ffe0a0', weapon: 'staff', wcol: '#fff0d0', wcol2: '#8a7050', build: 'slim', extra: 'wings' },
+  plume_archer: { skin: '#d8b090', hair: '#fff0d0', hairStyle: 'pony', body: '#8a6a4a', trim: '#fff0d0', legs: '#5a4a34', boots: '#3a2a1a', eye: '#ffe080', weapon: 'bow', wcol: '#8a6a4a', wcol2: '#fff0d0', build: 'slim', cape: '#c0a070' },
+  storm_paladin: { skin: '#b0c0d0', hair: '#c0d0e0', hairStyle: 'helm', body: '#5a6a8a', trim: '#e0f0ff', legs: '#3a4460', boots: '#1e2436', eye: '#e0f0ff', weapon: 'hammer', wcol: '#c0e0ff', wcol2: '#4a5a7a', shield: '#8aa0c0', build: 'big', cape: '#3a4a7a', glow: '#c0e0ff' },
+  gale_sorcerer: { skin: '#d0d8e8', hair: '#e0f0ff', hairStyle: 'witch', body: '#3a4a7a', trim: '#c0e0ff', legs: '#24304a', boots: '#141a2a', eye: '#ffffff', weapon: 'staff', wcol: '#c0e0ff', wcol2: '#3a4a7a', build: 'slim', cape: '#2a3a6a', glow: '#c0e0ff', extra: 'scarf' },
+  rift_stalker: { skin: '#3a2a4a', hair: '#c0a0ff', hairStyle: 'hood', body: '#24183a', trim: '#c0a0ff', legs: '#160e24', boots: '#0a0612', eye: '#e0c0ff', weapon: 'daggers', wcol: '#e0c0ff', wcol2: '#3a2a5a', build: 'slim', cape: '#1a1028', glow: '#c0a0ff' },
+  torn_angel: { skin: '#e0d8e8', hair: '#d0c0e0', hairStyle: 'long', body: '#8a7aa0', trim: '#ffffff', legs: '#5a4a70', boots: '#2a2238', eye: '#ff80d0', weapon: 'lance', wcol: '#e0d0ff', wcol2: '#5a4a70', build: 'slim', glow: '#e0c0ff', extra: 'wings' },
+  // ───────── 스토리 6: 바깥의 바다 ─────────
+  lamp_drowned: { skin: '#7a9a9a', hair: '#2a3a3a', hairStyle: 'short', body: '#3a5050', trim: '#ffe8a0', legs: '#2a3a3a', boots: '#141e1e', eye: '#ffe8a0', weapon: 'shovel', wcol: '#8a8a7a', wcol2: '#4a3a2a', build: 'normal', extra: 'chains' },
+  coral_bride: { skin: '#f0d0d8', hair: '#ff90b0', hairStyle: 'veil', body: '#e0c0c8', trim: '#ff90b0', legs: '#a08088', boots: '#5a3a40', eye: '#ff6090', weapon: 'flask', wcol: '#ff90b0', wcol2: '#e0c0c8', build: 'slim', glow: '#ff90b0' },
+  trench_diver: { skin: '#5a6a7a', hair: '#8a9aaa', hairStyle: 'helm', body: '#3a4a5a', trim: '#7090ff', legs: '#2a3440', boots: '#141a20', eye: '#7090ff', weapon: 'spear', wcol: '#a0b0c0', wcol2: '#3a4a5a', build: 'big', glow: '#7090ff' },
+  silent_monk: { skin: '#8a90a0', hair: '#1a1e2a', hairStyle: 'hood', body: '#1e2434', trim: '#7090ff', legs: '#141824', boots: '#0a0c14', eye: '#a0b0ff', weapon: 'talisman', wcol: '#7090ff', wcol2: '#1e2434', build: 'slim', cape: '#141824' },
+  inverted_citizen: { skin: '#d0b098', hair: '#5a4030', hairStyle: 'short', body: '#8a6a4a', trim: '#ffd080', legs: '#5a4a3a', boots: '#2a2018', eye: '#ffd080', weapon: 'fists', wcol: '#c0a080', wcol2: '#5a4030', build: 'normal', extra: 'scarf' },
+  city_watch: { skin: '#b09a80', hair: '#4a3a2a', hairStyle: 'helm', body: '#6a5a3a', trim: '#ffd080', legs: '#4a3e2a', boots: '#241c14', eye: '#ffd080', weapon: 'mace', wcol: '#c0a060', wcol2: '#4a3e2a', shield: '#8a7a5a', build: 'big', cape: '#5a3a2a' },
+  polar_hunter: { skin: '#c0d0d8', hair: '#e0ffff', hairStyle: 'hood', body: '#4a6a7a', trim: '#e0ffff', legs: '#2a4450', boots: '#14242a', eye: '#80ffc0', weapon: 'bow', wcol: '#8aa0b0', wcol2: '#e0ffff', build: 'slim', cape: '#e0f0f0' },
+  outer_knight: { skin: '#3a4a4a', hair: '#a0ffe0', hairStyle: 'horned', body: '#1e2e2e', trim: '#a0ffe0', legs: '#142020', boots: '#0a1010', eye: '#a0ffe0', weapon: 'greatsword', wcol: '#a0ffe0', wcol2: '#1e2e2e', shield: '#2a4040', build: 'big', glow: '#a0ffe0' },
+  unmade: { skin: '#e0fff8', hair: '#ffffff', hairStyle: 'bald', body: '#c0e0d8', trim: '#ffffff', legs: '#90b0a8', boots: '#5a7a70', eye: '#000000', weapon: 'claws', wcol: '#ffffff', wcol2: '#a0ffe0', build: 'slim', glow: '#d0fff0' },
+
+  // ───────── 보스 ─────────
+  branik: { skin: '#b09070', hair: '#3a2a20', hairStyle: 'horned', body: '#3a4a5a', trim: '#a0d0f0', legs: '#2a3040', boots: '#141820', eye: '#a0d0f0', weapon: 'axe', wcol: '#c0c8d0', wcol2: '#4a3a2a', build: 'big', cape: '#2a3a5a', glow: '#a0d0f0', extra: 'chains' },
+  lyanne: { skin: '#e8f4f8', hair: '#c0f0ff', hairStyle: 'long', body: '#3a7a9a', trim: '#e0ffff', legs: '#24546a', boots: '#10303e', eye: '#a0f0ff', weapon: 'rapier', wcol: '#d0f8ff', wcol2: '#3a7a9a', build: 'slim', cape: '#2a6a8a', glow: '#a0f0ff', extra: 'scarf' },
+  osric: { skin: '#a0b0b0', hair: '#e0e0d0', hairStyle: 'skull', body: '#4a5a5a', trim: '#c0e0e0', legs: '#2e3a3a', boots: '#161e1e', eye: '#80e0ff', weapon: 'staff', wcol: '#e0e0d0', wcol2: '#4a5a5a', build: 'big', cape: '#3a4a4a', glow: '#c0e0e0', extra: 'chains' },
+  penna: { skin: '#f0e0c8', hair: '#ffffff', hairStyle: 'crown', body: '#e0d0b0', trim: '#ffd080', legs: '#a08a68', boots: '#5a4a34', eye: '#ffd080', weapon: 'lute', wcol: '#fff0d0', wcol2: '#a08a68', build: 'slim', cape: '#fff0d0', glow: '#fff0d0', extra: 'wings' },
+  kalais: { skin: '#d0e0f0', hair: '#e0f0ff', hairStyle: 'spiky', body: '#2a3a6a', trim: '#c0e0ff', legs: '#1a2448', boots: '#0c1224', eye: '#ffffff', weapon: 'spear', wcol: '#e0f0ff', wcol2: '#3a4a8a', build: 'normal', cape: '#3a5a9a', glow: '#c0e0ff', extra: 'wings' },
+  sever: { skin: '#2a2034', hair: '#e0c0ff', hairStyle: 'horned', body: '#1a1028', trim: '#e0c0ff', legs: '#100a1a', boots: '#06040c', eye: '#ffffff', weapon: 'starblade', wcol: '#e0c0ff', wcol2: '#4a2a6a', build: 'big', cape: '#3a1a5a', glow: '#e0c0ff', extra: 'scarf' },
+  halvard: { skin: '#8aa0a0', hair: '#c0c0b0', hairStyle: 'bald', body: '#2a4040', trim: '#ffe8a0', legs: '#1a2a2a', boots: '#0e1616', eye: '#ffe8a0', weapon: 'hammer', wcol: '#8a8a7a', wcol2: '#ffe8a0', build: 'big', cape: '#1e3030', glow: '#ffe8a0', extra: 'chains' },
+  coralie: { skin: '#f8e0e8', hair: '#ff90b0', hairStyle: 'veil', body: '#f0d8e0', trim: '#ff90b0', legs: '#c0a0b0', boots: '#6a4a58', eye: '#ff6090', weapon: 'scythe', wcol: '#ff90b0', wcol2: '#f0d8e0', build: 'slim', cape: '#ffd0e0', glow: '#ff90b0' },
+  nekton: { skin: '#3a4a6a', hair: '#7090ff', hairStyle: 'horned', body: '#14183a', trim: '#7090ff', legs: '#0c1028', boots: '#060814', eye: '#a0c0ff', weapon: 'axe', wcol: '#7090ff', wcol2: '#14183a', build: 'big', cape: '#0c1030', glow: '#7090ff', extra: 'tail' },
+  vesper: { skin: '#e0c8b0', hair: '#5a3a2a', hairStyle: 'crown', body: '#5a3a2a', trim: '#ffd080', legs: '#3a2418', boots: '#1e120c', eye: '#ffd080', weapon: 'clock', wcol: '#ffd080', wcol2: '#5a3a2a', build: 'normal', cape: '#8a2a2a', glow: '#ffd080', extra: 'compass' },
+  noctis: { skin: '#1a2a2a', hair: '#80ffc0', hairStyle: 'long', body: '#0e1a1e', trim: '#80ffc0', legs: '#081214', boots: '#04080a', eye: '#c0ffe0', weapon: 'scythe', wcol: '#80ffc0', wcol2: '#1a3a3a', build: 'slim', cape: '#103a3a', glow: '#80ffc0', extra: 'wings' },
+  iska: { skin: '#e0fff8', hair: '#a0ffe0', hairStyle: 'starhood', body: '#0e1e1e', trim: '#a0ffe0', legs: '#081414', boots: '#040a0a', eye: '#ffffff', weapon: 'greatsword', wcol: '#a0ffe0', wcol2: '#e0fff8', build: 'big', cape: '#a0ffe0', glow: '#a0ffe0', extra: 'halo' },
+};

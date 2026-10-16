@@ -1,4 +1,5 @@
 import type { Look } from '../game/types';
+import { STORY_LOOKS_56 } from './looks3';
 
 /** 스토리 2~4 인간형 적·보스 외형 (절차 인간형 생성기 입력) */
 
@@ -60,5 +61,7 @@ export const STORY_LOOKS: Record<string, Look> = {
   mirror: { skin: '#d0d0e8', hair: '#ffffff', hairStyle: 'short', body: '#8080b0', trim: '#ffffff', legs: '#6a6a90', boots: '#4a4a6a', eye: '#4060ff', weapon: 'sword', wcol: '#ffffff', wcol2: '#8080b0', build: 'normal', cape: '#a0a0d0', glow: '#ffffff' },
   aeon: { skin: '#e0d0b0', hair: '#ffe0a0', hairStyle: 'helm', body: '#7a6a40', trim: '#ffe0a0', legs: '#5a4a30', boots: '#2a2014', eye: '#ffe0a0', weapon: 'clock', wcol: '#ffe0a0', wcol2: '#7a6a40', build: 'big', cape: '#5a4a2a', glow: '#ffe0a0', extra: 'halo' },
   arche: { skin: '#f0e8ff', hair: '#fff0c0', hairStyle: 'crown', body: '#1c162e', trim: '#fff0c0', legs: '#120e1e', boots: '#08060e', eye: '#fff0c0', weapon: 'greatsword', wcol: '#fff0c0', wcol2: '#e0d0ff', build: 'big', cape: '#e0d0ff', glow: '#fff0c0', extra: 'wings' },
+  // 스토리 5~6
+  ...STORY_LOOKS_56,
 };
 

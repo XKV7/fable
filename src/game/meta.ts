@@ -3,6 +3,7 @@ import { GACHA, type BannerKind } from '../data/gacha';
 import { ACHIEVEMENTS, CURSES } from '../data/meta';
 import { WEAPONS, WEAPON_MAP } from '../data/weapons';
 import { BOSSES } from '../data/bosses';
+import { STORIES } from '../data/stories';
 import { pullMany, type BannerPool } from './gacha';
 import type { RunState } from './run';
 import { MAX_AWAKEN, MAX_REFINE, type SaveData } from './save';
@@ -134,6 +135,9 @@ export interface RunSummary {
   stones: number;
   crystals: number;
   bonusStones: number; // 첫 처치 보상
+  /** 출정 보상: 기본 150(패배해도) + 클리어한 챕터마다 1600 */
+  runStones: number;
+  chaptersCleared: number;
   chapter: number;
   victory: boolean;
   newAch: string[];
@@ -143,6 +147,9 @@ export interface RunSummary {
   storyFirstClear: boolean;
   storyUnlocked: number;
 }
+
+/** 출정 보상 (영혼석) */
+export const RUN_REWARD = { base: 150, perChapter: 1600, perRushBoss: 400 };
 
 /** 런 종료 정산 */
 export function finishRun(save: SaveData, run: RunState): RunSummary {
@@ -158,7 +165,11 @@ export function finishRun(save: SaveData, run: RunState): RunSummary {
   }
   const stones = Math.round(st.stones * stoneMul);
   const crystals = Math.round(st.crystals * (1 + (CURSES[run.curse]?.reward ?? 0) * 0.5));
-  save.stones += stones + bonus;
+  // 출정 보상: 패배해도 150, 그 런에서 클리어한 챕터(보스 처치)마다 1600
+  const chaptersCleared = st.bosses.length;
+  const runStones = RUN_REWARD.base + (run.bossRush ? RUN_REWARD.perRushBoss : RUN_REWARD.perChapter) * chaptersCleared;
+  if (run.bossRush) save.bossRushBest = Math.max(save.bossRushBest ?? 0, chaptersCleared);
+  save.stones += stones + bonus + runStones;
   save.crystals += crystals;
   save.stats.runs++;
   save.stats.kills += st.kills;
@@ -171,10 +182,10 @@ export function finishRun(save: SaveData, run: RunState): RunSummary {
   let curseUnlocked = false;
   let storyFirstClear = false;
   let storyUnlocked = 0;
-  if (run.victory) {
+  if (run.victory && !run.bossRush) {
     storyFirstClear = !save.storyClear[run.story];
     save.storyClear[run.story] = true;
-    if (run.story >= save.storyMax && save.storyMax < 4) {
+    if (run.story >= save.storyMax && save.storyMax < STORIES.length) {
       save.storyMax = run.story + 1;
       storyUnlocked = save.storyMax;
     }
@@ -194,5 +205,5 @@ export function finishRun(save: SaveData, run: RunState): RunSummary {
     rotated = true;
   }
   const newAch = checkAchievements(save);
-  return { stones, crystals, bonusStones: bonus, chapter: run.chapter, victory: run.victory, newAch, curseUnlocked, rotated, storyFirstClear, storyUnlocked };
+  return { stones, crystals, bonusStones: bonus, runStones, chaptersCleared, chapter: run.chapter, victory: run.victory, newAch, curseUnlocked, rotated, storyFirstClear, storyUnlocked };
 }

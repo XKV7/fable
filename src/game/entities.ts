@@ -122,7 +122,11 @@ export class Projectile {
       }
       if (this.team === 'player') room.explode(this.x, this.y, b.r, this.mult * b.m, this.kind === 'normal' ? 'proc' : this.kind, b.el, b.st, undefined, b.col);
       else room.enemyExplode(this.x, this.y, b.r, this.mult * b.m, b.st);
-      if (b.field) room.addField(this.team, b.field, this.x - b.field.w / 2, this.y - b.field.h / 2, this.mult, 'proc');
+      if (b.field) {
+        // 장판은 맞은 자리(벽·공중)가 아니라 그 아래 바닥에 깔린다
+        const at = room.groundedField(this.x - b.field.w / 2, this.y - b.field.h / 2, b.field.w, b.field.h);
+        room.addField(this.team, b.field, at.x, at.y, this.mult, 'proc');
+      }
     } else {
       room.fx.burst(this.x, this.y, this.def.col ?? '#ffffff', 4, 1.5);
     }
@@ -597,8 +601,9 @@ export class Pickup {
   ) {
     const s = kind === 'relicOrb' ? 12 : 5;
     this.b = newBody(x - s / 2, y - s / 2, s, s);
-    this.b.vx = (Math.random() - 0.5) * 3;
-    this.b.vy = -2 - Math.random() * 2.5;
+    // 유물은 정한 자리에 그대로 내려앉게(옆으로 튀어 구덩이에 빠지지 않게)
+    this.b.vx = kind === 'relicOrb' ? 0 : (Math.random() - 0.5) * 3;
+    this.b.vy = kind === 'relicOrb' ? -1.5 : -2 - Math.random() * 2.5;
   }
   get cx(): number {
     return this.b.x + this.b.w / 2;

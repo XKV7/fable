@@ -50,7 +50,7 @@ export const DEFAULT_BINDINGS: Bindings = {
   attack: { keys: ['KeyJ'], pad: [2] },
   dash: { keys: ['ShiftLeft', 'ShiftRight'], pad: [1, 7] },
   skill1: { keys: ['KeyE'], pad: [4] },
-  skill2: { keys: ['KeyR'], pad: [5] },
+  skill2: { keys: ['KeyQ'], pad: [5] }, // 스킬 1 = E, 스킬 2 = Q
   swap: { keys: ['KeyG'], pad: [3] },
   interact: { keys: ['KeyF'], pad: [11] },
   item: { keys: ['KeyK'], pad: [6] },

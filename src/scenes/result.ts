@@ -90,7 +90,9 @@ export class ResultScene implements Scene {
     panel(g, 234, 64, 230, 112, { border: '#ffcc40' });
     text(g, '획득 보상', 244, 70, { size: 9, color: '#ffe080', bold: true });
     drawIcon(g, 'gem', 246, 88, 14, '#6a9aff');
-    text(g, `영혼석 +${this.sum.stones}${this.sum.bonusStones ? `  (첫 처치 +${this.sum.bonusStones})` : ''}`, 266, 90, { size: 8, color: '#9ec0ff' });
+    const totalStones = this.sum.stones + this.sum.bonusStones + this.sum.runStones;
+    text(g, `영혼석 +${totalStones}`, 266, 86, { size: 8, color: '#9ec0ff' });
+    text(g, `출정 ${this.sum.runStones}(기본 150 + 챕터 ${this.sum.chaptersCleared}×1600) · 획득 ${this.sum.stones}${this.sum.bonusStones ? ` · 첫 처치 ${this.sum.bonusStones}` : ''}`, 266, 97, { size: 5, color: '#8a9ac8', maxW: 192 });
     drawIcon(g, 'shard', 246, 108, 14, '#40d0e0');
     text(g, `영혼 결정 +${this.sum.crystals}`, 266, 110, { size: 8, color: '#a0f0ff' });
     text(g, `보유: 영혼석 ${app.save.stones} · 영혼 결정 ${app.save.crystals}`, 244, 130, { size: 7, color: '#c8c0d8' });

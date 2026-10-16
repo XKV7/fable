@@ -2,6 +2,8 @@ import type { PoseName } from '../game/types';
 import { POSES } from './humanoid';
 import { OUTLINE, Pix } from './pixel';
 import { CAELUS_FRAMES, CAELUS_FX, CAELUS_FX_SHEET, CAELUS_SHEET, type FxFrame, type SheetFrame } from './caelusSheet';
+import { drawHeroHD } from './hdHero';
+import { CHAR_MAP } from '../data/characters';
 
 /**
  * ★7 전용 고해상도(2배 정밀) 스프라이트. 96×96 프레임, 발 y=88, 키 약 48픽셀.
@@ -366,7 +368,7 @@ const cache = new Map<string, HTMLCanvasElement>();
 export function charFrameHD(id: string, pose: PoseName, an?: HDAnim, wide = false): HTMLCanvasElement | null {
   const s = sheetOf(id);
   const d = DRAW[id];
-  if (!s) return null;
+  if (!s) return procFrameHD(id, pose);
   if (!s.ok) return d ? d(pose === 'dead' ? 'hurt' : pose) : null; // 시트 불러오는 중 (아주 잠깐)
   const name = sheetFrameName(s, pose, an);
   const w = wide ? s.w : HD_FW;
@@ -375,6 +377,23 @@ export function charFrameHD(id: string, pose: PoseName, an?: HDAnim, wide = fals
   if (!c) {
     c = fromSheet(s, name, w);
     cache.set(k, c);
+  }
+  return c;
+}
+
+/**
+ * 컨셉아트 시트가 없는 ★3~5 영웅: Look으로 2배 정밀 절차 스프라이트(hdHero.ts)를 그려 캐시한다.
+ * 쓰러짐은 'hurt' 모습을 회전시켜 쓴다(hasLyingFrame = false).
+ */
+const procCache = new Map<string, HTMLCanvasElement>();
+function procFrameHD(id: string, pose: PoseName): HTMLCanvasElement | null {
+  const def = CHAR_MAP[id];
+  if (!def || def.rarity > 5 || typeof document === 'undefined') return null;
+  const k = `${id}|${pose}`;
+  let c = procCache.get(k);
+  if (!c) {
+    c = drawHeroHD(def.look, pose);
+    procCache.set(k, c);
   }
   return c;
 }

@@ -124,7 +124,7 @@ try {
   await press('KeyG', 200);
   await shot('10_run_swap');
   await press('KeyE', 300);
-  await press('KeyR', 300);
+  await press('KeyQ', 300);
   await page.keyboard.down('KeyD');
   await wait(1200);
   await page.keyboard.up('KeyD');

@@ -3,6 +3,7 @@ import { newPity, type PityState } from './gacha';
 import type { BannerKind } from '../data/gacha';
 import { CHAR_MAP, STARTER_CHAR, STARTER_WEAPON } from '../data/characters';
 import { validSnap, type RunSnap } from './runsave';
+import { STORIES } from '../data/stories';
 
 export interface Settings {
   music: number;
@@ -43,6 +44,10 @@ export interface SaveData {
   /** 스토리별 인트로를 봤는지 / 클리어했는지 */
   storySeen: Record<number, boolean>;
   storyClear: Record<number, boolean>;
+  /** 사용한 쿠폰 코드 (대문자). 계정마다 한 번씩만 */
+  usedCoupons: string[];
+  /** 보스 러시 최고 기록 (처치한 보스 수) */
+  bossRushBest: number;
   /** 진행 중인 런 (런 도중 나가도 이어하기). 없으면 null */
   run: RunSnap | null;
   loadout: { chars: [string, string]; weapon: string };
@@ -59,7 +64,7 @@ export interface SaveData {
 
 export const SAVE_KEY = 'pact_save_v1';
 /** 기본 키 배치가 바뀌면 올린다 — 이전 버전의 저장된 키 설정은 새 기본값으로 교체 */
-export const BIND_VER = 3;
+export const BIND_VER = 4;
 
 export function defaultSettings(): Settings {
   return { music: 0.6, sfx: 0.8, shake: 1, dmgNumbers: true, bindings: cloneBindings(DEFAULT_BINDINGS), bindVer: BIND_VER };
@@ -83,6 +88,8 @@ export function newSave(): SaveData {
     storyMax: 1,
     storySeen: {},
     storyClear: {},
+    usedCoupons: [],
+    bossRushBest: 0,
     run: null,
     loadout: { chars: [STARTER_CHAR, ''], weapon: STARTER_WEAPON },
     pickupIndex: 0,
@@ -105,9 +112,14 @@ function validOverride(o: unknown): SaveData['pickupOverride'] {
 
 /** 키 설정 이전: v2(WASD 배치)는 그대로 두고 대시만 Q → Shift (대시를 직접 바꾼 경우는 유지), 그보다 오래된 것은 새 기본값 */
 function migrateBindings(ver: number | undefined, b: Bindings | undefined): Bindings {
-  if (!b || (ver !== BIND_VER && ver !== 2)) return cloneBindings(DEFAULT_BINDINGS);
+  if (!b || (ver !== BIND_VER && ver !== 2 && ver !== 3)) return cloneBindings(DEFAULT_BINDINGS);
   const out = cloneBindings(b);
   if (ver === 2 && out.dash.keys.length === 1 && out.dash.keys[0] === 'KeyQ') out.dash.keys = [...DEFAULT_BINDINGS.dash.keys];
+  // v4: 스킬 2 기본 키 R → Q. 예전 기본값(R)을 그대로 쓰던 사람만 옮긴다 (Q를 다른 데 쓰고 있으면 거기서 빼고)
+  if ((ver ?? 0) < 4 && out.skill2.keys.length === 1 && out.skill2.keys[0] === 'KeyR') {
+    for (const a of Object.keys(out) as (keyof Bindings)[]) out[a].keys = out[a].keys.filter((k) => k !== 'KeyQ');
+    out.skill2.keys = ['KeyQ'];
+  }
   return out;
 }
 
@@ -129,13 +141,15 @@ export function sanitize(raw: unknown): SaveData {
     newChars: Array.isArray(r.newChars) ? r.newChars : [],
     storySeen: { ...(r.storySeen ?? {}) },
     storyClear: { ...(r.storyClear ?? {}) },
+    usedCoupons: Array.isArray(r.usedCoupons) ? r.usedCoupons.filter((c: unknown) => typeof c === 'string') : [],
+    bossRushBest: typeof r.bossRushBest === 'number' ? r.bossRushBest : 0,
     run: validSnap(r.run),
     pickupOverride: validOverride(r.pickupOverride),
   };
   for (const k of ['stones', 'crystals', 'curse', 'curseMax', 'pickupIndex', 'runsSinceRotation', 'story', 'storyMax'] as const) {
     if (typeof out[k] !== 'number' || !Number.isFinite(out[k])) out[k] = base[k];
   }
-  out.storyMax = Math.max(1, Math.min(4, Math.floor(out.storyMax)));
+  out.storyMax = Math.max(1, Math.min(STORIES.length, Math.floor(out.storyMax)));
   out.story = Math.max(1, Math.min(out.storyMax, Math.floor(out.story)));
   return out;
 }

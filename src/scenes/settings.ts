@@ -3,6 +3,7 @@ import { audio } from '../core/audio';
 import { ACTIONS, ACTION_LABELS, cloneBindings, DEFAULT_BINDINGS, keyName, ARROW_BINDINGS, type Action } from '../core/input';
 import { text } from '../gfx/renderer';
 import { newSave, sanitize } from '../game/save';
+import { redeemCoupon } from '../data/coupons';
 import { button, hot, keyHint, Menu, panel } from '../ui/widgets';
 
 type Mode = 'main' | 'keys' | 'capture' | 'reset' | 'io';
@@ -29,8 +30,9 @@ export class SettingsScene implements Scene {
       { label: `효과음 음량  ◀ ${pctS(s.sfx)} ▶` },
       { label: `화면 흔들림  ◀ ${pctS(s.shake)} ▶` },
       { label: `데미지 숫자  ◀ ${s.dmgNumbers ? '켜기' : '끄기'} ▶` },
-      { label: '키 재설정' },
+      { label: '조작 키 설정 (키 바꾸기)' },
       { label: '저장 데이터 내보내기 / 가져오기' },
+      { label: '쿠폰 코드 입력', col: '#ffe080' },
       { label: '저장 데이터 초기화', col: '#ff6080' },
       { label: '돌아가기' },
     ];
@@ -136,7 +138,7 @@ export class SettingsScene implements Scene {
       if (inp.menu('mright')) this.adjust(i, 1);
     }
     const r = this.main.update(inp);
-    if (r === 'back' || (r === 'ok' && i === 7)) {
+    if (r === 'back' || (r === 'ok' && i === 8)) {
       app.persist();
       app.go(this.back, false);
       return;
@@ -145,7 +147,8 @@ export class SettingsScene implements Scene {
       if (i <= 3) this.adjust(i, 1);
       if (i === 4) this.mode = 'keys';
       if (i === 5) this.openDom();
-      if (i === 6) {
+      if (i === 6) this.openCoupon();
+      if (i === 7) {
         this.mode = 'reset';
         this.confirm.sel = 1;
       }
@@ -193,6 +196,42 @@ export class SettingsScene implements Scene {
     (d.querySelector('#sv-close') as HTMLButtonElement).onclick = () => this.closeDom();
   }
 
+  /** 쿠폰 코드 입력창 (계정마다 코드당 한 번) */
+  private openCoupon(): void {
+    this.mode = 'io';
+    const d = document.createElement('div');
+    d.style.cssText = 'position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:#140c22;border:2px solid #c0a060;padding:16px;z-index:10;color:#e8e0f0;font-family:"Noto Sans KR",sans-serif;width:min(360px,88vw)';
+    d.innerHTML = `<div style="font-weight:bold;margin-bottom:8px;color:#ffe080">쿠폰 코드 입력</div>
+      <form id="cp-form" style="display:flex;gap:8px">
+        <input id="cp-code" maxlength="32" autocomplete="off" spellcheck="false" placeholder="코드" style="flex:1;padding:8px;background:#0a0612;color:#fff;border:1px solid #4a3a6a;font-size:15px;text-transform:uppercase">
+        <button type="submit" style="padding:8px 14px;background:#c0a060;border:0;font-weight:bold;cursor:pointer">사용</button>
+      </form>
+      <div id="cp-msg" style="min-height:18px;font-size:12px;margin-top:8px;color:#a8a0c0">한 계정에서 같은 쿠폰은 한 번만 쓸 수 있습니다.</div>
+      <div style="text-align:right;margin-top:6px"><button id="cp-close" style="padding:6px 12px;background:#2a2040;color:#e0d8f0;border:1px solid #4a3a6a;cursor:pointer">닫기</button></div>`;
+    document.body.appendChild(d);
+    this.dom = d;
+    const input = d.querySelector('#cp-code') as HTMLInputElement;
+    const msg = d.querySelector('#cp-msg') as HTMLDivElement;
+    setTimeout(() => input.focus(), 30);
+    (d.querySelector('#cp-form') as HTMLFormElement).onsubmit = (e) => {
+      e.preventDefault();
+      const r = redeemCoupon(app.save, input.value);
+      if (r.ok) {
+        app.persist();
+        audio.play('confirm');
+        msg.style.color = '#80ffa0';
+        msg.textContent = `쿠폰 사용 완료! ${r.desc}`;
+        app.toast(`쿠폰 보상: ${r.desc}`, '#80ffa0');
+        input.value = '';
+      } else {
+        audio.play('error');
+        msg.style.color = '#ff8090';
+        msg.textContent = r.error;
+      }
+    };
+    (d.querySelector('#cp-close') as HTMLButtonElement).onclick = () => this.closeDom();
+  }
+
   private closeDom(): void {
     if (this.dom) {
       this.dom.remove();
@@ -214,7 +253,7 @@ export class SettingsScene implements Scene {
       panel(g, 60, 30, 360, 226);
       const b = app.save.settings.bindings;
       this.keys.items.forEach((it, i) => {
-        const y = 36 + i * 13;
+        const y = 36 + i * 12;
         const sel = i === this.keys.sel;
         g.fillStyle = sel ? 'rgba(138,106,208,0.35)' : 'transparent';
         g.fillRect(66, y - 1, 348, 12);
@@ -223,13 +262,15 @@ export class SettingsScene implements Scene {
         if (i < ACTIONS.length) {
           const a = ACTIONS[i];
           const cap = this.mode === 'capture' && a === this.capAction;
-          text(g, cap ? '키를 누르세요…' : b[a].keys.map(keyName).join(' / '), 260, y, { size: 7, color: cap ? '#ff8080' : '#ffe080', maxW: 140 });
+          const none = !b[a].keys.length;
+          text(g, cap ? '바꿀 키를 누르세요… (Esc 취소)' : none ? '(없음)' : b[a].keys.map(keyName).join(' / '), 260, y, { size: 7, color: cap ? '#ff8080' : none ? '#ff6070' : '#ffe080', maxW: 150 });
         }
       });
+      text(g, '항목을 고르고 Enter(또는 공격 키) → 새 키를 누르면 바뀝니다. 다른 동작에 쓰던 키면 그쪽에서는 빠집니다.', 240, 245, { size: 6, align: 'center', color: '#a8a0c0', maxW: 400 });
       keyHint(g, [['↑↓', '선택'], ['Enter', '변경'], ['Esc', '돌아가기']], 260);
       return;
     }
-    this.main.render(g, 120, 34, 240, 22, 4, 8);
+    this.main.render(g, 120, 30, 240, 20, 3, 8);
     if (this.mode === 'reset') {
       panel(g, 120, 100, 240, 70, { border: '#ff4060' });
       text(g, '모든 진행(영웅·무기·재화)이 사라집니다. 정말 초기화할까요?', 240, 112, { size: 7, align: 'center', color: '#ffffff', maxW: 230 });

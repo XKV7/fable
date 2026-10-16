@@ -5,7 +5,7 @@ import { RELICS } from '../data/relics';
 import { CHARACTERS } from '../data/characters';
 import { WEAPONS } from '../data/weapons';
 import type { SaveData } from './save';
-import { storyDef, type StoryDef } from '../data/stories';
+import { STORIES, storyDef, type StoryDef } from '../data/stories';
 
 export interface MapNode {
   id: number;
@@ -126,6 +126,9 @@ export class RunState {
   finished = false;
   victory = false;
   initialized = false;
+  /** 보스 러시: 깬 스토리들의 모든 단계 보스와 차례로 싸운다 (단계 = 보스 하나) */
+  bossRush = false;
+  rushList: { story: number; theme: number }[] = [];
 
   constructor(save: SaveData, seed?: number) {
     this.rng = new Rng(seed);
@@ -154,10 +157,34 @@ export class RunState {
 
   /** 다음 단계에서 고를 수 있는 테마 */
   nextThemes(): number[] {
+    if (this.bossRush) {
+      const n = this.rushList[this.chapter];
+      return n ? [n.theme] : [];
+    }
     return this.storyDef.route[this.chapter] ?? [];
   }
 
+  /** 보스 러시 시작: 완수한 스토리마다 모든 단계(갈림길 포함)의 보스를 스토리 순서대로 */
+  startBossRush(save: SaveData): void {
+    this.bossRush = true;
+    this.tutorial = false;
+    this.rushList = [];
+    for (const sd of STORIES) if (save.storyClear[sd.id]) for (const stage of sd.route) for (const th of stage) this.rushList.push({ story: sd.id, theme: th });
+    if (this.rushList.length) this.newChapter(1, this.rushList[0].theme);
+  }
+
   newChapter(stage: number, theme: number): void {
+    if (this.bossRush) {
+      // 보스 러시: 단계마다 보스방 하나. 적 강도는 그 보스가 나오는 스토리 기준
+      const r = this.rushList[stage - 1] ?? this.rushList[this.rushList.length - 1];
+      this.story = r.story;
+      this.chapter = stage;
+      this.theme = r.theme;
+      this.nodes = [{ id: 0, layer: 0, idx: 0, type: 'boss', next: [], visited: true }];
+      this.layers = [[0]];
+      this.cur = 0;
+      return;
+    }
     this.chapter = stage;
     this.theme = theme;
     const m = generateChapter(this.rng, stage, stage === 1 && this.tutorial && this.story === 1);

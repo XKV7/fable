@@ -239,11 +239,34 @@ export class Room {
       });
     }
     if (init.type === 'boss') this.bossDoor = doors[0] ?? { x: w * TS - 40, y: 14 * TS };
-    for (const c of chests) this.props.push({ kind: 'chest', x: c.x, y: c.y, w: 20, h: 16, used: false, hidden: c.hidden });
+    for (const c of chests) {
+      // 상자는 항상 바닥 위에: 아래 바닥까지 내려놓고, 발밑이 가시·용암·허공이면 단단한 바닥으로
+      const W = this.world;
+      const tx = Math.floor(c.x / TS);
+      let gy = W.groundBelow(c.x, c.y - 8, 400);
+      if (gy >= W.pxH) gy = Math.floor(c.y / TS) * TS;
+      const fty = Math.floor(gy / TS);
+      for (const x of [tx - 1, tx]) {
+        const ft = W.get(x, fty);
+        if (ft !== Tile.Solid && ft !== Tile.Break && ft !== Tile.OneWay) W.set(x, fty, Tile.Solid);
+        const above = W.get(x, fty - 1);
+        if (above === Tile.Spike || above === Tile.Lava) W.set(x, fty - 1, Tile.Empty);
+      }
+      c.y = fty * TS;
+      // 상자를 둘러싼 벽은 부술 수 있는 블록으로 (갇힌 상자도 꺼낼 수 있게, 맵 가장자리 벽은 그대로)
+      for (let y = fty - 3; y <= fty - 1; y++)
+        for (let x = tx - 2; x <= tx + 1; x++) {
+          if (x <= 0 || y <= 0 || x >= W.w - 1) continue;
+          if (W.get(x, y) === Tile.Solid) W.set(x, y, Tile.Break);
+        }
+      for (let y = fty - 2; y <= fty - 1; y++) for (const x of [tx - 1, tx]) if (W.get(x, y) === Tile.Break || W.get(x, y) === Tile.Solid) W.set(x, y, Tile.Empty);
+      this.props.push({ kind: 'chest', x: c.x, y: c.y, w: 20, h: 16, used: false, hidden: c.hidden });
+    }
     if (init.type === 'treasure' && npcs.length) this.props.push({ kind: 'chest', x: npcs[0].x, y: npcs[0].y, w: 20, h: 16, used: false, label: 'big' });
     const npcKind: Partial<Record<RoomType, Prop['kind']>> = { shop: 'shop', altar: 'altar', armory: 'armory', rest: 'rest', event: 'event' };
     const nk = npcKind[init.type];
-    if (nk && npcs.length) this.props.push({ kind: nk, x: npcs[0].x, y: npcs[0].y, w: 40, h: 40, used: false });
+    // 거점(방 종류는 'rest')에서는 휴식처를 만들지 않는다 — 첫 시설 자리(업적 비석)에 겹쳐 "휴식"이 뜨던 문제
+    if (nk && npcs.length && init.mode !== 'hub') this.props.push({ kind: nk, x: npcs[0].x, y: npcs[0].y, w: 40, h: 40, used: false });
     signs.forEach((s, i) => this.props.push({ kind: 'sign', x: s.x, y: s.y, w: 20, h: 20, used: false, text: String(i) }));
     if (init.mode === 'hub') {
       const st = ['ach', 'codex', 'gacha', 'portal', 'loadout', 'growth', 'upgrade', 'dummy'];
@@ -383,7 +406,7 @@ export class Room {
    * 적이 서 있어도 되는 자리인가: 발밑 가까이에 단단한 바닥(가시·용암·허공 아님)이 있고 몸이 벽 속이 아님.
    * 날아다니는 적은 벽 속만 아니면 된다.
    */
-  private spawnOk(x: number, y: number, flying: boolean): boolean {
+  spawnOk(x: number, y: number, flying: boolean): boolean {
     const w = this.world;
     if (x < 20 || x > w.pxW - 20) return false;
     if (w.solidPx(x, y - 6) || w.solidPx(x, y - 18)) return false;
@@ -398,7 +421,7 @@ export class Room {
   }
 
   /** 가까운 안전한 자리 찾기 (좌우로 16px씩 넓혀 가며) */
-  private safeSpot(x: number, y: number, flying: boolean): { x: number; y: number } | null {
+  safeSpot(x: number, y: number, flying: boolean): { x: number; y: number } | null {
     for (let d = 0; d <= 200; d += 8)
       for (const s of d ? [1, -1] : [1]) {
         const xx = x + s * d;
@@ -897,7 +920,20 @@ export class Room {
     if (e.def.ai === 'dummy') {
       e.dmgTaken += dmg;
       e.dpsWindow.push({ t: this.time, d: dmg });
-    } else e.hp -= dmg;
+    } else {
+      e.hp -= dmg;
+      // 보스 체력 바의 페이즈 구간은 한 번에 뚫을 수 없다: 다음 페이즈 경계에서 멈추고(전환 중엔 무적), 넘친 피해는 버림
+      if (e instanceof Boss && !e.dead) {
+        const next = e.bd.phases[e.phase];
+        if (next !== undefined) {
+          const floor = Math.floor(next * e.maxHp);
+          if (e.hp < floor) {
+            dmg -= floor - e.hp;
+            e.hp = floor;
+          }
+        }
+      }
+    }
     if (this.init.mode === 'run') this.run.stats.dmg += dmg;
     e.flash = o.kind === 'dot' ? 2 : 6;
     e.lastHitT = this.time;
@@ -1120,12 +1156,17 @@ export class Room {
     }
     if (p.invulnerable()) return false;
     let dmg = computeTaken(raw, this.stats, this.run.curse);
-    if (this.run.shield > 0) {
-      const ab = Math.min(this.run.shield, dmg);
-      this.run.shield -= ab;
-      dmg -= ab;
+    // 보호막이 있으면 그 공격은 보호막만 깎는다 — 보호막보다 큰 피해여도 넘친 만큼 체력이 깎이지 않고 보호막만 깨진다
+    const shielded = this.run.shield > 0;
+    if (shielded) {
+      this.run.shield = Math.max(0, this.run.shield - dmg);
+      dmg = 0;
       this.fx.burst(p.cx, p.cy, '#ffd76a', 8, 2);
       audio.play('hit_guard', 1.3);
+      if (this.run.shield <= 0) {
+        this.fx.ring(p.cx, p.cy, '#ffd76a', 26, 14);
+        audio.play('clang', 0.8);
+      }
     }
     if (dmg > 0) {
       this.run.hp -= dmg;
@@ -1135,11 +1176,17 @@ export class Room {
     if (this.boss && !this.boss.dead) this.bossHit = true;
     const dir = Math.sign(p.cx - srcX) || -p.facing;
     p.hurt(dir, o.kb ?? 2.5);
-    this.hurtVignette = 30;
-    this.hitstop = Math.max(this.hitstop, 6);
-    this.cam.shake(4, 12);
-    audio.play('hurt');
-    this.fx.burst(p.cx, p.cy, '#ff3040', 10, 2.5);
+    if (shielded) {
+      // 보호막으로 막음: 화면 흔들림 없이, 붉은 섬광은 약하게
+      this.hurtVignette = Math.max(this.hurtVignette, 8);
+      this.hitstop = Math.max(this.hitstop, 3);
+    } else {
+      this.hurtVignette = 30;
+      this.hitstop = Math.max(this.hitstop, 6);
+      this.cam.shake(4, 12);
+      audio.play('hurt');
+      this.fx.burst(p.cx, p.cy, '#ff3040', 10, 2.5);
+    }
     if (o.st === 'burn') p.dot.burn = 120;
     if (o.st === 'poison') p.dot.poison = 180;
     if (o.st === 'chill' || o.st === 'freeze') p.dot.chill = 120;
@@ -1291,6 +1338,31 @@ export class Room {
     const p = new Projectile(team, def, x, y, ang, mult, kind);
     this.projs.push(p);
     return p;
+  }
+
+  /**
+   * 장판을 바닥에 떨어뜨린 위치 (왼쪽 위 좌표). 벽·천장 속이면 가까운 빈 곳으로 빠져나온 뒤 아래 바닥을 찾는다.
+   * 바닥이 없으면(구덩이) 원래 위치 그대로.
+   */
+  groundedField(x: number, y: number, w: number, h: number): { x: number; y: number } {
+    const W = this.world;
+    let cx = x + w / 2;
+    let py = y + h / 2;
+    if (W.solidPx(cx, py)) {
+      let found = false;
+      for (let d = 4; d <= 64 && !found; d += 4)
+        for (const [dx, dy] of [[0, -d], [-d, 0], [d, 0], [-d, -d], [d, -d], [0, d]]) {
+          if (!W.solidPx(cx + dx, py + dy)) {
+            cx += dx;
+            py += dy;
+            found = true;
+            break;
+          }
+        }
+    }
+    const gy = W.groundBelow(cx, py, 600);
+    if (gy >= W.pxH) return { x: cx - w / 2, y };
+    return { x: cx - w / 2, y: gy - h };
   }
 
   addField(team: 'player' | 'enemy', def: FieldDef, x: number, y: number, mult: number, kind: DmgKind): Field {

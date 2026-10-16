@@ -4,7 +4,8 @@ import { chapterDef, ITEM_MAP, ROOM_TYPES } from '../data/meta';
 import { TUTORIAL_SIGNS } from '../data/rooms';
 import type { Input } from '../core/input';
 import { charArt } from '../gfx/sprites';
-import { rgba, shade } from '../gfx/pixel';
+import { shade } from '../gfx/pixel';
+import { Tile, TS } from '../game/world';
 import { text, measure } from '../gfx/renderer';
 import type { Room } from '../game/room';
 import type { RunState } from '../game/run';
@@ -60,97 +61,100 @@ export class Hud {
     const hpF = Math.max(0, run.hp / maxHp);
     this.ghostHp += (hpF - this.ghostHp) * 0.06;
     if (this.ghostHp < hpF) this.ghostHp = hpF;
-    // ── 초상화 + 체력 ──
-    panel(g, 4, 4, 168, 52, { alpha: 0.85 });
+    // ── 초상화 + 체력 + 스킬 + (런) 골드·아이템: 한 칸으로 작게 ──
+    const PW = mode === 'run' ? 150 : 128;
+    panel(g, 3, 3, PW, 38, { alpha: 0.85 });
     const act = run.party[run.active];
-    portrait(g, act.id, 9, 9, 28);
+    portrait(g, act.id, 6, 6, 22);
     const other = p.other;
     if (other) {
-      portrait(g, other.id, 25, 29, 16, p.swapCd > 0);
-      cdOverlay(g, 25, 29, 16, p.swapCd / Math.max(0.01, p.swapMax));
-      text(g, input.label('swap'), 33, 46, { size: 6, align: 'center', color: p.swapCd > 0 ? '#8a8098' : '#a0ffd0', bold: true });
+      portrait(g, other.id, 18, 26, 12, p.swapCd > 0);
+      cdOverlay(g, 18, 26, 12, p.swapCd / Math.max(0.01, p.swapMax));
+      text(g, input.label('swap'), 9, 30, { size: 5, align: 'center', color: p.swapCd > 0 ? '#8a8098' : '#a0ffd0', bold: true });
       if (p.swapCd <= 0 && room.time % 40 < 20) {
         g.strokeStyle = '#a0ffd0';
-        g.strokeRect(24.5, 28.5, 17, 17);
+        g.strokeRect(17.5, 25.5, 13, 13);
       }
     }
     const def = CHAR_MAP[act.id];
-    text(g, `${def.name}`, 42, 8, { size: 7, color: def.fx, bold: true });
-    text(g, `Lv.${act.lv}${act.aw ? ` · 각성${act.aw}` : ''}${act.temp ? ' · 임시' : ''}`, 42 + measure(g, def.name, 7, true) + 4, 9, { size: 6, color: '#a8a0c0' });
-    bar(g, 42, 18, 124, 7, hpF, hpF < 0.3 ? '#ff3050' : '#e84060', '#2a1020', this.ghostHp);
+    text(g, `${def.name}`, 32, 5, { size: 6, color: def.fx, bold: true });
+    const lvStr = `Lv.${act.lv}${act.aw ? `·각${act.aw}` : ''}${act.temp ? '·임시' : ''}`;
+    const lx = 32 + measure(g, def.name, 6, true) + 3;
+    text(g, lvStr, lx, 6, { size: 5, color: '#a8a0c0' });
+    if (mode === 'run') {
+      // 골드는 레벨 오른쪽에
+      const gx = lx + measure(g, lvStr, 5) + 4;
+      drawIcon(g, 'coin', gx, 5, 6, '#ffd040');
+      text(g, String(run.gold), gx + 7, 6, { size: 5, color: '#ffe080' });
+    }
+    bar(g, 32, 13, PW - 32, 5, hpF, hpF < 0.3 ? '#ff3050' : '#e84060', '#2a1020', this.ghostHp);
     if (room.shield > 0) {
       g.fillStyle = 'rgba(255,215,106,0.85)';
-      g.fillRect(42, 18, Math.min(1, room.shield / maxHp) * 124, 2);
+      g.fillRect(32, 13, Math.min(1, room.shield / maxHp) * (PW - 32), 2);
     }
-    text(g, `${Math.ceil(run.hp)} / ${maxHp}${room.shield > 0 ? ` (+${Math.ceil(room.shield)})` : ''}`, 104, 18.5, { size: 6, align: 'center', color: '#ffffff' });
+    text(g, `${Math.ceil(run.hp)}/${maxHp}${room.shield > 0 ? ` +${Math.ceil(room.shield)}` : ''}`, 32 + (PW - 32) / 2, 12.5, { size: 5, align: 'center', color: '#ffffff' });
     // 스킬
-    const skills = def.skills;
     for (let i = 0; i < 2; i++) {
-      const x = 42 + i * 26;
-      const y = 29;
+      const x = 32 + i * 18;
+      const y = 21;
       g.fillStyle = shade(def.fx, -0.6);
-      g.fillRect(x, y, 22, 22);
-      drawIcon(g, ['star', 'bolt'][i], x + 4, y + 3, 14, def.fx);
-      cdOverlay(g, x, y, 22, p.skillCd[i] / Math.max(0.01, p.skillMax[i]));
+      g.fillRect(x, y, 16, 16);
+      drawIcon(g, ['star', 'bolt'][i], x + 3, y + 3, 10, def.fx);
+      cdOverlay(g, x, y, 16, p.skillCd[i] / Math.max(0.01, p.skillMax[i]));
       g.strokeStyle = p.skillCd[i] <= 0 ? def.fx : '#3a3048';
-      g.strokeRect(x + 0.5, y + 0.5, 21, 21);
-      text(g, input.label(i === 0 ? 'skill1' : 'skill2'), x + 2, y + 14, { size: 6, color: '#ffffff', bold: true });
-      if (p.skillCd[i] > 0) text(g, p.skillCd[i].toFixed(p.skillCd[i] < 3 ? 1 : 0), x + 11, y + 7, { size: 7, align: 'center', color: '#ffffff', bold: true });
-      void skills;
+      g.strokeRect(x + 0.5, y + 0.5, 15, 15);
+      text(g, input.label(i === 0 ? 'skill1' : 'skill2'), x + 1, y + 10, { size: 5, color: '#ffffff', bold: true });
+      if (p.skillCd[i] > 0) text(g, p.skillCd[i].toFixed(p.skillCd[i] < 3 ? 1 : 0), x + 8, y + 4, { size: 6, align: 'center', color: '#ffffff', bold: true });
     }
     // 대시 충전
     const dc = 1 + room.build.flag('dashCharges');
     for (let i = 0; i < dc; i++) {
       g.fillStyle = i < p.dashCharges ? '#a0ffd0' : '#3a3048';
-      g.fillRect(96 + i * 6, 30, 4, 4);
+      g.fillRect(70 + i * 5, 22, 3, 3);
     }
-    text(g, '대시', 96, 36, { size: 5, color: '#8a8098' });
     // 버프
-    let bx = 96;
-    for (const b of room.build.activeBuffs().slice(0, 6)) {
+    let bx = 70;
+    for (const b of room.build.activeBuffs().slice(0, 5)) {
       g.fillStyle = '#ffe080';
-      g.fillRect(bx, 44, 8, 8 * Math.min(1, b.left / 5));
+      g.fillRect(bx, 29, 6, 6 * Math.min(1, b.left / 5));
       g.strokeStyle = '#806020';
-      g.strokeRect(bx + 0.5, 44.5, 8, 8);
-      if (b.stacks > 1) text(g, String(b.stacks), bx + 4, 44, { size: 5, align: 'center', color: '#000' });
-      bx += 10;
+      g.strokeRect(bx + 0.5, 29.5, 6, 6);
+      if (b.stacks > 1) text(g, String(b.stacks), bx + 3, 29, { size: 4, align: 'center', color: '#000' });
+      bx += 8;
     }
 
     if (mode === 'run') {
-      // ── 재화 ──
-      panel(g, 4, 58, 80, 30, { alpha: 0.8 });
-      drawIcon(g, 'coin', 8, 61, 9, '#ffd040');
-      text(g, String(run.gold), 20, 62, { size: 7, color: '#ffe080' });
-      drawIcon(g, 'gem', 44, 61, 9, '#6a9aff');
-      text(g, String(run.stats.stones), 56, 62, { size: 7, color: '#9ec0ff' });
-      drawIcon(g, 'shard', 8, 73, 9, '#40d0e0');
-      text(g, String(run.stats.crystals), 20, 74, { size: 7, color: '#a0f0ff' });
-      // ── 미니맵 ──
-      this.minimap(g, run);
-      // ── 문장 요약 ──
-      const cs = room.build.crests.slice(0, 6);
-      if (cs.length) {
-        panel(g, 4, 92, 84, 8 + cs.length * 9, { alpha: 0.75 });
-        cs.forEach((c, i) => {
-          const cd = CREST_MAP[c.id];
-          const y = 96 + i * 9;
-          drawIcon(g, cd.icon, 8, y, 7, c.tier > 0 ? cd.col : '#6a6078');
-          text(g, cd.name, 18, y, { size: 6, color: c.tier > 0 ? cd.col : '#8a8098' });
-          for (let k = 0; k < 3; k++) {
-            g.fillStyle = k < c.tier ? cd.col : '#2a2238';
-            g.fillRect(48 + k * 6, y + 2, 4, 4);
-          }
-          text(g, `${c.count}`, 68, y, { size: 6, color: '#c8c0d8' });
-        });
-      }
-      // ── 아이템 ──
-      panel(g, 88, 58, 30, 30, { alpha: 0.85 });
+      // ── 소모품 (칸 안 오른쪽) ──
+      const ix = PW - 16;
+      g.fillStyle = 'rgba(20,14,30,0.9)';
+      g.fillRect(ix, 21, 16, 16);
+      g.strokeStyle = '#4a3a6a';
+      g.strokeRect(ix + 0.5, 21.5, 15, 15);
       const it = run.items[0];
       if (it) {
-        drawIcon(g, ITEM_ICON[it] ?? 'potion', 93, 64, 20, ITEM_MAP[it].col);
-        if (run.items.length > 1) text(g, `+${run.items.length - 1}`, 116, 79, { size: 6, align: 'right', color: '#fff' });
+        drawIcon(g, ITEM_ICON[it] ?? 'potion', ix + 2, 23, 12, ITEM_MAP[it].col);
+        if (run.items.length > 1) text(g, `+${run.items.length - 1}`, ix + 15, 31, { size: 5, align: 'right', color: '#fff' });
       }
-      text(g, input.label('item'), 91, 59, { size: 6, color: '#ffffff', bold: true });
+      text(g, input.label('item'), ix + 1, 21, { size: 4, color: '#ffffff', bold: true });
+      // ── 현재 방 지도 (오른쪽 위) ──
+      this.minimap(g, run, room);
+      // ── 문장 세트: 활성화된 것 전부, 작게 ──
+      const cs = room.build.crests;
+      if (cs.length) {
+        const rowH = 7;
+        panel(g, 3, 43, 70, 4 + cs.length * rowH, { alpha: 0.72 });
+        cs.forEach((c, i) => {
+          const cd = CREST_MAP[c.id];
+          const y = 45 + i * rowH;
+          drawIcon(g, cd.icon, 6, y, 5, c.tier > 0 ? cd.col : '#6a6078');
+          text(g, cd.name, 13, y - 0.5, { size: 5, color: c.tier > 0 ? cd.col : '#8a8098' });
+          for (let k = 0; k < 3; k++) {
+            g.fillStyle = k < c.tier ? cd.col : '#2a2238';
+            g.fillRect(44 + k * 5, y + 1, 3, 3);
+          }
+          text(g, `${c.count}`, 66, y - 0.5, { size: 5, color: '#c8c0d8' });
+        });
+      }
     }
     // ── 콤보 ──
     if (room.combo > 1) {
@@ -182,42 +186,58 @@ export class Hud {
     }
   }
 
-  minimap(g: CanvasRenderingContext2D, run: RunState): void {
-    const L = run.layers.length;
-    const w = L * 12 + 8;
-    const x0 = 476 - w;
-    panel(g, x0, 4, w, 46, { alpha: 0.8 });
-    text(g, `${run.story > 1 ? `스토리${run.story} · ` : ''}제${run.chapter}장`, x0 + 4, 6, { size: 6, color: '#c0b0d8' });
-    const pos = (id: number): [number, number] => {
-      const n = run.nodes[id];
-      const cnt = run.layers[n.layer].length;
-      return [x0 + 8 + n.layer * 12, 28 + (n.idx - (cnt - 1) / 2) * 9];
+  private mapCache: { room: Room | null; c: HTMLCanvasElement | null; t: number } = { room: null, c: null, t: 0 };
+
+  /** 오른쪽 위: 지금 있는 방의 지도 (지형·위험 지형·문·상자) + 적 위치(빨간 점)·플레이어 */
+  minimap(g: CanvasRenderingContext2D, run: RunState, room: Room): void {
+    const W = room.world;
+    const k = Math.max(1, Math.min(2.2, Math.min(118 / W.w, 54 / W.h)));
+    const mw = Math.round(W.w * k);
+    const mh = Math.round(W.h * k);
+    const x0 = 477 - mw - 6;
+    const y0 = 12;
+    panel(g, x0 - 3, 3, mw + 6, mh + 13, { alpha: 0.82 });
+    const nodeIdx = run.nodes[run.cur]?.layer ?? 0;
+    text(g, run.bossRush ? `보스 러시 ${run.chapter}/${run.rushList.length}` : `${run.story > 1 ? `스토리${run.story} · ` : ''}제${run.chapter}장 · 방 ${nodeIdx + 1}/${run.layers.length}`, x0, 4, { size: 5, color: run.bossRush ? '#ff9090' : '#c0b0d8', maxW: mw + 2 });
+    // 지형은 잠깐씩만 다시 그린다 (부서지는 블록·무너지는 발판 반영)
+    const mc = this.mapCache;
+    if (mc.room !== room || !mc.c || room.time - mc.t > 30 || room.time < mc.t) {
+      const c = mc.c && mc.c.width === W.w && mc.c.height === W.h ? mc.c : document.createElement('canvas');
+      c.width = W.w;
+      c.height = W.h;
+      const m = c.getContext('2d')!;
+      m.clearRect(0, 0, W.w, W.h);
+      for (let ty = 0; ty < W.h; ty++)
+        for (let tx = 0; tx < W.w; tx++) {
+          const v = W.get(tx, ty);
+          const col = v === Tile.Solid ? '#5a5070' : v === Tile.Break ? '#7a6a58' : v === Tile.Crumble ? (W.solid(tx, ty) ? '#8a7050' : '') : v === Tile.OneWay ? '#9a90b8' : v === Tile.Spike ? '#e04050' : v === Tile.Lava ? '#ff7a1a' : '';
+          if (!col) continue;
+          m.fillStyle = col;
+          m.fillRect(tx, ty, 1, 1);
+        }
+      mc.room = room;
+      mc.c = c;
+      mc.t = room.time;
+    }
+    g.save();
+    g.imageSmoothingEnabled = false;
+    g.fillStyle = 'rgba(8,6,14,0.7)';
+    g.fillRect(x0, y0, mw, mh);
+    g.drawImage(mc.c!, x0, y0, mw, mh);
+    const s = k / TS;
+    const dot = (wx: number, wy: number, col: string, r: number): void => {
+      g.fillStyle = col;
+      g.fillRect(Math.round(x0 + wx * s - r / 2), Math.round(y0 + wy * s - r / 2), r, r);
     };
-    g.lineWidth = 1;
-    for (const n of run.nodes) {
-      const [ax, ay] = pos(n.id);
-      for (const m of n.next) {
-        const [bx, by] = pos(m);
-        const onPath = n.id === run.cur;
-        g.strokeStyle = onPath ? 'rgba(255,240,180,0.8)' : 'rgba(120,100,150,0.5)';
-        g.beginPath();
-        g.moveTo(ax, ay);
-        g.lineTo(bx, by);
-        g.stroke();
-      }
+    for (const pr of room.props) {
+      if (pr.kind === 'door') dot(pr.x, pr.y - 16, pr.open ? '#80ffa0' : '#6a8070', 3);
+      else if (pr.kind === 'chest' && !pr.used && !pr.hidden) dot(pr.x, pr.y - 6, '#ffd040', 2);
     }
-    for (const n of run.nodes) {
-      const [x, y] = pos(n.id);
-      const col = ROOM_TYPES[n.type].col;
-      const cur = n.id === run.cur;
-      const r = cur ? 3 : 2;
-      g.fillStyle = n.visited ? col : rgba(col, 0.45);
-      g.fillRect(x - r, y - r, r * 2, r * 2);
-      if (cur && Math.floor(Date.now() / 300) % 2) {
-        g.strokeStyle = '#ffffff';
-        g.strokeRect(x - r - 1.5, y - r - 1.5, r * 2 + 3, r * 2 + 3);
-      }
-    }
+    for (const e of room.enemies) if (!e.dead && e.def.ai !== 'dummy') dot(e.cx, e.cy, e.elite ? '#ff70c0' : '#ff3040', 2);
+    if (room.boss && !room.boss.dead) dot(room.boss.cx, room.boss.cy, '#ff2020', 4);
+    // 플레이어 (깜빡임)
+    dot(room.player.cx, room.player.cy, Math.floor(room.time / 15) % 2 ? '#ffffff' : '#80e0ff', 3);
+    g.restore();
   }
 
   /** 월드 좌표 기반 UI: 적 체력바·상태이상·상호작용 안내·문 아이콘·표지판 */

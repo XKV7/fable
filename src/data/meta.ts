@@ -45,7 +45,7 @@ import type { MusicTheme } from '../core/audio';
 export type Particles = 'dust' | 'spore' | 'ember' | 'shadow' | 'rain' | 'snow' | 'void' | 'ash' | 'petal' | 'spark' | 'blood' | 'star' | 'bubble' | 'leaf';
 
 export interface ChapterDef {
-  n: number; // 테마 id (적·보스·배경이 이 값으로 묶임). 스토리 1: 1~7, 스토리 2: 11~16, 스토리 3: 21~26, 스토리 4: 31~36
+  n: number; // 테마 id (적·보스·배경이 이 값으로 묶임). 스토리 1: 1~7, 스토리 2: 11~16, 스토리 3: 21~26, 스토리 4: 31~36, 스토리 5: 41~46, 스토리 6: 51~56
   name: string;
   boss: string;
   bg: [string, string, string]; // 하늘/먼 배경/가까운 배경
@@ -91,11 +91,25 @@ export const CHAPTERS: ChapterDef[] = [
   { n: 34, name: '거울의 미궁', boss: 'mirror', bg: ['#14141e', '#22223a', '#303056'], tile: ['#4a4a6a', '#d0d0ff', '#24243a'], ambient: '#04040c', dark: 0.4, light: '#ffffff', music: 's34', particles: 'spark', slippery: true, desc: '거울과 환영' },
   { n: 35, name: '시간의 폐허', boss: 'aeon', bg: ['#1a160c', '#2a2414', '#3a321c'], tile: ['#5a5030', '#c0b070', '#2a2414'], ambient: '#060402', dark: 0.45, light: '#ffe0a0', music: 's35', particles: 'dust', hazard: 'void', desc: '멈춘 시간' },
   { n: 36, name: '계약의 근원', boss: 'arche', bg: ['#08060e', '#120e1e', '#1c162e'], tile: ['#2e2840', '#e0d0ff', '#16121e'], ambient: '#000000', dark: 0.55, light: '#fff0c0', music: 's36', particles: 'star', hazard: 'void', desc: '최초의 계약자' },
+  // ── 스토리 5: 찢어진 하늘 ──
+  { n: 41, name: '떠도는 하늘 항구', boss: 'branik', bg: ['#16202e', '#223448', '#2e4862'], tile: ['#4a5a6a', '#8aa8c0', '#24303c'], ambient: '#04080e', dark: 0.38, light: '#a0d0f0', music: 's41', particles: 'rain', hazard: 'void', desc: '하늘 해적과 닻' },
+  { n: 42, name: '거꾸로 흐르는 폭포', boss: 'lyanne', bg: ['#0c1a22', '#142a36', '#1e3c4c'], tile: ['#3a5a68', '#80c8e0', '#1a2c34'], ambient: '#02080c', dark: 0.42, light: '#a0f0ff', music: 's42', particles: 'bubble', slippery: true, desc: '물안개와 급류' },
+  { n: 43, name: '폭풍 고래의 뼈', boss: 'osric', bg: ['#10141a', '#1c222c', '#28303c'], tile: ['#5a6060', '#c0c8c0', '#2a2e30'], ambient: '#04060a', dark: 0.5, light: '#c0e0e0', music: 's43', particles: 'rain', desc: '고래뼈와 번개' },
+  { n: 44, name: '깃털 사원', boss: 'penna', bg: ['#2a2218', '#3a3024', '#4a4030'], tile: ['#6a5a44', '#e0d0b0', '#342a1e'], ambient: '#0a0804', dark: 0.32, light: '#fff0d0', music: 's44', particles: 'petal', desc: '깃털과 사제들' },
+  { n: 45, name: '천공의 회랑', boss: 'kalais', bg: ['#0a1022', '#121e3a', '#1c2c52'], tile: ['#3a4868', '#a0c0f0', '#1a2236'], ambient: '#02040c', dark: 0.45, light: '#c0e0ff', music: 's45', particles: 'spark', hazard: 'void', desc: '폭풍의 사도' },
+  { n: 46, name: '하늘의 상처', boss: 'sever', bg: ['#0a0612', '#160c24', '#221236'], tile: ['#2e2440', '#c0a0ff', '#140e1e'], ambient: '#000000', dark: 0.58, light: '#e0c0ff', music: 's46', particles: 'void', hazard: 'void', desc: '하늘을 찢는 자' },
+  // ── 스토리 6: 바깥의 바다 ──
+  { n: 51, name: '잠긴 등대', boss: 'halvard', bg: ['#081418', '#10222a', '#18303a'], tile: ['#2e4448', '#8ab0a8', '#162226'], ambient: '#000608', dark: 0.55, light: '#ffe8a0', music: 's51', particles: 'bubble', desc: '꺼진 등불과 익사자' },
+  { n: 52, name: '산호 묘지', boss: 'coralie', bg: ['#1a0c14', '#2a1420', '#3c1e2e'], tile: ['#5a3a44', '#ff90b0', '#2a1820'], ambient: '#060204', dark: 0.48, light: '#ff90b0', music: 's52', particles: 'spore', desc: '산호와 묘비' },
+  { n: 53, name: '침묵의 해구', boss: 'nekton', bg: ['#04060e', '#080c1a', '#0e1428'], tile: ['#1e2438', '#5a70c0', '#0c101c'], ambient: '#000000', dark: 0.68, light: '#7090ff', music: 's53', particles: 'bubble', hazard: 'void', desc: '빛이 닿지 않는 곳' },
+  { n: 54, name: '거꾸로 선 도시', boss: 'vesper', bg: ['#1c140c', '#2c2014', '#3e2e1c'], tile: ['#5a4a34', '#d0b080', '#2a2218'], ambient: '#060402', dark: 0.42, light: '#ffd080', music: 's54', particles: 'dust', desc: '뒤집힌 거리' },
+  { n: 55, name: '검은 오로라', boss: 'noctis', bg: ['#020a0a', '#061818', '#0a2626'], tile: ['#1e3434', '#80ffc0', '#0e1a1a'], ambient: '#000202', dark: 0.55, light: '#80ffc0', music: 's55', particles: 'snow', slippery: true, desc: '밤의 날개' },
+  { n: 56, name: '바깥의 문', boss: 'iska', bg: ['#020606', '#081212', '#0e1e1e'], tile: ['#1e2e2e', '#a0ffe0', '#0a1414'], ambient: '#000000', dark: 0.62, light: '#a0ffe0', music: 's56', particles: 'star', hazard: 'void', desc: '바깥의 전령' },
 ];
 
 export const chapterDef = (n: number): ChapterDef => CHAPTERS.find((c) => c.n === n) ?? CHAPTERS[0];
 
-/** 테마가 속한 스토리 (1~4) */
+/** 테마가 속한 스토리 (1~6) */
 export const storyOfTheme = (n: number): number => (n < 10 ? 1 : Math.floor(n / 10) + 1);
 
 export interface AchievementDef {

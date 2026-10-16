@@ -302,7 +302,7 @@ export class Player {
     this.endAct();
     this.state = 'dash';
     this.dashT = 11;
-    this.dashInv = 22;
+    this.dashInv = 30;
     this.dashCharges--;
     this.dashRegen = 0.55 * (1 - Math.min(0.6, this.room.stats.dashCdr ?? 0));
     if (!this.b.onGround) this.airDashes++;

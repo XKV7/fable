@@ -15,7 +15,21 @@ const REMOTE = new Set([
   'starfall', 'pillarMarch', 'homingOrbs', 'crossBeam', 'laserSweep', 'gravityWell', 'floorHalf', 'meteor',
 ]);
 /** 즉사기 */
-const EXECUTE = new Set(['royalExecution', 'oblivionErase']);
+const EXECUTE = new Set(['royalExecution', 'oblivionErase', 'execGround', 'execZones', 'execHalf']);
+/**
+ * 스토리 2~4 마지막·직전 보스의 즉사기 (공통 방식 3가지, 보스마다 이름·대사·색).
+ * execGround: 바닥을 휩쓸어 땅에 서 있으면 즉사 → 뛰어오르거나 발판 위로
+ * execZones: 화면 전체가 지워지고 빛의 기둥 안만 안전
+ * execHalf: 플레이어가 있는 쪽 절반이 지워짐 → 반대편으로
+ */
+const EXEC_TXT: Record<string, { name: string; shout: string; col: string }> = {
+  orbis: { name: '궤도 붕괴', shout: '별들이 궤도를 벗어난다… 빛의 기둥 안으로!', col: '#ffe080' },
+  nemesia: { name: '블랙홀 붕괴', shout: '모든 빛은 삼켜진다… 반대편으로 달아나라!', col: '#c0a0ff' },
+  fenrik: { name: '달의 포효', shout: '달이 울부짖는다! — 뛰어올라라!', col: '#c8d8ff' },
+  carmilla: { name: '피의 심판', shout: '피의 왕좌 앞에 엎드려라… 빛 안으로!', col: '#ff4060' },
+  aeon: { name: '시간 단절', shout: '이 시간을 끊어 낸다… 반대편으로!', col: '#a0e0ff' },
+  arche: { name: '계약 파기', shout: '모든 계약은 여기서 끝난다! — 뛰어올라라!', col: '#ffd070' },
+};
 /** 즉사기 재사용 대기 (프레임) */
 const EXECUTE_CD = 900;
 
@@ -65,6 +79,8 @@ export class Boss extends Enemy {
   /** 보조 패턴 실행 중 (몸 동작·예고 상태를 건드리지 않는다) */
   private asSub = false;
   private execCd = 600;
+  /** execHalf: 지워지는 쪽 (왼쪽 절반?) */
+  private halfLeft = false;
   private landMark: { end: () => void } | null = null;
   private safe: { x: number; y: number }[] = [];
   private clones: Clone[] = [];
@@ -1089,6 +1105,98 @@ export class Boss extends Enemy {
           const ok = this.safe.some((z) => Math.abs(pl.cx - z.x) <= 22 && pl.b.y + pl.b.h > z.y - 60 && pl.b.y < z.y);
           if (!ok) room.instantKill('망각의 선고');
           for (const z of this.safe) room.fx.burst(z.x, z.y - 30, '#fff0a0', 24, 3);
+        }
+        return t > T + 30;
+      }
+      case 'execGround': {
+        const X = EXEC_TXT[this.bd.id] ?? { name: '처형', shout: '뛰어올라라!', col: '#ff4060' };
+        const T = 110;
+        const gy = this.ground(room);
+        this.pose = t < T ? 'windHigh' : 'slam';
+        this.anim = t < T ? 'wind' : 'atk';
+        this.b.vx = 0;
+        this.tele(t < T);
+        if (t === 1) {
+          this.face(room);
+          room.bossShout(X.shout, X.col);
+          audio.play('boss_roar', 0.9);
+          room.marker(16, gy - 30, room.world.pxW - 32, 30, T, X.col, true);
+        }
+        if (t === T - 60 || t === T - 40 || t === T - 20) {
+          room.toastWorld(room.player.cx, room.player.b.y - 16, `${(T - t) / 20}`, X.col);
+          audio.play('warn');
+        }
+        if (t === T) {
+          for (let x = 40; x < room.world.pxW; x += 80) room.fx.slash(x, gy - 15, this.facing, { arc: 'h', r: 44 }, X.col);
+          room.flash(X.col, 0.6);
+          room.cam.shake(10, 30);
+          audio.play('explode', 1.2);
+          const pl = room.player;
+          if (pl.b.y + pl.b.h > gy - 30) room.instantKill(X.name);
+        }
+        return t > T + 30;
+      }
+      case 'execZones': {
+        const X = EXEC_TXT[this.bd.id] ?? { name: '소멸', shout: '빛 안으로!', col: '#ff80d0' };
+        const T = 130;
+        this.pose = 'castUp';
+        this.anim = 'wind';
+        this.b.vx = 0;
+        this.tele(t < T);
+        if (t === 1) {
+          room.bossShout(X.shout, X.col);
+          audio.play('boss_roar', 0.7);
+          const n = this.phase >= 2 ? 1 : 2;
+          this.safe = [];
+          for (let i = 0; i < n; i++) {
+            const x = 60 + Math.random() * (room.world.pxW - 120);
+            const gy = room.world.groundBelow(x, 60);
+            this.safe.push({ x, y: gy });
+            room.marker(x - 22, gy - 60, 44, 60, T, '#fff0a0', true);
+          }
+          room.marker(0, 0, room.world.pxW, room.world.pxH, T, X.col, true);
+        }
+        if (t === T - 60 || t === T - 40 || t === T - 20) {
+          room.toastWorld(room.player.cx, room.player.b.y - 16, `${(T - t) / 20}`, X.col);
+          audio.play('warn');
+        }
+        if (t === T) {
+          room.flash('#ffffff', 1);
+          room.cam.shake(10, 40);
+          audio.play('explode', 1.6);
+          const pl = room.player;
+          const ok = this.safe.some((z) => Math.abs(pl.cx - z.x) <= 22 && pl.b.y + pl.b.h > z.y - 60 && pl.b.y < z.y);
+          if (!ok) room.instantKill(X.name);
+          for (const z of this.safe) room.fx.burst(z.x, z.y - 30, '#fff0a0', 24, 3);
+        }
+        return t > T + 30;
+      }
+      case 'execHalf': {
+        const X = EXEC_TXT[this.bd.id] ?? { name: '절단', shout: '반대편으로!', col: '#ff4060' };
+        const T = 120;
+        const W = room.world.pxW;
+        this.pose = 'castUp';
+        this.anim = 'wind';
+        this.b.vx = 0;
+        this.tele(t < T);
+        if (t === 1) {
+          // 플레이어가 있는 쪽 절반이 지워진다 → 반대편으로 건너가야 산다
+          this.halfLeft = room.player.cx < W / 2;
+          room.bossShout(X.shout, X.col);
+          audio.play('boss_roar', 0.8);
+          room.marker(this.halfLeft ? 0 : W / 2, 0, W / 2, room.world.pxH, T, X.col, true);
+        }
+        if (t === T - 60 || t === T - 40 || t === T - 20) {
+          room.toastWorld(room.player.cx, room.player.b.y - 16, `${(T - t) / 20}`, X.col);
+          audio.play('warn');
+        }
+        if (t === T) {
+          room.flash(X.col, 0.8);
+          room.cam.shake(10, 35);
+          audio.play('explode', 1.4);
+          for (let x = this.halfLeft ? 20 : W / 2 + 20; x < (this.halfLeft ? W / 2 : W); x += 40) room.fx.burst(x, room.player.cy, X.col, 6, 3);
+          const pl = room.player;
+          if (this.halfLeft ? pl.cx < W / 2 : pl.cx >= W / 2) room.instantKill(X.name);
         }
         return t > T + 30;
       }

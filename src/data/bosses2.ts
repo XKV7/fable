@@ -49,7 +49,7 @@ const ROWS: Row[] = [
     phases: [0.5],
     patterns: [
       ['radialBurst', 'crossBeam', 'laserSweep', 'homingOrbs', 'teleSlam'],
-      ['radialBurst', 'crossBeam', 'laserSweep', 'homingOrbs', 'teleSlam', 'starfall', 'gravityWell'],
+      ['radialBurst', 'crossBeam', 'laserSweep', 'homingOrbs', 'teleSlam', 'starfall', 'gravityWell', 'execZones'],
     ],
     col: '#ffe080', elem: { col: '#ffe080', vis: 'star', drop: 'fireball', proj: 'star' },
   },
@@ -58,8 +58,8 @@ const ROWS: Row[] = [
     phases: [0.66, 0.33],
     patterns: [
       ['swordCombo', 'radialBurst', 'starfall', 'crossBeam', 'gravityWell'],
-      ['swordCombo', 'radialBurst', 'starfall', 'crossBeam', 'gravityWell', 'laserSweep', 'cloneDash'],
-      ['swordCombo', 'radialBurst', 'starfall', 'crossBeam', 'gravityWell', 'laserSweep', 'cloneDash', 'meteor', 'floorHalf'],
+      ['swordCombo', 'radialBurst', 'starfall', 'crossBeam', 'gravityWell', 'laserSweep', 'cloneDash', 'execHalf'],
+      ['swordCombo', 'radialBurst', 'starfall', 'crossBeam', 'gravityWell', 'laserSweep', 'cloneDash', 'meteor', 'floorHalf', 'execHalf'],
     ],
     col: '#c0b0ff', elem: { col: '#c0b0ff', vis: 'void', drop: 'shard', proj: 'orb' },
   },
@@ -105,7 +105,7 @@ const ROWS: Row[] = [
     phases: [0.5],
     patterns: [
       ['dashSlash', 'leapSmash', 'charge', 'cloneDash', 'shockRing'],
-      ['dashSlash', 'leapSmash', 'charge', 'cloneDash', 'shockRing', 'summon', 'spikeWave'],
+      ['dashSlash', 'leapSmash', 'charge', 'cloneDash', 'shockRing', 'summon', 'spikeWave', 'execGround'],
     ],
     col: '#ffe040', elem: { col: '#e0e0b0', vis: 'blood', drop: 'blade', proj: 'blade' },
   },
@@ -114,8 +114,8 @@ const ROWS: Row[] = [
     phases: [0.66, 0.33],
     patterns: [
       ['dashSlash', 'aimedFan', 'homingOrbs', 'crossBeam', 'swordCombo'],
-      ['dashSlash', 'aimedFan', 'homingOrbs', 'crossBeam', 'swordCombo', 'cloneDash', 'floorHalf'],
-      ['dashSlash', 'aimedFan', 'homingOrbs', 'crossBeam', 'swordCombo', 'cloneDash', 'floorHalf', 'meteor', 'laserSweep', 'radialBurst'],
+      ['dashSlash', 'aimedFan', 'homingOrbs', 'crossBeam', 'swordCombo', 'cloneDash', 'floorHalf', 'execZones'],
+      ['dashSlash', 'aimedFan', 'homingOrbs', 'crossBeam', 'swordCombo', 'cloneDash', 'floorHalf', 'meteor', 'laserSweep', 'radialBurst', 'execZones'],
     ],
     col: '#ff4070', elem: { col: '#ff4070', vis: 'blood', drop: 'blade', proj: 'orb' },
   },
@@ -161,7 +161,7 @@ const ROWS: Row[] = [
     phases: [0.5],
     patterns: [
       ['homingOrbs', 'pillarMarch', 'laserSweep', 'radialBurst', 'teleSlam'],
-      ['homingOrbs', 'pillarMarch', 'laserSweep', 'radialBurst', 'teleSlam', 'floorHalf', 'gravityWell'],
+      ['homingOrbs', 'pillarMarch', 'laserSweep', 'radialBurst', 'teleSlam', 'floorHalf', 'gravityWell', 'execHalf'],
     ],
     col: '#ffe0a0', elem: { col: '#ffe0a0', vis: 'time', drop: 'blade', proj: 'orb' },
   },
@@ -170,8 +170,8 @@ const ROWS: Row[] = [
     phases: [0.66, 0.33],
     patterns: [
       ['swordCombo', 'crossBeam', 'radialBurst', 'cloneDash', 'starfall'],
-      ['swordCombo', 'crossBeam', 'radialBurst', 'cloneDash', 'starfall', 'laserSweep', 'gravityWell', 'meteor'],
-      ['swordCombo', 'crossBeam', 'radialBurst', 'cloneDash', 'starfall', 'laserSweep', 'gravityWell', 'meteor', 'floorHalf', 'pactShadows', 'pillarMarch'],
+      ['swordCombo', 'crossBeam', 'radialBurst', 'cloneDash', 'starfall', 'laserSweep', 'gravityWell', 'meteor', 'execGround'],
+      ['swordCombo', 'crossBeam', 'radialBurst', 'cloneDash', 'starfall', 'laserSweep', 'gravityWell', 'meteor', 'floorHalf', 'pactShadows', 'pillarMarch', 'execGround'],
     ],
     col: '#fff0c0', elem: { col: '#fff0c0', vis: 'holy', drop: 'blade', proj: 'soul' },
   },

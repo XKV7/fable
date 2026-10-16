@@ -4,7 +4,8 @@ type Wave = OscillatorType;
 
 export type MusicTheme =
   | 'title' | 'hub' | 'ch1' | 'ch2' | 'ch3' | 'ch4' | 'ch5' | 'ch6' | 'ch7' | 'boss' | 'finalboss' | 'gacha' | 'none'
-  | 's11' | 's12' | 's13' | 's14' | 's15' | 's16' | 's21' | 's22' | 's23' | 's24' | 's25' | 's26' | 's31' | 's32' | 's33' | 's34' | 's35' | 's36';
+  | 's11' | 's12' | 's13' | 's14' | 's15' | 's16' | 's21' | 's22' | 's23' | 's24' | 's25' | 's26' | 's31' | 's32' | 's33' | 's34' | 's35' | 's36'
+  | 's41' | 's42' | 's43' | 's44' | 's45' | 's46' | 's51' | 's52' | 's53' | 's54' | 's55' | 's56';
 
 interface ThemeDef {
   bpm: number;
@@ -58,6 +59,20 @@ const THEMES: Record<Exclude<MusicTheme, 'none'>, ThemeDef> = {
   s34: { bpm: 100, root: 50, scale: HARM, prog: [0, 6, 5, 4], lead: 'sine', bass: 'triangle', pad: 'sine', drums: 0.4 },
   s35: { bpm: 92, root: 46, scale: LOCRIAN, prog: [0, 3, 6, 1], lead: 'triangle', bass: 'sawtooth', pad: 'triangle', drums: 0.5 },
   s36: { bpm: 140, root: 36, scale: HARM, prog: [0, 5, 1, 4], lead: 'square', bass: 'sawtooth', pad: 'sawtooth', drums: 0.9 },
+  // 스토리 5: 찢어진 하늘
+  s41: { bpm: 104, root: 45, scale: DORIAN, prog: [0, 3, 4, 1], lead: 'triangle', bass: 'square', pad: 'sine', drums: 0.5, swing: 0.08 },
+  s42: { bpm: 90, root: 50, scale: MINOR, prog: [0, 5, 3, 6], lead: 'sine', bass: 'sine', pad: 'triangle', drums: 0.3 },
+  s43: { bpm: 112, root: 41, scale: PHRYG, prog: [0, 1, 5, 4], lead: 'square', bass: 'sawtooth', pad: 'sine', drums: 0.6 },
+  s44: { bpm: 96, root: 48, scale: HARM, prog: [0, 3, 5, 4], lead: 'sine', bass: 'triangle', pad: 'sawtooth', drums: 0.4 },
+  s45: { bpm: 136, root: 44, scale: DORIAN, prog: [0, 6, 3, 4], lead: 'sawtooth', bass: 'square', pad: 'square', drums: 0.85 },
+  s46: { bpm: 144, root: 37, scale: LOCRIAN, prog: [0, 1, 4, 6], lead: 'square', bass: 'sawtooth', pad: 'sawtooth', drums: 0.95 },
+  // 스토리 6: 바깥의 바다
+  s51: { bpm: 84, root: 43, scale: MINOR, prog: [0, 4, 6, 5], lead: 'triangle', bass: 'sine', pad: 'sine', drums: 0.3, swing: 0.1 },
+  s52: { bpm: 98, root: 46, scale: HARM, prog: [0, 1, 5, 4], lead: 'sine', bass: 'triangle', pad: 'sawtooth', drums: 0.45 },
+  s53: { bpm: 76, root: 36, scale: LOCRIAN, prog: [0, 6, 1, 4], lead: 'triangle', bass: 'sawtooth', pad: 'sine', drums: 0.35 },
+  s54: { bpm: 118, root: 47, scale: HARM, prog: [0, 5, 6, 3], lead: 'square', bass: 'triangle', pad: 'square', drums: 0.6, swing: 0.12 },
+  s55: { bpm: 128, root: 42, scale: DORIAN, prog: [0, 3, 6, 4], lead: 'sawtooth', bass: 'square', pad: 'sine', drums: 0.8 },
+  s56: { bpm: 150, root: 35, scale: PHRYG, prog: [0, 1, 6, 4], lead: 'square', bass: 'sawtooth', pad: 'sawtooth', drums: 1 },
 };
 
 const mtof = (m: number): number => 440 * Math.pow(2, (m - 69) / 12);

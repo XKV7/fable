@@ -23,6 +23,8 @@ export interface Body {
   onGround: boolean;
   dropTimer: number;
   hitWall: number; // 이번 프레임 벽 충돌 방향
+  /** 무너지는 발판을 밟아도 무너뜨리지 않음 (적) */
+  noCrumble?: boolean;
 }
 
 export function newBody(x: number, y: number, w: number, h: number): Body {
@@ -111,7 +113,7 @@ export class World {
           b.y = ty * TS - b.h;
           b.vy = 0;
           b.onGround = true;
-          if (v === Tile.Crumble) this.touchCrumble(tx, ty);
+          if (v === Tile.Crumble && !b.noCrumble) this.touchCrumble(tx, ty);
           break;
         }
       }
@@ -131,7 +133,7 @@ export class World {
         const v = this.get(tx, ty);
         if (this.solid(tx, ty) || (v === Tile.OneWay && !ignoreOneWay && b.dropTimer <= 0 && Math.abs(b.y + b.h - ty * TS) < 0.6)) {
           b.onGround = true;
-          if (v === Tile.Crumble) this.touchCrumble(tx, ty);
+          if (v === Tile.Crumble && !b.noCrumble) this.touchCrumble(tx, ty);
           break;
         }
       }

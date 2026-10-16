@@ -132,6 +132,68 @@ const ROWS: Row[] = [
   ['first_soul', '최초의 혼', 36, 'bomber', '#fff0c0', { elem: { vis: 'holy' } }],
   ['origin_eye', '근원의 눈', 36, 'caster', '#fff0c0', { proj: P.soul('#fff0c0') }],
   ['arche_shade', '아르케의 그림자', 36, 'lancer', '#a090c0'],
+
+  // ── 스토리 5: 찢어진 하늘 ──
+  ['sky_pirate', '하늘 해적', 41, 'melee', '#a08a6a', { weight: 4 }],
+  ['harpoon_gunner', '작살 포수', 41, 'archer', '#8aa0b0', { proj: P.spear('#d0e0f0') }],
+  ['storm_gull', '폭풍 갈매기', 41, 'flyer', '#d0e0f0', { elem: { vis: 'thunder' } }],
+  ['anchor_golem', '닻 골렘', 41, 'golem', '#6a7a8a', { elem: { vis: 'thunder' } }],
+
+  ['mist_maiden', '물안개 시녀', 42, 'gcaster', '#a0f0ff', { proj: P.shard('#d0f8ff', 'chill') }],
+  ['falls_crab', '폭포 게', 42, 'shield', '#4a8aa0', { w: 18, h: 14, def: 0.18 }],
+  ['rain_jelly', '빗방울 해파리', 42, 'bomber', '#80d0ff', { elem: { vis: 'ice', st: 'chill' } }],
+  ['torrent_monk', '급류 수도승', 42, 'teleporter', '#60a0c0'],
+
+  ['whalebone_warrior', '고래뼈 전사', 43, 'lancer', '#d0d0c0', { weight: 4 }],
+  ['barnacle_blob', '따개비 덩어리', 43, 'jumper', '#7a8a7a', { def: 0.1 }],
+  ['storm_eel', '폭풍 장어', 43, 'charger', '#4a6a9a', { w: 20, elem: { vis: 'thunder' } }],
+  ['marrow_wisp', '골수 위습', 43, 'caster', '#e0f0ff', { proj: P.bolt('#e0f0ff') }],
+
+  ['feather_monk', '깃털 수도사', 44, 'melee', '#e0d0b0', { weight: 4, speed: 1 }],
+  ['plume_archer', '깃털 궁수', 44, 'archer', '#c0a080', { proj: P.arrow('#fff0d0') }],
+  ['temple_owl', '사원 올빼미', 44, 'flyer', '#a08a6a'],
+  ['quill_turret', '깃펜 포탑', 44, 'turret', '#fff0d0', { proj: P.blade('#fff0d0') }],
+
+  ['storm_paladin', '폭풍 성기사', 45, 'shield', '#c0d0e0', { def: 0.2, weight: 3 }],
+  ['thunder_roc', '천둥 새', 45, 'bomber', '#8aa0d0', { elem: { vis: 'thunder', st: 'shock' } }],
+  ['cloud_wyrm', '구름 비룡', 45, 'charger', '#c0d0f0', { w: 20, h: 16 }],
+  ['gale_sorcerer', '돌풍 마법사', 45, 'gcaster', '#c0e0ff', { proj: P.bolt('#c0e0ff') }],
+
+  ['rift_stalker', '균열 추적자', 46, 'teleporter', '#c0a0ff', { weight: 4 }],
+  ['void_shard', '공허 파편', 46, 'flyer', '#e0c0ff', { w: 12, h: 12, elem: { vis: 'void' } }],
+  ['torn_angel', '찢긴 천사', 46, 'lancer', '#d0c0e0'],
+  ['rift_eye', '균열의 눈', 46, 'caster', '#a080ff', { proj: P.orb('#c0a0ff', 0.045) }],
+
+  // ── 스토리 6: 바깥의 바다 ──
+  ['lamp_drowned', '등불 익사자', 51, 'melee', '#6a8a8a', { weight: 4 }],
+  ['lamp_jelly', '등불 해파리', 51, 'bomber', '#ffe8a0', { elem: { vis: 'holy' } }],
+  ['tide_hound', '조류 사냥개', 51, 'charger', '#3a6a7a', { w: 20 }],
+  ['lens_turret', '등대 렌즈', 51, 'turret', '#ffe8a0', { proj: P.bolt('#fff0c0') }],
+
+  ['coral_bride', '산호 신부', 52, 'gcaster', '#ff90b0', { proj: P.lob('#ff90b0', 'poison') }],
+  ['coral_golem', '산호 골렘', 52, 'golem', '#d06a7a', { elem: { vis: 'poison', st: 'poison' } }],
+  ['grave_crab', '묘지 게', 52, 'shield', '#a0a0a0', { w: 18, h: 14, def: 0.2 }],
+  ['bone_fish', '뼈 물고기', 52, 'flyer', '#e0e0d0'],
+
+  ['trench_diver', '해구 잠수부', 53, 'lancer', '#5a6a8a', { weight: 4, def: 0.12 }],
+  ['angler_eye', '해구의 눈', 53, 'caster', '#7090ff', { proj: P.orb('#7090ff', 0.04) }],
+  ['abyss_worm', '심연 벌레', 53, 'jumper', '#3a3a6a', { w: 18, elem: { vis: 'void' } }],
+  ['silent_monk', '침묵 수도사', 53, 'teleporter', '#4a5a7a'],
+
+  ['inverted_citizen', '거꾸로 선 시민', 54, 'melee', '#c0a080', { weight: 4 }],
+  ['city_watch', '뒤집힌 경비병', 54, 'shield', '#8a7a5a', { def: 0.2 }],
+  ['gear_spider', '태엽 거미', 54, 'jumper', '#c0a060', { w: 18, elem: { vis: 'time' } }],
+  ['lantern_moth', '가로등 나방', 54, 'bomber', '#ffd080', { elem: { vis: 'fire', st: 'burn' } }],
+
+  ['aurora_wisp', '오로라 위습', 55, 'caster', '#80ffc0', { proj: P.star('#c0ffe0') }],
+  ['night_raptor', '밤 랩터', 55, 'charger', '#2a3a4a', { w: 20, h: 16, mul: 1.1 }],
+  ['polar_hunter', '극야 사냥꾼', 55, 'archer', '#a0c0d0', { proj: P.shard('#e0ffff', 'chill') }],
+  ['frost_gargoyle', '서리 가고일', 55, 'flyer', '#80a0b0', { def: 0.15, elem: { vis: 'ice', st: 'chill' } }],
+
+  ['outer_knight', '바깥의 기사', 56, 'shield', '#4a6a6a', { def: 0.22, weight: 3 }],
+  ['herald_eye', '전령의 눈', 56, 'caster', '#a0ffe0', { proj: P.soul('#a0ffe0') }],
+  ['unmade', '지워진 것', 56, 'teleporter', '#d0fff0'],
+  ['outer_swarm', '바깥의 떼', 56, 'flyer', '#3a5a5a', { w: 18, h: 14, mul: 1.2 }],
 ];
 
 export const STORY_ENEMIES: EnemyDef[] = ROWS.map(([id, name, theme, base, col, extra = {}]) => {

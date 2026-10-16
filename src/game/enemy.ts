@@ -62,6 +62,7 @@ export class Enemy {
     const w = Math.round(def.w * this.scale);
     const h = Math.round(def.h * this.scale);
     this.b = newBody(x - w / 2, y - h, w, h);
+    this.b.noCrumble = true; // 적은 무너지는 발판을 밟아도 떨어지지 않는다
     this.maxHp = this.hp = Math.round(def.hp * sc * (elite ? ELITE_MULT.hp : 1));
     this.atk = Math.round(def.atk * (CHAPTER_SCALE[chapter] ?? 1) * (1 + curse * 0.8) * (elite ? ELITE_MULT.atk : 1) * power.atk);
     this.kbRes = elite ? Math.max(def.kbRes, 0.6) : def.kbRes;
@@ -341,7 +342,10 @@ export class Enemy {
       }
       case 'nova':
         room.enemyExplode(this.cx, this.cy, 56, this.atk, 'poison');
-        room.addField('enemy', { vis: 'poison', w: 70, h: 30, life: 180, tick: 30, m: 1, st: 'poison' }, this.cx - 35, room.world.groundBelow(this.cx, this.cy) - 30, Math.round(this.atk * 0.4), 'normal');
+        {
+          const at = room.groundedField(this.cx - 35, this.cy - 15, 70, 30);
+          room.addField('enemy', { vis: 'poison', w: 70, h: 30, life: 180, tick: 30, m: 1, st: 'poison' }, at.x, at.y, Math.round(this.atk * 0.4), 'normal');
+        }
         break;
     }
   }
@@ -520,7 +524,10 @@ export class Enemy {
             this.st = 24;
             this.cd = d.cd;
             room.fx.dust(this.cx, this.b.y + this.b.h, 6);
-            if (this.elite) room.addField('enemy', { vis: d.elem?.vis ?? 'poison', w: 40, h: 14, life: 120, tick: 30, m: 1, st: d.elem ? d.elem.st : 'poison' }, this.cx - 20, this.b.y + this.b.h - 14, Math.round(this.atk * 0.3), 'normal');
+            if (this.elite) {
+              const at = room.groundedField(this.cx - 20, this.b.y + this.b.h - 14, 40, 14);
+              room.addField('enemy', { vis: d.elem?.vis ?? 'poison', w: 40, h: 14, life: 120, tick: 30, m: 1, st: d.elem ? d.elem.st : 'poison' }, at.x, at.y, Math.round(this.atk * 0.3), 'normal');
+            }
           }
           return;
         }
@@ -550,7 +557,10 @@ export class Enemy {
           this.b.vx = this.facing * (this.def.id === 'forge_hound' ? 5 : 4.2);
           this.contact(room, this.atk);
           if (this.animT % 3 === 0) room.fx.dust(this.cx - this.facing * 6, this.b.y + this.b.h, 1);
-          if (this.def.id === 'forge_hound' && this.animT % 8 === 0) room.addField('enemy', { vis: 'fire', w: 16, h: 10, life: 90, tick: 30, m: 1, st: 'burn' }, this.cx - 8, this.b.y + this.b.h - 10, Math.round(this.atk * 0.3), 'normal');
+          if (this.def.id === 'forge_hound' && this.animT % 8 === 0) {
+            const at = room.groundedField(this.cx - 8, this.b.y + this.b.h - 10, 16, 10);
+            room.addField('enemy', { vis: 'fire', w: 16, h: 10, life: 90, tick: 30, m: 1, st: 'burn' }, at.x, at.y, Math.round(this.atk * 0.3), 'normal');
+          }
           if (this.st <= 0 || this.b.hitWall || (this.b.onGround && !this.groundAhead(room, this.facing))) {
             this.state = 'recover';
             this.st = 34;

@@ -76,6 +76,11 @@ export class RunScene implements Scene {
   /** 현재 런 상태 저장 (런 이어하기) */
   checkpoint(): void {
     if (this.ended || !this.room) return;
+    // 보스 러시는 이어하기 저장을 하지 않는다 (중간에 나가면 기록만 남고 끝)
+    if (this.run.bossRush) {
+      app.save.run = null;
+      return;
+    }
     app.save.run = snapRun(this.run, {
       rngEntry: this.entryRng,
       template: this.entryTemplate,
@@ -125,10 +130,11 @@ export class RunScene implements Scene {
     this.room.useItemRequest = () => this.useItem();
     this.room.build.fire('roomStart', {}, Math.random);
     if (node.type === 'boss') {
-      audio.playMusic(run.chapter >= run.storyDef.finalStage ? 'finalboss' : 'boss');
+      audio.playMusic(run.bossRush ? (run.chapter >= run.rushList.length ? 'finalboss' : 'boss') : run.chapter >= run.storyDef.finalStage ? 'finalboss' : 'boss');
       this.bossCard = 150;
     } else audio.playMusic(ch.music);
-    if (chapterStart) this.card = { title: `제${run.chapter}장  ${ch.name}`, sub: run.storyDef.cards[run.chapter - 1] ?? '더 깊은 곳으로', t: 180 };
+    if (chapterStart && run.bossRush) this.card = { title: `보스 러시  ${run.chapter} / ${run.rushList.length}`, sub: `스토리 ${run.story} · ${ch.name}`, t: 150 };
+    else if (chapterStart) this.card = { title: `제${run.chapter}장  ${ch.name}`, sub: run.storyDef.cards[run.chapter - 1] ?? '더 깊은 곳으로', t: 180 };
     else if (node.type !== 'combat' && node.type !== 'boss') this.card = { title: { start: '입구', tutorial: '훈련의 방', elite: '정예의 방', altar: '영혼 제단', armory: '무기고', shop: '상점', rest: '휴식처', event: '???', treasure: '보물방', combat: '', boss: '' }[node.type], sub: '', t: 90 };
     if (node.type === 'elite') this.card = { title: '정예의 방', sub: '강력한 적이 유물을 지키고 있다', t: 100 };
     if (!resuming) this.checkpoint();
@@ -149,7 +155,10 @@ export class RunScene implements Scene {
     } else if (node.type === 'elite') {
       const e = room.enemies.find((x) => x.elite) ?? room.enemies[0];
       const x = e ? e.cx : p.cx;
-      room.pickups.push(new Pickup('relicOrb', x, (e ? e.cy : p.cy) - 10, 1));
+      // 유물은 항상 안전한 바닥 위에 (구덩이·가시·용암·벽 속 금지). 쓰러진 자리 근처에서 찾고, 없으면 플레이어 발밑
+      const ey = e ? e.b.y + e.b.h : p.b.y + p.b.h;
+      const spot = room.safeSpot(x, room.world.groundBelow(x, ey - 8, 200), false) ?? room.safeSpot(p.cx, p.b.y + p.b.h, false) ?? { x: p.cx, y: p.b.y + p.b.h };
+      room.pickups.push(new Pickup('relicOrb', spot.x, spot.y - 14, 1));
       room.dropReward('gold', x, p.cy - 30, 40 + run.chapter * 15, 10);
       room.dropReward('stone', x, p.cy - 30, 20, 4);
     } else if (node.type === 'tutorial') {
@@ -280,8 +289,8 @@ export class RunScene implements Scene {
     app.toast(`${nm} 처치!`, '#ffe080');
     audio.play('victory');
     this.relicChoice(3, `${nm}의 유산`, 2);
-    if (run.chapter >= run.storyDef.finalStage) run.kingDown = true;
-    if (run.storyDef.trueStage && run.chapter >= run.storyDef.trueStage) run.trueEnd = true;
+    if (!run.bossRush && run.chapter >= run.storyDef.finalStage) run.kingDown = true;
+    if (!run.bossRush && run.storyDef.trueStage && run.chapter >= run.storyDef.trueStage) run.trueEnd = true;
     this.bossDone = true;
     this.exitDoors();
     audio.playMusic('none');
@@ -293,6 +302,12 @@ export class RunScene implements Scene {
     const run = this.run;
     const sd = run.storyDef;
     const next = run.nextThemes();
+    if (run.bossRush) {
+      // 다음 보스로, 마지막이면 완주
+      this.room.addExitDoors(next.length ? [{ nodeId: -1, nextCh: next[0] }] : [{ nodeId: -2 }]);
+      if (!next.length) app.toast('보스 러시 완주!', '#ffe080');
+      return;
+    }
     if (sd.trueStage && run.chapter >= sd.trueStage) {
       this.room.addExitDoors([{ nodeId: -2 }]);
     } else if (run.chapter >= sd.finalStage) {

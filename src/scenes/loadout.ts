@@ -19,10 +19,15 @@ import { StoryTextScene } from './story';
 type Focus = 0 | 1 | 2 | 3 | 4 | 5; // 슬롯1, 슬롯2, 무기, 저주, 출정, 스토리
 
 /** 편성: 영웅 2명 + 무기 1개 + 저주 단계 선택 후 출정 */
+/** 보스 러시: 스토리 1~4를 모두 완수하면 열림 */
+export const rushUnlocked = (): boolean => [1, 2, 3, 4].every((i) => !!app.save.storyClear[i]);
+
 export class LoadoutScene implements Scene {
   focus: Focus = 4;
   /** 무기 칸에서 위로 갈 때 돌아갈 영웅 칸 */
   lastSlot: 0 | 1 = 0;
+  /** 스토리 칸에서 「보스 러시」를 고른 상태 (스토리 1~4를 모두 완수하면 열림) */
+  rush = false;
   picking: 'char' | 'weapon' | null = null;
   pick = 0;
   t = 0;
@@ -134,7 +139,9 @@ export class LoadoutScene implements Scene {
       } else if (this.focus === 3) {
         if (!this.curseLocked()) app.save.curse = app.save.curse >= app.save.curseMax ? 0 : app.save.curse + 1;
       } else if (this.focus === 5) {
-        if (!this.storyLocked()) app.save.story = app.save.story >= app.save.storyMax ? 1 : app.save.story + 1;
+        if (this.rush) this.rush = false;
+        else if (app.save.story >= app.save.storyMax && rushUnlocked()) this.rush = true;
+        else if (!this.storyLocked()) app.save.story = app.save.story >= app.save.storyMax ? 1 : app.save.story + 1;
       } else this.depart();
     }
   }
@@ -170,7 +177,10 @@ export class LoadoutScene implements Scene {
       if (f === 1) n = 0;
       else if (f === 0) n = 1;
       else if (f === 4) n = 3;
-      else if (f === 5 && app.save.story > 1) {
+      else if (f === 5 && this.rush) {
+        this.rush = false;
+        audio.play('select');
+      } else if (f === 5 && app.save.story > 1) {
         app.save.story--;
         audio.play('select');
       } else if (f === 5) n = 2;
@@ -183,8 +193,12 @@ export class LoadoutScene implements Scene {
       if (f === 0) n = 1;
       else if (f === 1) n = 0;
       else if (f === 2) n = 5;
+      else if (f === 5 && this.rush) audio.play('error');
       else if (f === 5 && app.save.story < app.save.storyMax) {
         app.save.story++;
+        audio.play('select');
+      } else if (f === 5 && rushUnlocked()) {
+        this.rush = true;
         audio.play('select');
       } else if (f === 5) this.storyLocked();
       else if (f === 3 && app.save.curse < app.save.curseMax) {
@@ -221,6 +235,13 @@ export class LoadoutScene implements Scene {
     if (!WEAPON_MAP[lo.weapon] || (!app.debug && !app.save.weapons[lo.weapon])) lo.weapon = Object.keys(app.save.weapons)[0];
     app.persist();
     const run = new RunState(app.save);
+    if (this.rush) {
+      run.startBossRush(app.save);
+      if (!run.rushList.length) return;
+      if (markAch(app.save, 'first_run')) app.achToast(['first_run']);
+      app.go(new RunScene(run));
+      return;
+    }
     if (markAch(app.save, 'first_run')) app.achToast(['first_run']);
     const sd = run.storyDef;
     const first = !app.save.storySeen[sd.id];
@@ -308,11 +329,19 @@ export class LoadoutScene implements Scene {
     const ssel = this.focus === 5;
     panel(g, 316, 166, 156, 42, { border: ssel ? '#ffffff' : '#c0a060' });
     hot.add('lf:5', 316, 166, 156, 42);
-    text(g, `스토리 ${sd.id} / ${STORIES.length}`, 322, 170, { size: 6, color: '#a8a0c0' });
-    text(g, `◀ ${sd.name} ▶`, 394, 180, { size: 9, align: 'center', color: '#ffe0a0', bold: true });
-    text(g, save.storyMax > 1 ? (save.storyClear[sd.id] ? `${sd.sub} · 완수` : sd.sub) : '「망자의 계약」을 완수하면 후속 스토리가 열린다', 394, 194, { size: 5, align: 'center', color: save.storyClear[sd.id] ? '#a0ffd0' : '#a8a0c0', maxW: 150 });
+    if (this.rush) {
+      const n = STORIES.filter((x) => save.storyClear[x.id]).reduce((a, x) => a + x.route.flat().length, 0);
+      text(g, '특별 모드', 322, 170, { size: 6, color: '#ff9090' });
+      text(g, '◀ 보스 러시', 394, 180, { size: 9, align: 'center', color: '#ff8080', bold: true });
+      text(g, `완수한 스토리의 보스 ${n}체와 연속으로 · 최고 기록 ${save.bossRushBest ?? 0}체`, 394, 194, { size: 5, align: 'center', color: '#ffc0c0', maxW: 150 });
+    } else {
+      text(g, `스토리 ${sd.id} / ${STORIES.length}`, 322, 170, { size: 6, color: '#a8a0c0' });
+      text(g, `◀ ${sd.name} ▶`, 394, 180, { size: 9, align: 'center', color: '#ffe0a0', bold: true, maxW: 150 });
+      text(g, save.storyMax > 1 ? (save.storyClear[sd.id] ? `${sd.sub} · 완수` : sd.sub) : '「망자의 계약」을 완수하면 후속 스토리가 열린다', 394, 194, { size: 5, align: 'center', color: save.storyClear[sd.id] ? '#a0ffd0' : '#a8a0c0', maxW: 150 });
+      if (sd.id === save.storyMax && rushUnlocked()) text(g, '▶ 보스 러시', 466, 170, { size: 5, align: 'right', color: '#ff9090' });
+    }
     // 출정
-    button(g, 316, 210, 156, 28, '출정!', this.focus === 4, { size: 11, col: '#ffcc40', sub: sd.id === 1 ? '끝없는 왕좌를 향해' : sd.sub });
+    button(g, 316, 210, 156, 28, '출정!', this.focus === 4, { size: 11, col: '#ffcc40', sub: this.rush ? '보스와 연속 전투' : sd.id === 1 ? '끝없는 왕좌를 향해' : sd.sub });
     hot.add('lf:4', 316, 210, 156, 28);
     // 피커
     if (this.picking) {

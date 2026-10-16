@@ -774,6 +774,29 @@ export class Room {
         p.counterM = ev.m * dm;
         break;
       case 'tp': {
+        if (ev.toEnemy && ev.exact) {
+          // 적의 정확한 위치로: 적 옆(벽이면 반대쪽·적 자리)에 발 높이를 맞춰 놓고, 떨어지지 않게 속도를 0으로
+          const e = this.nearestEnemy(p.cx, p.cy, 320);
+          if (e) {
+            this.fx.ghost(p.frame(), p.cx - 24, p.b.y + p.b.h - 44, p.facing < 0, col, 18);
+            const side = p.cx < e.cx ? -1 : 1;
+            const footY = e.flying ? e.b.y + e.b.h / 2 + p.b.h / 2 : e.b.y + e.b.h;
+            const free = (x: number): boolean => {
+              const y = footY - p.b.h;
+              for (const [ox, oy] of [[1, 1], [p.b.w - 1, 1], [1, p.b.h - 1], [p.b.w - 1, p.b.h - 1], [p.b.w / 2, p.b.h / 2]]) if (this.world.solidPx(x + ox, y + oy)) return false;
+              return true;
+            };
+            const cands = [e.cx + side * (e.b.w / 2 + 6), e.cx - side * (e.b.w / 2 + 6), e.cx].map((cx) => Math.max(16, Math.min(this.world.pxW - 16, cx)) - p.b.w / 2);
+            p.b.x = cands.find(free) ?? cands[2];
+            p.b.y = footY - p.b.h;
+            p.b.vx = 0;
+            p.b.vy = 0;
+            this.unstick(p.b);
+            p.facing = p.cx < e.cx ? 1 : -1;
+            this.fx.burst(p.cx, p.cy, col, 12, 2);
+            break;
+          }
+        }
         let tx: number;
         if (ev.toEnemy) {
           const e = this.nearestEnemy(p.cx, p.cy, 220);

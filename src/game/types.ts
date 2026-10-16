@@ -194,7 +194,7 @@ export type ActEvent =
   | { t: number; k: 'shield'; v: number }
   | { t: number; k: 'timestop'; dur: number }
   | { t: number; k: 'counter'; dur: number; m: number }
-  | { t: number; k: 'tp'; dx: number; toEnemy?: boolean }
+  | { t: number; k: 'tp'; dx: number; toEnemy?: boolean; exact?: boolean } // exact: 적의 높이까지 정확히 (발판 위·공중의 적에게도) 붙는다
   | { t: number; k: 'meteor'; n: number; m: number; spread: number; el?: Element; st?: StatusId; big?: boolean; spr?: ProjSprite }
   | { t: number; k: 'fx'; fx: SlashFx }
   /** 컨셉아트 이펙트 그림: name = '영웅id:그림'(생략 시 카일루스). 플레이어 기준 (dx, dy)에서 크기 s0→s1, life 프레임 */

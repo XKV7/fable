@@ -239,14 +239,22 @@ function drawCaelus(pose: PoseName): HTMLCanvasElement {
  * 시트 이미지가 아직 안 불러와졌으면 손으로 찍은 픽셀 버전(drawCaelus)으로 대신 그리고 캐시하지 않는다.
  */
 const CAELUS_POSE: Record<PoseName, string> = {
-  idle0: 'idle0', idle1: 'idle2', crouch: 'idle0',
+  idle0: 'idle0', idle1: 'idle2', crouch: 'crouch',
   run0: 'run0', run1: 'run1', run2: 'run2', run3: 'run3', run4: 'run0', run5: 'run1',
-  jump: 'run1', fall: 'run3', dash: 'run2',
+  jump: 'jump', fall: 'fall', dash: 'dash',
   hurt: 'hit1', guard: 'hit0', dead: 'die3',
   windHigh: 'attack0', slashDown: 'attack1', windLow: 'attack2', slashUp: 'attack3',
   thrustWind: 'attack4', thrust: 'attack5', spin: 'attack3', slamWind: 'attack0', slam: 'attack1',
   kick: 'attack5', uppercut: 'attack3', throw: 'attack5',
   cast: 'cast0', castUp: 'cast1', shootWind: 'cast0', shoot: 'cast1',
+};
+/** 반복 동작: 원본 칸 사이에 만든 사이 동작(이름에 '_')을 끼워 더 부드럽게 */
+const CYCLES: Record<string, { frames: string[]; tick: number }> = {
+  idle: { frames: ['idle0', 'idle1', 'idle2', 'idle3', 'idle4'], tick: 9 },
+  run: { frames: ['run0', 'run0_1', 'run1', 'run1_2', 'run2', 'run2_3', 'run3', 'run3_0'], tick: 4 },
+  walk: { frames: ['walk0', 'walk0_1', 'walk1', 'walk1_2', 'walk2', 'walk2_3', 'walk3', 'walk3_4', 'walk4'], tick: 5 },
+  hurt: { frames: ['hit0', 'hit1', 'hit2', 'hit3', 'hit4'], tick: 4 },
+  dead: { frames: ['hit1', 'hit_die', 'die0', 'die0_1', 'die1', 'die1_2', 'die2', 'die2_3', 'die3'], tick: 4 },
 };
 interface Sheet { img: HTMLImageElement; ok: boolean; frames: typeof CAELUS_FRAMES; pose: Record<PoseName, string> }
 const SHEETS: Record<string, Sheet> = {};
@@ -261,31 +269,64 @@ function sheetOf(id: string): Sheet | null {
   }
   return s;
 }
-function fromSheet(s: Sheet, pose: PoseName): HTMLCanvasElement {
-  const f = s.frames[s.pose[pose]] ?? s.frames.idle0;
+
+/** 전투 중 애니메이션 정보 (없으면 포즈의 대표 칸) */
+export interface HDAnim {
+  t: number; // 반복 동작 시계 (대기·달리기)
+  since: number; // 지금 포즈가 시작된 뒤 지난 틱 (피격·쓰러짐 진행, 동작 전환)
+  prev?: PoseName; // 바로 앞 포즈 (공격 칸 사이 동작)
+  walk?: boolean; // 느리게 움직이는 중
+}
+
+function sheetFrameName(s: Sheet, pose: PoseName, an?: HDAnim): string {
+  const base = s.pose[pose];
+  if (!an) return base;
+  const cyc = (k: string, t: number, loop = true): string => {
+    const c = CYCLES[k];
+    const i = Math.floor(t / c.tick);
+    return c.frames[loop ? i % c.frames.length : Math.min(i, c.frames.length - 1)];
+  };
+  if (pose === 'idle0' || pose === 'idle1') return cyc('idle', an.t);
+  if (pose.startsWith('run')) return cyc(an.walk ? 'walk' : 'run', an.t);
+  if (pose === 'hurt') return cyc('hurt', an.since, false);
+  if (pose === 'dead') return cyc('dead', an.since, false);
+  // 공격·시전: 포즈가 막 바뀐 2틱 동안은 앞 칸 → 이 칸 사이 동작
+  if (an.prev && an.since < 2) {
+    const m = /^(attack|cast)(\d)$/.exec(base);
+    const pm = /^(attack|cast)(\d)$/.exec(s.pose[an.prev]);
+    if (m && pm && m[1] === pm[1] && +m[2] === +pm[2] + 1) {
+      const k = `${pm[0]}_${m[2]}`;
+      if (s.frames[k]) return k;
+    }
+  }
+  return base;
+}
+
+function fromSheet(s: Sheet, name: string): HTMLCanvasElement {
+  const f = s.frames[name] ?? s.frames.idle0;
   const c = document.createElement('canvas');
   c.width = c.height = HD_FW;
   const g = c.getContext('2d')!;
   g.imageSmoothingEnabled = false;
-  // 발 기준점을 96×96 칸의 (48, 88)에 맞춘다. 쓰러진 프레임은 몸 가운데를 맞춘다
-  const ax = pose === 'dead' ? Math.round(f.w / 2) : f.ax;
-  g.drawImage(s.img, f.x, f.y, f.w, f.h, HD_FW / 2 - ax, FOOT - f.ay, f.w, f.h);
+  // 발 기준점(머리 아래 가장 낮은 점)을 96×96 칸의 (48, 88)에 맞춘다
+  g.drawImage(s.img, f.x, f.y, f.w, f.h, HD_FW / 2 - f.ax, FOOT - f.ay, f.w, f.h);
   return c;
 }
 
 const DRAW: Record<string, (pose: PoseName) => HTMLCanvasElement> = { caelus: drawCaelus };
 const cache = new Map<string, HTMLCanvasElement>();
 
-/** 고해상도 스프라이트가 있는 영웅이면 96×96 프레임, 없으면 null */
-export function charFrameHD(id: string, pose: PoseName): HTMLCanvasElement | null {
+/** 고해상도 스프라이트가 있는 영웅이면 96×96 프레임, 없으면 null. an을 주면 사이 동작·반복 동작까지 고른다 */
+export function charFrameHD(id: string, pose: PoseName, an?: HDAnim): HTMLCanvasElement | null {
   const d = DRAW[id];
   if (!d) return null;
-  const k = `${id}|${pose}`;
+  const s = sheetOf(id);
+  if (s && !s.ok) return d(pose === 'dead' ? 'hurt' : pose); // 시트 불러오는 중 (아주 잠깐)
+  const name = s ? sheetFrameName(s, pose, an) : pose;
+  const k = `${id}|${name}`;
   let c = cache.get(k);
   if (!c) {
-    const s = sheetOf(id);
-    if (s && !s.ok) return d(pose === 'dead' ? 'hurt' : pose); // 시트 불러오는 중 (아주 잠깐)
-    c = s ? fromSheet(s, pose) : d(pose);
+    c = s ? fromSheet(s, name) : d(pose);
     cache.set(k, c);
   }
   return c;

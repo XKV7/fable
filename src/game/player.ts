@@ -72,6 +72,10 @@ export class Player {
   afterDash = 0;
   afterSwap = 0;
   deadT = 0;
+  /** 고해상도 그림 애니메이션: 지금·앞 포즈와 지금 포즈가 이어진 틱 */
+  private hdPose: PoseName = 'idle0';
+  private hdPrev: PoseName | undefined;
+  private hdSince = 0;
   landT = 0;
   wasGround = true;
   swapHitDone = false;
@@ -525,8 +529,17 @@ export class Player {
     const img = this.frame();
     // ★7 고해상도 스프라이트: 월드 대신 확대된 화면 층에 그린다
     const lying = this.state === 'dead' && this.deadT > 14;
-    const lieHD = lying && hasLyingFrame(this.def.id);
-    const hd = this.room.demoNoHD ? null : charFrameHD(this.def.id, lieHD ? 'dead' : this.pose());
+    // 쓰러지는 그림이 있는 영웅은 쓰러진 순간부터 그림 순서대로 (회전 없음)
+    const lieHD = this.state === 'dead' && hasLyingFrame(this.def.id);
+    const pose = lieHD ? 'dead' : this.pose();
+    if (pose !== this.hdPose) {
+      this.hdPrev = this.hdPose;
+      this.hdPose = pose;
+      this.hdSince = 0;
+    }
+    const hd = this.room.demoNoHD
+      ? null
+      : charFrameHD(this.def.id, pose, { t: this.animT, since: lieHD ? this.deadT : this.hdSince++, prev: this.hdPrev, walk: Math.abs(this.b.vx) < 1.2 });
     const x = Math.round(this.cx - 24 - cx);
     const y = Math.round(this.b.y + this.b.h - 44 - cy);
     g.save();

@@ -1,8 +1,102 @@
 import type { CharDef } from '../game/types';
 import { melee, multi, P, shot } from './actionKit';
 
-/** 확장 영웅 12명 (★5 2 / ★4 4 / ★3 6). 형식은 characters.ts와 동일 */
+/** 확장 영웅 13명 (★7 1 / ★5 2 / ★4 4 / ★3 6). 형식은 characters.ts와 동일 */
 export const CHARACTERS_EX: CharDef[] = [
+  // ───────────────────────── ★7 ─────────────────────────
+  {
+    // 컨셉아트: 검은 후드(흰 삼각 문양)·은발·보라 눈, 흰-청 줄무늬 롱코트, 푸른 별빛 장검, 등 뒤에 떠 있는 별의 나침반
+    id: 'caelus', name: '카일루스', title: '별의 나침반을 쥔 검사', rarity: 7, type: 'speed', crest: 'soul',
+    lore: '하늘에서 떨어진 별의 나침반을 주운 검사. 나침반이 가리키는 곳마다 별빛이 칼날이 되어 내려앉는다.',
+    atk: 36, hp: 150, speed: 2.25, fx: '#8a9aff',
+    look: { skin: '#f4ecf0', hair: '#d8d8ec', hairStyle: 'starhood', body: '#1c1a2c', trim: '#a8c4ff', legs: '#15131f', boots: '#c8c8dc', cape: '#16141f', eye: '#a070ff', weapon: 'starblade', wcol: '#6a86ff', wcol2: '#26244a', build: 'normal', glow: '#9a8aff', extra: 'compass' },
+    combo: [
+      melee({ dur: 12, t: 4, m: 0.75, box: [0, -16, 36, 22], w: 'windHigh', s: 'slashDown', fx: { arc: 'down', r: 28, col: '#a8c0ff' }, hs: 3, lunge: 2.5 }),
+      melee({ dur: 12, t: 4, m: 0.75, box: [0, -18, 36, 24], w: 'windLow', s: 'slashUp', fx: { arc: 'up', r: 28, col: '#b8a0ff' }, hs: 3, lunge: 2.5 }),
+      melee({ dur: 14, t: 4, m: 0.9, box: [0, -10, 42, 14], w: 'thrustWind', s: 'thrust', fx: { arc: 'thrust', r: 36, col: '#c8e8ff' }, hs: 4, lunge: 3.5, el: 'holy' }),
+      {
+        // 마무리: 회전 베기 + 초승달 검기
+        dur: 30,
+        pose: [[0, 'windHigh'], [6, 'spin'], [14, 'slashDown']],
+        cancel: 24,
+        move: [[4, 3], [14, 0]],
+        ev: [
+          { t: 4, k: 'sfx', s: 'swing_heavy' },
+          { t: 6, k: 'hit', box: [-20, -20, 56, 32], m: 1.2, kb: 3, hs: 6, el: 'holy', fx: { arc: 'circle', r: 30, col: '#8a9aff' }, shake: 3 },
+          { t: 14, k: 'hit', box: [0, -18, 46, 26], m: 1.4, kb: 5, hs: 7, el: 'holy', fx: { arc: 'down', r: 36, col: '#c8e8ff' }, fin: true },
+          { t: 14, k: 'proj', p: { spr: 'crescent', spd: 5.5, life: 46, w: 20, h: 30, col: '#8a9aff', el: 'holy', pierce: 99 }, m: 1.1 },
+        ],
+      },
+    ],
+    air: melee({ dur: 16, t: 4, m: 0.85, box: [0, -6, 34, 26], w: 'windHigh', s: 'slashDown', fx: { arc: 'down', r: 28, col: '#a8c0ff' }, air: true, grav: 0.3, hs: 3, extra: [{ t: 4, k: 'proj', p: { spr: 'crescent', spd: 5, life: 26, w: 14, h: 20, col: '#a8c0ff', el: 'holy', pierce: 3 }, m: 0.5, ang: 30 }] }),
+    dashAtk: melee({ dur: 20, t: 5, m: 1.5, box: [-10, -14, 56, 18], w: 'thrustWind', s: 'thrust', fx: { arc: 'h', r: 44, col: '#8a9aff' }, lunge: 8, hs: 5, el: 'holy', inv: [0, 10] }),
+    skills: [
+      {
+        name: '성흔 결정창',
+        desc: '별빛 결정이 앞으로 차례로 솟구치고(공격력 90%×5), 결정 파편 다섯 발을 흩뿌린다.',
+        cd: 7,
+        act: {
+          dur: 30,
+          pose: [[0, 'slamWind'], [8, 'slam']],
+          ev: [
+            { t: 8, k: 'sfx', s: 'cast' },
+            { t: 8, k: 'shake', v: 3 },
+            { t: 8, k: 'field', f: { vis: 'star', w: 22, h: 46, life: 22, tick: 8, m: 0.9, el: 'holy' }, dx: 28, ground: true },
+            { t: 11, k: 'field', f: { vis: 'star', w: 22, h: 52, life: 22, tick: 8, m: 0.9, el: 'holy' }, dx: 54, ground: true },
+            { t: 14, k: 'field', f: { vis: 'star', w: 22, h: 58, life: 22, tick: 8, m: 0.9, el: 'holy' }, dx: 80, ground: true },
+            { t: 17, k: 'field', f: { vis: 'star', w: 22, h: 64, life: 22, tick: 8, m: 0.9, el: 'holy' }, dx: 106, ground: true },
+            { t: 20, k: 'field', f: { vis: 'star', w: 26, h: 72, life: 22, tick: 8, m: 0.9, el: 'holy' }, dx: 134, ground: true },
+            { t: 10, k: 'proj', p: { spr: 'shard', spd: 5.5, life: 60, w: 10, h: 6, col: '#c8e8ff', el: 'holy', pierce: 2 }, m: 0.6, n: 5, spread: 12, ang: -10 },
+          ],
+        },
+      },
+      {
+        name: '천구 나침반',
+        desc: '발밑에 별의 마법진을 펼쳐 적을 끌어당기며 지속 피해를 주고(공격력 50%/0.33초), 별 위성 3개를 소환한다 (9초).',
+        cd: 13,
+        act: {
+          dur: 26,
+          pose: [[0, 'castUp']],
+          ev: [
+            { t: 6, k: 'sfx', s: 'gem' },
+            { t: 6, k: 'fx', fx: { arc: 'circle', r: 46, col: '#9a8aff' } },
+            { t: 8, k: 'field', f: { vis: 'star', w: 140, h: 40, life: 150, tick: 20, m: 0.5, el: 'holy', pull: 1.4 }, dx: 0, ground: true },
+            { t: 8, k: 'summon', s: { kind: 'star', life: 540, m: 0.6, max: 6 }, n: 3 },
+          ],
+        },
+      },
+    ],
+    swap: {
+      name: '교대: 별의 심판',
+      desc: '가장 가까운 적에게 순간이동해 시간을 멈추고, 거대한 별의 마법진을 터뜨린다 (공격력 450%).',
+      act: {
+        dur: 40,
+        pose: [[0, 'dash'], [6, 'castUp'], [24, 'slashDown']],
+        inv: [0, 30],
+        ev: [
+          { t: 0, k: 'tp', dx: 18, toEnemy: true },
+          { t: 4, k: 'timestop', dur: 50 },
+          { t: 6, k: 'fx', fx: { arc: 'circle', r: 60, col: '#9a8aff' } },
+          { t: 6, k: 'sfx', s: 'cast' },
+          { t: 24, k: 'nova', r: 90, m: 4.5, el: 'holy', up: -3 },
+          { t: 24, k: 'shake', v: 8 },
+          { t: 24, k: 'sfx', s: 'explode' },
+        ],
+      },
+    },
+    passive: {
+      name: '성계의 가호',
+      desc: '모든 피해 +20%, 치명타 확률 +10%. 5초마다 가장 가까운 적에게 별빛 검을 떨어뜨린다 (공격력 160%).',
+      effects: [{ stats: { allDmg: 0.2, crit: 0.1 } }, { on: 'interval', every: 5, do: [{ k: 'meteor', m: 1.6 }] }],
+    },
+    awaken: [
+      { desc: '성흔 결정창 파편 +4', mods: [{ target: 'skill1', count: 4 }] },
+      { desc: '천구 나침반 별 위성 +2', mods: [{ target: 'skill2', count: 2 }] },
+      { desc: '치명타 피해 +40%', effects: [{ stats: { critDmg: 0.4 } }] },
+      { desc: '별의 심판 피해 +60%', mods: [{ target: 'swap', dmg: 0.6 }] },
+      { desc: '모든 기술 피해 +40%, 스킬 쿨타임 -15%', mods: [{ target: 'all', dmg: 0.4 }], effects: [{ stats: { cdr: 0.15 } }] },
+    ],
+  },
   // ───────────────────────── ★5 ─────────────────────────
   {
     id: 'marionne', name: '마리오네', title: '망각의 인형술사', rarity: 5, type: 'magic', crest: 'soul',

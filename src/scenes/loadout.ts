@@ -4,7 +4,7 @@ import { CHARACTERS, CHAR_MAP, TYPE_COL, TYPE_LABEL } from '../data/characters';
 import { CURSES } from '../data/meta';
 import { WEAPONS, WEAPON_MAP, weaponDesc } from '../data/weapons';
 import { text } from '../gfx/renderer';
-import { charFrame } from '../gfx/sprites';
+import { charArt } from '../gfx/sprites';
 import { RunState } from '../game/run';
 import { markAch } from '../game/meta';
 import { drawIcon } from '../ui/icons';
@@ -231,7 +231,7 @@ export class LoadoutScene implements Scene {
       text(g, i === 0 ? '선봉' : '교대', x + 6, y + 4, { size: 7, color: '#8a8098' });
       if (c) {
         const pose = sel ? (['idle0', 'windHigh', 'slashDown', 'thrust'] as const)[Math.floor(this.t / 20) % 4] : 'idle0';
-        g.drawImage(charFrame(id, pose), x + 36 - 48, y + 102 - 88, 96, 96);
+        g.drawImage(charArt(id, pose), x + 36 - 48, y + 102 - 88, 96, 96);
         stars(g, x + 76, y + 14, c.rarity, 6);
         text(g, c.name, x + 76, y + 24, { size: 10, color: '#ffffff', bold: true });
         text(g, c.title, x + 76, y + 38, { size: 6, color: '#a8a0c0' });
@@ -289,7 +289,7 @@ export class LoadoutScene implements Scene {
           g.fillRect(x, y, 46, 42);
           g.strokeStyle = RARITY_COL[c.rarity];
           g.strokeRect(x + 0.5, y + 0.5, 45, 41);
-          g.drawImage(charFrame(id, sel ? 'castUp' : 'idle0'), x + 23 - 24, y - 13, 48, 48);
+          g.drawImage(charArt(id, sel ? 'castUp' : 'idle0'), x + 23 - 24, y - 13, 48, 48);
           text(g, c.name, x + 23, y + 33, { size: 6, align: 'center', color: lo.chars.includes(id) ? '#ffe080' : '#ffffff', maxW: 44 });
         } else {
           const wd = WEAPON_MAP[id];

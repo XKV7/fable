@@ -221,6 +221,23 @@ export class Projectile {
         g.fillRect(-1, -h / 2 + 4, 2, h - 4);
         break;
       }
+      case 'crescent': {
+        // 초승달 검기: 진행 방향으로 볼록한 푸른 호
+        const r = d.h / 2;
+        g.rotate(ang);
+        g.globalCompositeOperation = 'lighter';
+        g.strokeStyle = rgba(col, 0.85);
+        g.lineWidth = 3;
+        g.beginPath();
+        g.arc(-r * 0.4, 0, r, -Math.PI / 2.4, Math.PI / 2.4);
+        g.stroke();
+        g.strokeStyle = rgba('#ffffff', 0.8);
+        g.lineWidth = 1;
+        g.beginPath();
+        g.arc(-r * 0.4, 0, r - 1, -Math.PI / 3, Math.PI / 3);
+        g.stroke();
+        break;
+      }
       case 'blade':
         g.rotate(ang);
         g.globalCompositeOperation = 'lighter';

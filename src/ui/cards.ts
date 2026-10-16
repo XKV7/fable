@@ -3,7 +3,7 @@ import { CREST_MAP } from '../data/crests';
 import { RELIC_MAP } from '../data/relics';
 import { WEAPON_MAP, weaponDesc } from '../data/weapons';
 import { text, wrap } from '../gfx/renderer';
-import { charFrame } from '../gfx/sprites';
+import { charArt } from '../gfx/sprites';
 import { rgba } from '../gfx/pixel';
 import { drawIcon } from './icons';
 import { RARITY_BG, RARITY_COL, RELIC_RARITY_COL, RELIC_RARITY_NAME } from './theme';
@@ -67,7 +67,7 @@ export function weaponCard(g: CanvasRenderingContext2D, id: string, rf: number, 
   if (extra) text(g, extra, x + w / 2, y + h - 12, { size: 7, align: 'center', color: '#ffe080', bold: true });
 }
 
-export function charCard(g: CanvasRenderingContext2D, id: string, x: number, y: number, w: number, h: number, sel: boolean, sub?: string, pose: Parameters<typeof charFrame>[1] = 'idle0'): void {
+export function charCard(g: CanvasRenderingContext2D, id: string, x: number, y: number, w: number, h: number, sel: boolean, sub?: string, pose: Parameters<typeof charArt>[1] = 'idle0'): void {
   const c = CHAR_MAP[id];
   const col = RARITY_COL[c.rarity];
   const [b0, b1] = RARITY_BG[c.rarity];
@@ -80,7 +80,7 @@ export function charCard(g: CanvasRenderingContext2D, id: string, x: number, y: 
   g.lineWidth = sel ? 2 : 1;
   g.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
   g.lineWidth = 1;
-  const f = charFrame(id, pose);
+  const f = charArt(id, pose);
   const sc = Math.max(1, Math.floor(Math.min(w / 30, (h - 30) / 30)));
   g.imageSmoothingEnabled = false;
   g.drawImage(f, x + w / 2 - 24 * sc, y + h - 30 - 46 * sc, 48 * sc, 48 * sc);

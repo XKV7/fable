@@ -3,7 +3,7 @@ import { CREST_MAP } from '../data/crests';
 import { chapterDef, ITEM_MAP, ROOM_TYPES } from '../data/meta';
 import { TUTORIAL_SIGNS } from '../data/rooms';
 import type { Input } from '../core/input';
-import { charFrame } from '../gfx/sprites';
+import { charArt } from '../gfx/sprites';
 import { rgba, shade } from '../gfx/pixel';
 import { text, measure } from '../gfx/renderer';
 import type { Room } from '../game/room';
@@ -14,14 +14,15 @@ import { bar, panel } from './widgets';
 import { drawIcon, ITEM_ICON, STATUS_ICON } from './icons';
 
 export function portrait(g: CanvasRenderingContext2D, id: string, x: number, y: number, size: number, dim = false): void {
-  const f = charFrame(id, 'idle0');
+  const f = charArt(id, 'idle0');
   g.save();
   g.imageSmoothingEnabled = false;
   g.fillStyle = '#120c1c';
   g.fillRect(x, y, size, size);
   // 1:1 픽셀로 잘라 그린다 (정수 배율 유지)
   const cy = size >= 24 ? 27 : 24;
-  g.drawImage(f, 24 - size / 2, cy - size / 2, size, size, x, y, size, size);
+  const k = f.width / 48; // 고해상도(★7) 스프라이트는 원본 좌표가 2배
+  g.drawImage(f, (24 - size / 2) * k, (cy - size / 2) * k, size * k, size * k, x, y, size, size);
   if (dim) {
     g.fillStyle = 'rgba(0,0,0,0.5)';
     g.fillRect(x, y, size, size);

@@ -50,6 +50,7 @@ export class TitleScene implements Scene {
     this.room = new Room({ template: ROOMS.find((r) => r.id === 'c_arena')!, chapter: ch, mode: 'title', type: 'combat', next: [], depth: 2 }, run, demoSave);
     this.room.god = true;
     this.room.demo = true;
+    this.room.demoNoHD = true; // 타이틀은 월드 위에 어두운 막을 덮으므로 고해상도 층을 쓰지 않는다
     this.room.cam.shakeScale = 0.5;
     this.room.fx.showNumbers = app.save.settings.dmgNumbers;
   }

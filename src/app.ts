@@ -4,6 +4,7 @@ import { Loop } from './core/loop';
 import { Renderer, text, W, H } from './gfx/renderer';
 import { newSave, sanitize, type SaveData } from './game/save';
 import { accounts } from './core/account';
+import { drawHDQueue, hdQueue } from './gfx/hd';
 import { hot } from './ui/widgets';
 import { ACHIEVEMENTS } from './data/meta';
 import type { Room } from './game/room';
@@ -225,9 +226,11 @@ export class App {
   private render(): void {
     const r = this.r;
     r.beginFrame();
+    hdQueue.length = 0;
     this.scene.world(r.w);
     const [sx, sy] = this.scene.shake?.() ?? [0, 0];
     r.present(sx, sy);
+    drawHDQueue(r.d, sx, sy);
     const g = r.d;
     hot.clear();
     this.scene.ui(g);

@@ -3,6 +3,7 @@ import { CHAR_MAP } from '../data/characters';
 import { drawHumanoid } from './humanoid';
 import { Pix, shade, silhouette } from './pixel';
 import { drawCreature } from './creatures';
+import { charFrameHD } from './hd';
 import { STORY_LOOKS } from './looks2';
 import { ENEMY_MAP } from '../data/enemies';
 
@@ -23,6 +24,14 @@ export function lookFrame(key: string, look: Look, pose: PoseName): HTMLCanvasEl
 
 export function charFrame(id: string, pose: PoseName): HTMLCanvasElement {
   return lookFrame(`c:${id}`, CHAR_MAP[id].look, pose);
+}
+
+/**
+ * UI용 영웅 그림: 고해상도(★7) 스프라이트가 있으면 그것을(96×96), 없으면 일반 프레임(48×48).
+ * 그리는 쪽은 항상 목표 크기를 지정하므로 둘 다 같은 자리·크기로 나온다.
+ */
+export function charArt(id: string, pose: PoseName): HTMLCanvasElement {
+  return charFrameHD(id, pose) ?? charFrame(id, pose);
 }
 
 export function white(c: HTMLCanvasElement): HTMLCanvasElement {

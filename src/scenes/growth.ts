@@ -2,7 +2,7 @@ import { app, type Scene } from '../app';
 import { audio } from '../core/audio';
 import { CHARACTERS, CHAR_MAP, TYPE_COL, TYPE_LABEL } from '../data/characters';
 import { text } from '../gfx/renderer';
-import { charFrame } from '../gfx/sprites';
+import { charArt } from '../gfx/sprites';
 import { charAtk, charHp } from '../game/combat';
 import { checkAchievements } from '../game/meta';
 import { levelCost, MAX_LEVEL } from '../game/save';
@@ -94,7 +94,7 @@ export class GrowthScene implements Scene {
     const o = save.chars[id];
     panel(g, 144, 28, 328, 228, { border: RARITY_COL[c.rarity] });
     const pose = this.flash > 0 ? 'castUp' : (['idle0', 'idle1'] as const)[Math.floor(this.t / 30) % 2];
-    g.drawImage(charFrame(id, pose), 210 - 72, 170 - 132, 144, 144);
+    g.drawImage(charArt(id, pose), 210 - 72, 170 - 132, 144, 144);
     if (this.flash > 0) {
       g.save();
       g.globalCompositeOperation = 'lighter';

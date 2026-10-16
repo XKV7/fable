@@ -424,6 +424,13 @@ export class Room {
   // ─────────── 업데이트 ───────────
   update(): void {
     this.time++;
+    // ★6·★7 영웅: 몸 주위로 별빛 입자 (★7은 더 많이, 위로 흩날림)
+    const pr = this.player.def.rarity;
+    if (pr >= 6 && this.player.state !== 'dead' && this.time % (pr >= 7 ? 4 : 9) === 0) {
+      const a = Math.random() * Math.PI * 2;
+      const r = 8 + Math.random() * 10;
+      this.fx.parts.push({ x: this.player.cx + Math.cos(a) * r, y: this.player.cy + Math.sin(a) * r * 1.3, vx: 0, vy: -0.35 - Math.random() * 0.3, life: 0, max: 36, col: Math.random() < 0.3 ? '#ffffff' : this.player.def.fx, size: Math.random() < 0.2 ? 2 : 1, grav: 0, kind: 'px', drag: 0.98 });
+    }
     if (this.flashA > 0) this.flashA = Math.max(0, this.flashA - 0.04);
     if (this.hurtVignette > 0) this.hurtVignette--;
     if (this.bossBanner > 0) this.bossBanner--;
@@ -1083,6 +1090,8 @@ export class Room {
   }
 
   bossHit = false;
+  /** 고해상도 층을 쓰지 않는 방 (타이틀 데모처럼 위에 반투명 막을 덮는 화면) */
+  demoNoHD = false;
 
   /** 즉사기: 체력·보호막·무적 시간을 무시하고 쓰러뜨린다 (부활 효과는 적용) */
   instantKill(cause: string): void {

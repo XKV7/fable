@@ -230,6 +230,20 @@ function drawWeapon(p: Pix, L: Look, hx: number, hy: number, deg: number, back: 
       p.px(hx, hy - 3, c2);
       p.px(hx, hy - 1, c2);
       break;
+    case 'starblade': {
+      // 별빛 장검: 어두운 손잡이, 넓은 가드와 보라 보석, 푸른 칼날에 밝은 심선
+      p.bar(hx, hy, a + Math.PI, 3, 1, c2);
+      p.bar(hx, hy, a, 16, 3, shade(c, -0.25), 2);
+      p.bar(hx, hy, a, 16, 2, c, 2);
+      p.bar(hx, hy, a, 15, 1, '#d8f4ff', 3);
+      p.px(hx + Math.cos(a) * 17, hy + Math.sin(a) * 17, '#ffffff');
+      const gx = hx + Math.cos(a) * 2;
+      const gy = hy + Math.sin(a) * 2;
+      p.bar(gx, gy, a + Math.PI / 2, 3, 1, '#c8c8e0');
+      p.bar(gx, gy, a - Math.PI / 2, 3, 1, '#c8c8e0');
+      p.px(gx, gy, '#b07aff');
+      break;
+    }
     case 'none':
       break;
   }
@@ -317,6 +331,18 @@ export function drawHumanoid(L: Look, poseName: PoseName): HTMLCanvasElement {
     // 갈비뼈
     for (let i = 0; i < 3; i++) p.rect(tx + 1, torsoTop + 2 + i * 2, tw - 2, 1, '#2a2620');
   }
+  if (L.hairStyle === 'starhood') {
+    // 롱코트: 앞섶의 흰-청 줄무늬, 벨트, 무릎까지 내려오는 자락
+    p.rect(tx + tw - 2, torsoTop + 1, 1, th - 1, L.trim);
+    p.rect(tx + 1, torsoTop + 1, 1, th - 3, '#dcdcee');
+    p.rect(tx, torsoBot - 2, tw, 1, '#f4f4ff');
+    p.px(tx + 2, torsoBot - 2, '#6a86ff');
+    const flare = Math.round((P.cape ?? 0) * 3);
+    for (let i = 0; i < 5; i++) {
+      p.rect(tx - 1 - Math.round(i * 0.3) - (i > 2 ? flare : 0), torsoBot + i, tw + 1, 1, i === 4 ? '#26244a' : L.body);
+      p.px(tx + tw - 1, torsoBot + i, L.trim);
+    }
+  }
   // 앞다리
   p.line(hipFx, hipY, ffx, ffy - 1, legCol);
   p.line(hipFx + 1, hipY, ffx + 1, ffy - 1, legCol);
@@ -330,7 +356,7 @@ export function drawHumanoid(L: Look, poseName: PoseName): HTMLCanvasElement {
     p.rect(headX - 4, headY + 2, 2, 5, hc);
   }
   if (hs === 'bun') p.disc(headX + 1, headY - 1, 2, hc);
-  if (hs === 'hood' || hs === 'witch') p.rect(headX - 2, headY - 1, 9, 9, L.cape ?? L.body);
+  if (hs === 'hood' || hs === 'witch' || hs === 'starhood') p.rect(headX - 2, headY - 1, 9, 9, L.cape ?? L.body);
   p.rect(headX, headY, 7, 7, hs === 'skull' ? '#e8e0c8' : L.skin);
   p.rect(headX, headY + 6, 7, 1, hs === 'skull' ? '#c8c0a8' : skinShade);
   switch (hs) {
@@ -399,15 +425,58 @@ export function drawHumanoid(L: Look, poseName: PoseName): HTMLCanvasElement {
     case 'bald':
       p.rect(headX, headY, 7, 1, shade(L.skin, 0.15));
       break;
+    case 'starhood': {
+      // 검은 후드가 얼굴을 감싸고(정수리에 흰 삼각 문양), 은발 앞머리가 이마를 덮는다
+      const hood = L.cape ?? L.body;
+      const rim = '#2c2a44';
+      p.rect(headX - 2, headY - 3, 11, 3, hood);
+      p.rect(headX - 1, headY - 4, 8, 1, hood);
+      p.rect(headX - 3, headY - 2, 3, 10, hood);
+      p.rect(headX + 7, headY - 1, 2, 7, hood);
+      p.rect(headX - 1, headY - 4, 8, 1, rim);
+      p.px(headX - 4, headY - 1, hood);
+      p.px(headX - 4, headY, hood);
+      p.px(headX + 4, headY - 4, '#f4f4ff');
+      p.rect(headX + 3, headY - 3, 3, 1, '#f4f4ff');
+      p.rect(headX + 2, headY - 2, 5, 1, '#c8c8e0');
+      // 앞머리 (들쭉날쭉) + 옆머리
+      p.rect(headX - 1, headY, 8, 1, hc);
+      for (const x of [0, 1, 3, 4, 6]) p.px(headX + x, headY + 1, hc);
+      for (const x of [0, 3, 6]) p.px(headX + x, headY + 2, shade(hc, -0.1));
+      p.rect(headX - 1, headY + 1, 1, 6, hc);
+      p.px(headX - 1, headY + 7, shade(hc, -0.25));
+      p.px(headX + 6, headY + 3, shade(hc, -0.15));
+      break;
+    }
   }
   if (hs !== 'helm' && hs !== 'horned' && hs !== 'skull') {
     p.px(headX + 5, headY + 3, L.eye);
-    if (hs !== 'hood') p.px(headX + 5, headY + 2, shade(L.skin, -0.1));
+    if (hs === 'starhood') {
+      // 세로로 긴 보라 눈 두 개 (위 밝음, 아래 짙음)
+      p.px(headX + 5, headY + 4, shade(L.eye, -0.35));
+      p.px(headX + 2, headY + 3, L.eye);
+      p.px(headX + 2, headY + 4, shade(L.eye, -0.35));
+      p.px(headX + 4, headY + 6, shade(L.skin, -0.3));
+    } else if (hs !== 'hood') p.px(headX + 5, headY + 2, shade(L.skin, -0.1));
     if (hs === 'hood' && L.glow) p.px(headX + 3, headY + 3, L.glow);
   } else if (hs === 'skull' && L.glow) {
     p.px(headX + 3, headY + 2, L.glow);
   }
   if (L.extra === 'halo') p.ring(headX + 3, headY - 3, 3, '#fff0a0');
+  if (L.extra === 'compass') {
+    // 등 뒤에 떠 있는 별의 나침반 (네 갈래 별 + 고리 + 보라 핵)
+    const ox = sxB - 8;
+    const oy = shoulderY - 6 - (P.bob > 0 ? 1 : 0);
+    p.line(ox, oy - 5, ox, oy + 5, '#a8c4ff');
+    p.line(ox - 4, oy, ox + 4, oy, '#a8c4ff');
+    p.px(ox - 2, oy - 2, '#6a86ff');
+    p.px(ox + 2, oy - 2, '#6a86ff');
+    p.px(ox - 2, oy + 2, '#6a86ff');
+    p.px(ox + 2, oy + 2, '#6a86ff');
+    p.rect(ox - 1, oy - 1, 3, 3, '#7a4ae0');
+    p.px(ox, oy, '#f4f4ff');
+    p.px(ox, oy - 6, '#ffffff');
+  }
   if (L.extra === 'chains') {
     p.px(tx, torsoBot, '#a0a0a8');
     p.px(tx - 1, torsoBot + 1, '#808088');

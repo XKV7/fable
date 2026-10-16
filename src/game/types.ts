@@ -128,7 +128,7 @@ export interface SlashFx {
   dy?: number;
 }
 
-export type ProjSprite = 'arrow' | 'orb' | 'fireball' | 'bolt' | 'dagger' | 'star' | 'bone' | 'scythe' | 'flask' | 'spear' | 'wave' | 'soul' | 'shard' | 'blade' | 'spore' | 'rock';
+export type ProjSprite = 'arrow' | 'orb' | 'fireball' | 'bolt' | 'dagger' | 'star' | 'bone' | 'scythe' | 'flask' | 'spear' | 'wave' | 'soul' | 'shard' | 'blade' | 'spore' | 'rock' | 'crescent';
 
 export interface ProjDef {
   spr: ProjSprite;
@@ -229,20 +229,20 @@ export interface SkillDef {
 export interface Look {
   skin: string;
   hair: string;
-  hairStyle: 'short' | 'long' | 'spiky' | 'bald' | 'pony' | 'hood' | 'helm' | 'crown' | 'horned' | 'witch' | 'skull' | 'veil' | 'bun';
+  hairStyle: 'short' | 'long' | 'spiky' | 'bald' | 'pony' | 'hood' | 'helm' | 'crown' | 'horned' | 'witch' | 'skull' | 'veil' | 'bun' | 'starhood';
   body: string;
   trim: string;
   legs: string;
   boots: string;
   cape?: string;
   eye: string;
-  weapon: 'sword' | 'greatsword' | 'daggers' | 'bow' | 'scythe' | 'flask' | 'mace' | 'staff' | 'fists' | 'spear' | 'clock' | 'rapier' | 'lance' | 'orb' | 'shovel' | 'hammer' | 'axe' | 'cannon' | 'lute' | 'claws' | 'strings' | 'talisman' | 'none';
+  weapon: 'sword' | 'greatsword' | 'daggers' | 'bow' | 'scythe' | 'flask' | 'mace' | 'staff' | 'fists' | 'spear' | 'clock' | 'rapier' | 'lance' | 'orb' | 'shovel' | 'hammer' | 'axe' | 'cannon' | 'lute' | 'claws' | 'strings' | 'talisman' | 'starblade' | 'none';
   wcol: string;
   wcol2: string;
   shield?: string;
   build: 'normal' | 'big' | 'slim';
   glow?: string;
-  extra?: 'wings' | 'halo' | 'tail' | 'scarf' | 'chains';
+  extra?: 'wings' | 'halo' | 'tail' | 'scarf' | 'chains' | 'compass';
 }
 
 export interface AwakenDef {

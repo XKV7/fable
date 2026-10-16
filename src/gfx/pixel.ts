@@ -166,6 +166,8 @@ const PALETTE_HEX = [
   '4a4a54', '6e6e78', 'a0a0aa', 'e8e0c8',
   // 보강: 어둠(그림자 계열 적)
   '0e0a16', '1a1226', '261a36', '14182c', '1e2a44',
+  // 보강: 창백한 피부·은발·별빛 청보라 (★7 카일루스 컨셉아트 팔레트)
+  'f4e8ee', 'dcdcee', 'b4b4d0', '8a8ab0', '6a86ff', 'a8c4ff', '26244a', '16141f', '2c2a44',
 ];
 
 function srgbToLin(v: number): number {

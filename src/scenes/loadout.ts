@@ -28,11 +28,21 @@ export class LoadoutScene implements Scene {
   t = 0;
   constructor(public back: Scene) {}
 
+  enter(): void {
+    // 디버그로 골랐던 미보유 영웅·무기는 디버그를 끄면 보유한 것으로 되돌린다
+    if (app.debug) return;
+    const lo = app.save.loadout;
+    const owned = this.ownedChars();
+    for (const i of [0, 1] as const) if (lo.chars[i] && !app.save.chars[lo.chars[i]]) lo.chars[i] = owned.find((id) => !lo.chars.includes(id)) ?? (i === 0 ? owned[0] : '');
+    if (!app.save.weapons[lo.weapon]) lo.weapon = this.ownedWeapons()[0];
+  }
+
+  /** 선택 가능한 영웅: 보유한 영웅 (디버그 모드에서는 전부 — 테스트용) */
   private ownedChars(): string[] {
-    return CHARACTERS.filter((c) => app.save.chars[c.id]).map((c) => c.id);
+    return CHARACTERS.filter((c) => app.debug || app.save.chars[c.id]).map((c) => c.id);
   }
   private ownedWeapons(): string[] {
-    return WEAPONS.filter((w) => app.save.weapons[w.id]).map((w) => w.id);
+    return WEAPONS.filter((w) => app.debug || app.save.weapons[w.id]).map((w) => w.id);
   }
 
   update(): void {
@@ -178,7 +188,7 @@ export class LoadoutScene implements Scene {
 
   private depart(): void {
     const lo = app.save.loadout;
-    if (!lo.chars[1] || lo.chars[0] === lo.chars[1] || !app.save.chars[lo.chars[1]]) {
+    if (!lo.chars[1] || lo.chars[0] === lo.chars[1] || (!app.debug && !app.save.chars[lo.chars[1]])) {
       audio.play('error');
       app.toast('영웅 2명이 필요하다 — 계약의 제단에서 영웅을 부르자', '#ff8080');
       return;
@@ -279,6 +289,7 @@ export class LoadoutScene implements Scene {
       g.fillRect(0, 0, 480, 270);
       panel(g, 40, 24, 400, 220);
       text(g, this.picking === 'char' ? '영웅 선택' : '무기 선택', 50, 30, { size: 10, color: '#e0d0ff', bold: true });
+      if (app.debug) text(g, '[디버그] 보유하지 않은 영웅·무기도 선택 가능 (기록에는 추가되지 않음)', 430, 33, { size: 6, align: 'right', color: '#80ffa0' });
       list.forEach((id, i) => {
         const x = 48 + (i % 8) * 48;
         const y = 46 + Math.floor(i / 8) * 44;
@@ -291,6 +302,7 @@ export class LoadoutScene implements Scene {
           g.strokeRect(x + 0.5, y + 0.5, 45, 41);
           g.drawImage(charArt(id, sel ? 'castUp' : 'idle0'), x + 23 - 24, y - 13, 48, 48);
           text(g, c.name, x + 23, y + 33, { size: 6, align: 'center', color: lo.chars.includes(id) ? '#ffe080' : '#ffffff', maxW: 44 });
+          if (!save.chars[id]) text(g, '디버그', x + 2, y + 1, { size: 5, color: '#80ffa0' });
         } else {
           const wd = WEAPON_MAP[id];
           g.fillStyle = sel ? rgba(RARITY_COL[wd.rarity], 0.4) : 'rgba(255,255,255,0.05)';
@@ -299,12 +311,12 @@ export class LoadoutScene implements Scene {
           g.strokeRect(x + 0.5, y + 0.5, 45, 41);
           drawIcon(g, wd.icon, x + 13, y + 3, 20, wd.col);
           text(g, wd.name.replace(/「.*」/, '').trim(), x + 23, y + 26, { size: 5, align: 'center', color: '#ffffff', maxW: 44 });
-          text(g, `재련${save.weapons[id].rf}`, x + 23, y + 34, { size: 5, align: 'center', color: '#a8a0c0' });
+          text(g, save.weapons[id] ? `재련${save.weapons[id].rf}` : '디버그', x + 23, y + 34, { size: 5, align: 'center', color: save.weapons[id] ? '#a8a0c0' : '#80ffa0' });
         }
         hot.add(`lp:${i}`, x, y, 46, 42);
       });
       const cur = list[this.pick];
-      if (cur && this.picking === 'weapon') text(g, weaponDesc(WEAPON_MAP[cur], save.weapons[cur].rf), 240, 232, { size: 7, align: 'center', color: '#ffe8c0', maxW: 390 });
+      if (cur && this.picking === 'weapon') text(g, weaponDesc(WEAPON_MAP[cur], save.weapons[cur]?.rf ?? 1), 240, 232, { size: 7, align: 'center', color: '#ffe8c0', maxW: 390 });
       if (cur && this.picking === 'char') text(g, `${CHAR_MAP[cur].passive.name}: ${CHAR_MAP[cur].passive.desc}`, 240, 232, { size: 7, align: 'center', color: '#ffe8c0', maxW: 390 });
       keyHint(g, [['WASD/방향키', '선택'], [`${app.input.label('attack')}/${app.input.label('interact')}`, '결정'], ['Esc', '취소']]);
     } else keyHint(g, [['WASD/방향키', '항목'], [`${app.input.label('attack')}/${app.input.label('interact')}`, '변경/출정'], ['Esc', '나가기']], 258);

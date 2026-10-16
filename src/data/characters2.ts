@@ -11,7 +11,7 @@ export const CHARACTERS_EX: CharDef[] = [
     // 컨셉아트: 검은 후드(흰 삼각 문양)·은발·보라 눈, 흰-청 줄무늬 롱코트, 푸른 별빛 장검, 등 뒤에 떠 있는 별의 나침반
     id: 'caelus', name: '카일루스', title: '별의 나침반을 쥔 검사', rarity: 7, type: 'speed', crest: 'soul',
     lore: '하늘에서 떨어진 별의 나침반을 주운 검사. 나침반이 가리키는 곳마다 별빛이 칼날이 되어 내려앉는다.',
-    atk: 56, hp: 240, speed: 2.25, fx: '#8a9aff',
+    atk: 70, hp: 300, speed: 2.25, fx: '#8a9aff',
     look: { skin: '#f4ecf0', hair: '#d8d8ec', hairStyle: 'starhood', body: '#1c1a2c', trim: '#a8c4ff', legs: '#15131f', boots: '#c8c8dc', cape: '#16141f', eye: '#a070ff', weapon: 'starblade', wcol: '#6a86ff', wcol2: '#26244a', build: 'normal', glow: '#9a8aff', extra: 'compass' },
     combo: [
       melee({ dur: 12, t: 4, m: 0.75, box: [0, -16, 36, 22], w: 'windHigh', s: 'slashDown', fx: { arc: 'down', r: 28, col: '#a8c0ff' }, hs: 3, lunge: 2.5 }),
@@ -105,7 +105,7 @@ export const CHARACTERS_EX: CharDef[] = [
     // 컨셉아트: 「아스트랄 나이트」 — 후드·별의 지팡이·별의 나침반. 스프라이트는 전용 시트(sheets/astral)
     id: 'astral', name: '아스트랄 나이트', title: '별의 경계에서, 너와 나', rarity: 7, type: 'magic', crest: 'soul',
     lore: '별과 별 사이의 경계를 지키는 기사. 별의 지팡이로 그은 자리마다 하늘이 열리고, 그 너머의 별빛이 쏟아진다.',
-    atk: 56, hp: 240, speed: 2.15, fx: '#a890ff',
+    atk: 70, hp: 300, speed: 2.15, fx: '#a890ff',
     look: { skin: '#f4ecf0', hair: '#c8c0e8', hairStyle: 'starhood', body: '#1a1630', trim: '#a890ff', legs: '#12101e', boots: '#2a2440', cape: '#14122a', eye: '#a070ff', weapon: 'staff', wcol: '#c8b8ff', wcol2: '#3a2a6a', build: 'slim', glow: '#a890ff', extra: 'compass' },
     combo: [
       melee({ dur: 13, t: 4, m: 0.8, box: [0, -18, 40, 26], w: 'windHigh', s: 'slashDown', fx: { arc: 'down', r: 30, col: '#b8a8ff' }, hs: 3, lunge: 2.5 }),
@@ -193,7 +193,7 @@ export const CHARACTERS_EX: CharDef[] = [
     // 컨셉아트: 「세계를 비추는 별의 계승자」(이름 없음 → 솔렌). 떠 있는 별의 구체·별의 문장, 검과 구체로 싸운다. 스프라이트는 전용 시트
     id: 'solen', name: '솔렌', title: '세계를 비추는 별의 계승자', rarity: 6, type: 'speed', crest: 'soul',
     lore: '「…별은 사라지지 않아. 다만, 다른 세상으로 이어질 뿐.」 꺼져 가던 별의 빛을 이어받은 계승자. 곁에 떠도는 별의 구체가 그의 검을 비춘다.',
-    atk: 44, hp: 190, speed: 2.15, fx: '#9ab4ff',
+    atk: 55, hp: 238, speed: 2.15, fx: '#9ab4ff',
     look: { skin: '#f4ecf0', hair: '#e0e0f0', hairStyle: 'starhood', body: '#1a1a34', trim: '#9ab4ff', legs: '#14142a', boots: '#d0d0e0', cape: '#2a2a5a', eye: '#8ab0ff', weapon: 'starblade', wcol: '#9ab4ff', wcol2: '#2a2a5a', build: 'normal', glow: '#9ab4ff', extra: 'compass' },
     combo: [
       melee({ dur: 12, t: 4, m: 0.8, box: [0, -16, 38, 24], w: 'windHigh', s: 'slashDown', fx: { arc: 'down', r: 28, col: '#b8c8ff' }, hs: 3, lunge: 2.5 }),
@@ -282,7 +282,7 @@ export const CHARACTERS_EX: CharDef[] = [
     // 컨셉아트: 「별의 항해자 루카스」 — 별의 책·별의 나침반, 소환한 고래. 스프라이트는 전용 시트(sheets/lucas)
     id: 'lucas', name: '루카스', title: '별의 항해자', rarity: 6, type: 'magic', crest: 'soul',
     lore: '「…더 넓은 세상을, 함께 보자.」 별의 책에 적힌 항로를 따라 하늘을 항해하는 소년. 그가 책장을 넘기면 별의 바다에서 고래가 헤엄쳐 온다.',
-    atk: 40, hp: 175, speed: 2.0, fx: '#7ab8ff',
+    atk: 50, hp: 219, speed: 2.0, fx: '#7ab8ff',
     look: { skin: '#f4ecf0', hair: '#d8d8f0', hairStyle: 'starhood', body: '#1a1a3a', trim: '#7ab8ff', legs: '#14142e', boots: '#c8c8e0', cape: '#e0e0f0', eye: '#7ab8ff', weapon: 'orb', wcol: '#7ab8ff', wcol2: '#2a2a5a', build: 'slim', glow: '#7ab8ff', extra: 'compass' },
     combo: [
       melee({ dur: 13, t: 4, m: 0.8, box: [0, -20, 46, 30], w: 'windHigh', s: 'slashDown', fx: { arc: 'down', r: 32, col: '#9ac8ff' }, hs: 3, lunge: 2 }),
@@ -367,7 +367,7 @@ export const CHARACTERS_EX: CharDef[] = [
   {
     id: 'marionne', name: '마리오네', title: '망각의 인형술사', rarity: 5, type: 'magic', crest: 'soul',
     lore: '왕국의 광대극을 이끌던 인형술사. 잊힌 자들의 혼을 인형에 깃들게 해, 그들이 다시 한 번 무대에 서게 한다.',
-    atk: 25, hp: 95, speed: 1.95, fx: '#ff80c0',
+    atk: 31, hp: 119, speed: 1.95, fx: '#ff80c0',
     look: { skin: '#f8e8e8', hair: '#2a1a3a', hairStyle: 'witch', body: '#5a1a4a', trim: '#ff80c0', legs: '#2a0a24', boots: '#1a0618', cape: '#3a0a30', eye: '#ff80c0', weapon: 'strings', wcol: '#ffd0e8', wcol2: '#c0a040', build: 'slim', glow: '#ff80c0', extra: 'chains' },
     combo: [
       melee({ dur: 16, t: 5, m: 0.65, box: [0, -14, 48, 12], w: 'castUp', s: 'cast', fx: { arc: 'thrust', r: 44, col: '#ffd0e8' }, hs: 2, sfx: 'swing' }),
@@ -393,7 +393,7 @@ export const CHARACTERS_EX: CharDef[] = [
   {
     id: 'ignia', name: '이그니아', title: '마지막 피닉스 기사', rarity: 5, type: 'power', crest: 'flame',
     lore: '불사조 기사단의 마지막 생존자. 재가 되어도 다시 타오르는 맹세로, 끝없는 왕에게 마지막 불꽃을 겨눈다.',
-    atk: 29, hp: 125, speed: 1.95, fx: '#ffa040',
+    atk: 36, hp: 156, speed: 1.95, fx: '#ffa040',
     look: { skin: '#f0c8a0', hair: '#ff6a1a', hairStyle: 'spiky', body: '#a03a1a', trim: '#ffd060', legs: '#5a1a0a', boots: '#3a1006', cape: '#ff7a2a', eye: '#ffe080', weapon: 'sword', wcol: '#ffd080', wcol2: '#6a2a10', build: 'normal', glow: '#ffa040', extra: 'wings' },
     combo: [
       melee({ dur: 20, t: 7, m: 1.0, box: [-4, -18, 36, 30], w: 'windHigh', s: 'slashDown', fx: { arc: 'down', r: 26, col: '#ffb060' }, hs: 4, lunge: 2, el: 'fire' }),
@@ -421,7 +421,7 @@ export const CHARACTERS_EX: CharDef[] = [
   {
     id: 'seira', name: '세이라', title: '피의 검무희', rarity: 4, type: 'speed', crest: 'blood',
     lore: '연회장에서 춤추던 무희. 왕궁이 피로 물든 밤, 그녀의 춤은 검무가 되었다. 박자가 이어질수록 칼끝이 빨라진다.',
-    atk: 19, hp: 90, speed: 2.3, fx: '#ff5070',
+    atk: 24, hp: 112, speed: 2.3, fx: '#ff5070',
     look: { skin: '#f8dcd0', hair: '#c01030', hairStyle: 'pony', body: '#8a1030', trim: '#ffd060', legs: '#4a0818', boots: '#2a040c', cape: '#ff5070', eye: '#ff3050', weapon: 'daggers', wcol: '#ffd0d8', wcol2: '#8a6a20', build: 'slim', extra: 'scarf' },
     combo: [
       melee({ dur: 11, t: 3, m: 0.4, box: [-6, -14, 30, 22], w: 'spin', s: 'slashDown', fx: { arc: 'down', r: 16, col: '#ff8090' }, hs: 2, lunge: 2 }),
@@ -449,7 +449,7 @@ export const CHARACTERS_EX: CharDef[] = [
   {
     id: 'bram', name: '브람', title: '철갑 포병', rarity: 4, type: 'ranged', crest: 'fury',
     lore: '왕실 포병대의 마지막 생존자. 성벽이 무너질 때까지 포를 놓지 않았다. 포격의 반동조차 그의 걸음걸이가 되었다.',
-    atk: 24, hp: 120, speed: 1.6, fx: '#ffb060',
+    atk: 30, hp: 150, speed: 1.6, fx: '#ffb060',
     look: { skin: '#d8a880', hair: '#6a5a4a', hairStyle: 'helm', body: '#5a5a62', trim: '#c08030', legs: '#3a3a42', boots: '#2a2a30', eye: '#ffd060', weapon: 'cannon', wcol: '#5a5258', wcol2: '#c08030', build: 'big' },
     combo: [
       shot({ dur: 24, t: 8, m: 0.8, p: { spr: 'fireball', spd: 6, life: 60, w: 9, h: 9, col: '#ffb060', kb: 2, boom: { r: 22, m: 0.8, el: 'fire' } }, w: 'shootWind', s: 'shoot', sfx: 'explode', move: [[8, -1.8], [14, 0]] }),
@@ -475,7 +475,7 @@ export const CHARACTERS_EX: CharDef[] = [
   {
     id: 'jolly', name: '졸리', title: '광기의 광대', rarity: 4, type: 'magic', crest: 'venom',
     lore: '왕의 연회에서 웃음을 팔던 광대. 웃음이 멈춘 왕궁에서 그는 혼자 웃었다. 지금도 웃고 있다. 아무도 따라 웃지 않는데도.',
-    atk: 20, hp: 90, speed: 2.0, fx: '#c0ff60',
+    atk: 25, hp: 112, speed: 2.0, fx: '#c0ff60',
     look: { skin: '#f8f0f0', hair: '#40c040', hairStyle: 'spiky', body: '#8a2aa0', trim: '#ffe040', legs: '#2a8a40', boots: '#4a1a5a', cape: '#ffe040', eye: '#ff3030', weapon: 'flask', wcol: '#c0ff60', wcol2: '#ffe040', build: 'slim', extra: 'scarf' },
     combo: [
       shot({ dur: 16, t: 5, m: 0.6, p: { spr: 'orb', spd: 4, vy: -2.4, grav: 0.16, life: 70, w: 7, h: 7, col: '#c0ff60', boom: { r: 16, m: 0.8, el: 'poison', st: 'poison' } }, w: 'throw', s: 'shoot' }),
@@ -501,7 +501,7 @@ export const CHARACTERS_EX: CharDef[] = [
   {
     id: 'freya', name: '프레야', title: '서리늑대 버서커', rarity: 4, type: 'speed', crest: 'frost',
     lore: '북방 설원에서 늑대에게 길러진 전사. 분노가 차오르면 서리늑대의 혼이 깨어나 그녀의 손톱이 얼음 송곳니가 된다.',
-    atk: 21, hp: 110, speed: 2.2, fx: '#a8e4ff',
+    atk: 26, hp: 138, speed: 2.2, fx: '#a8e4ff',
     look: { skin: '#f0dcd0', hair: '#e8f4ff', hairStyle: 'long', body: '#4a6a8a', trim: '#e8f4ff', legs: '#3a4a5a', boots: '#2a3240', cape: '#8aa0b8', eye: '#80e0ff', weapon: 'claws', wcol: '#d0f4ff', wcol2: '#6a7a8a', build: 'normal', extra: 'scarf' },
     combo: [
       melee({ dur: 13, t: 4, m: 0.5, box: [0, -14, 26, 22], w: 'guard', s: 'slashDown', fx: { arc: 'down', r: 16, col: '#d0f4ff' }, hs: 2, lunge: 2 }),
@@ -529,7 +529,7 @@ export const CHARACTERS_EX: CharDef[] = [
   {
     id: 'hawin', name: '하윈', title: '견습 퇴마사', rarity: 3, type: 'guard', crest: 'ward',
     lore: '사당에서 부적 쓰는 법을 배우던 견습생. 스승은 돌아오지 않았지만, 그가 남긴 결계술만은 아직 손에 남아 있다.',
-    atk: 15, hp: 105, speed: 1.9, fx: '#fff0a0',
+    atk: 19, hp: 131, speed: 1.9, fx: '#fff0a0',
     look: { skin: '#f8e0c8', hair: '#202028', hairStyle: 'bun', body: '#e8e0d0', trim: '#c03030', legs: '#c03030', boots: '#2a2020', eye: '#202020', weapon: 'talisman', wcol: '#fff0c0', wcol2: '#c03030', build: 'slim' },
     combo: [
       shot({ dur: 16, t: 5, m: 0.6, p: { spr: 'shard', spd: 6, life: 50, w: 9, h: 6, col: '#fff0c0', el: 'holy', kb: 1 }, w: 'throw', s: 'shoot' }),
@@ -555,7 +555,7 @@ export const CHARACTERS_EX: CharDef[] = [
   {
     id: 'dor', name: '도르', title: '무덤 도굴꾼', rarity: 3, type: 'power', crest: 'soul',
     lore: '묘소의 보물을 노리던 도굴꾼. 망자들이 깨어나자 삽을 들고 맞서 싸웠다. 함정 파는 솜씨만큼은 누구도 따라오지 못한다.',
-    atk: 19, hp: 105, speed: 1.85, fx: '#d0b080',
+    atk: 24, hp: 131, speed: 1.85, fx: '#d0b080',
     look: { skin: '#d8b090', hair: '#5a4030', hairStyle: 'hood', body: '#6a5a40', trim: '#a08050', legs: '#4a4030', boots: '#2a2018', cape: '#4a3a28', eye: '#ffd060', weapon: 'shovel', wcol: '#8a8a7a', wcol2: '#5a3a20', build: 'normal' },
     combo: [
       melee({ dur: 20, t: 7, m: 0.85, box: [-4, -18, 34, 28], w: 'windHigh', s: 'slashDown', fx: { arc: 'down', r: 22, col: '#d0b080' }, hs: 4, lunge: 1.5, sfx: 'swing_heavy' }),
@@ -581,7 +581,7 @@ export const CHARACTERS_EX: CharDef[] = [
   {
     id: 'lyra', name: '리라', title: '떠돌이 음유시인', rarity: 3, type: 'magic', crest: 'swift',
     lore: '왕국의 몰락을 노래하며 떠도는 시인. 그녀의 노래는 망자를 달래고, 살아있는 자에게 다시 싸울 용기를 준다.',
-    atk: 15, hp: 90, speed: 2.0, fx: '#80ffd0',
+    atk: 19, hp: 112, speed: 2.0, fx: '#80ffd0',
     look: { skin: '#f8e0d0', hair: '#40a080', hairStyle: 'long', body: '#2a6a5a', trim: '#e0c060', legs: '#3a3a4a', boots: '#2a2028', cape: '#a04060', eye: '#2a6a4a', weapon: 'lute', wcol: '#c08040', wcol2: '#f0e0c0', build: 'slim' },
     combo: [
       shot({ dur: 16, t: 5, m: 0.6, p: { spr: 'wave', spd: 5, life: 36, w: 10, h: 14, col: '#80ffd0', pierce: 2, kb: 1 }, w: 'guard', s: 'shoot', sfx: 'cast' }),
@@ -607,7 +607,7 @@ export const CHARACTERS_EX: CharDef[] = [
   {
     id: 'kai', name: '카이', title: '투창수', rarity: 3, type: 'ranged', crest: 'storm',
     lore: '변방 수비대의 투창수. 화살보다 무거운 창을 화살보다 멀리 던진다. 하늘에서 내리꽂는 창비는 그의 자랑이다.',
-    atk: 17, hp: 95, speed: 2.0, fx: '#e0d0a0',
+    atk: 21, hp: 119, speed: 2.0, fx: '#e0d0a0',
     look: { skin: '#c89070', hair: '#3a2a1a', hairStyle: 'short', body: '#6a7a3a', trim: '#d0b060', legs: '#4a4030', boots: '#2a2018', cape: '#8a4a2a', eye: '#202020', weapon: 'spear', wcol: '#d0c0a0', wcol2: '#6a4a2a', build: 'normal', extra: 'scarf' },
     combo: [
       shot({ dur: 18, t: 6, m: 0.8, p: { spr: 'spear', spd: 7, grav: 0.05, life: 60, w: 16, h: 4, col: '#d0c0a0', kb: 2, pierce: 1 }, w: 'windHigh', s: 'throw', sfx: 'arrow' }),
@@ -633,7 +633,7 @@ export const CHARACTERS_EX: CharDef[] = [
   {
     id: 'bern', name: '베른', title: '도끼 벌목꾼', rarity: 3, type: 'power', crest: 'fury',
     lore: '왕실 숲을 돌보던 벌목꾼. 망령에게 숲을 빼앗긴 뒤로는 나무 대신 해골을 벤다. 한 번 휘두르면 멈추지 않는다.',
-    atk: 21, hp: 115, speed: 1.8, fx: '#ffc080',
+    atk: 26, hp: 144, speed: 1.8, fx: '#ffc080',
     look: { skin: '#e0b090', hair: '#a04020', hairStyle: 'short', body: '#a03030', trim: '#2a2a2a', legs: '#3a3a5a', boots: '#3a2818', eye: '#202020', weapon: 'axe', wcol: '#b0b8c0', wcol2: '#6a4a2a', build: 'big' },
     combo: [
       melee({ dur: 24, t: 9, m: 1.1, box: [-4, -20, 40, 32], w: 'windHigh', s: 'slashDown', fx: { arc: 'down', r: 26, col: '#ffc080' }, hs: 5, lunge: 2, sfx: 'swing_heavy' }),
@@ -659,7 +659,7 @@ export const CHARACTERS_EX: CharDef[] = [
   {
     id: 'bolt', name: '볼트', title: '수리공 로봇', rarity: 3, type: 'guard', crest: 'storm',
     lore: '왕실 공방의 자동 수리 인형. 주인이 떠난 뒤에도 고장 난 것을 고치라는 명령을 따르고 있다. 지금 고칠 것은 이 왕국이다.',
-    atk: 16, hp: 115, speed: 1.75, fx: '#80e0ff',
+    atk: 20, hp: 144, speed: 1.75, fx: '#80e0ff',
     look: { skin: '#a0a8b0', hair: '#6a7078', hairStyle: 'helm', body: '#7a8088', trim: '#ffb040', legs: '#5a6068', boots: '#3a4048', eye: '#80e0ff', weapon: 'hammer', wcol: '#c0c8d0', wcol2: '#ffb040', build: 'big', glow: '#80e0ff' },
     combo: [
       melee({ dur: 18, t: 6, m: 0.7, box: [-2, -16, 30, 26], w: 'windHigh', s: 'slashDown', fx: { arc: 'down', r: 18, col: '#80e0ff' }, hs: 3, lunge: 1.5, sfx: 'clang' }),

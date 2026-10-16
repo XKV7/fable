@@ -11,7 +11,7 @@ export const CHARACTERS: CharDef[] = [
   {
     id: 'kael', name: '카엘', title: '떠돌이 검사', rarity: 3, type: 'power', crest: 'fury',
     lore: '이름 없는 전장을 떠돌던 검사. 모든 것을 잃은 뒤에도 검만은 놓지 않았다. 계약자에게 가장 먼저 응답한 영혼.',
-    atk: 20, hp: 105, speed: 1.95, fx: '#e8f0ff',
+    atk: 25, hp: 131, speed: 1.95, fx: '#e8f0ff',
     look: { skin: '#f0c8a0', hair: '#6a4a3a', hairStyle: 'short', body: '#4a6aa0', trim: '#c8b070', legs: '#3a3a52', boots: '#5a3a2a', cape: '#8a2a2a', eye: '#202020', weapon: 'sword', wcol: '#d8e0f0', wcol2: '#8a6a3a', build: 'normal', extra: 'scarf' },
     combo: [
       melee({ dur: 19, t: 6, m: 0.8, box: [-2, -16, 28, 26], w: 'windHigh', s: 'slashDown', fx: { arc: 'down', r: 20 }, hs: 3, lunge: 1.5 }),
@@ -38,7 +38,7 @@ export const CHARACTERS: CharDef[] = [
   {
     id: 'rina', name: '리나', title: '숲의 사냥꾼', rarity: 3, type: 'ranged', crest: 'swift',
     lore: '망국의 숲을 지키던 사냥꾼. 화살 한 발로 두 마리의 늑대를 꿰뚫었다는 전설이 있다.',
-    atk: 17, hp: 88, speed: 2.05, fx: '#b8f080',
+    atk: 21, hp: 110, speed: 2.05, fx: '#b8f080',
     look: { skin: '#f0d0b0', hair: '#c88a3a', hairStyle: 'pony', body: '#3a7a3a', trim: '#a0c060', legs: '#5a4a2a', boots: '#3a2a1a', cape: '#2a5a2a', eye: '#2a6a2a', weapon: 'bow', wcol: '#a07040', wcol2: '#f0f0d0', build: 'slim' },
     combo: [
       shot({ dur: 15, t: 5, m: 0.7, p: P.arrow(), sfx: 'arrow' }),
@@ -64,7 +64,7 @@ export const CHARACTERS: CharDef[] = [
   {
     id: 'bor', name: '보르', title: '맨손 수도승', rarity: 3, type: 'speed', crest: 'swift',
     lore: '무너진 산사의 마지막 수도승. 무기를 거부하고 단련된 주먹 하나로 망자의 군세와 맞섰다.',
-    atk: 15, hp: 100, speed: 2.15, fx: '#ffd080',
+    atk: 19, hp: 125, speed: 2.15, fx: '#ffd080',
     look: { skin: '#d8a070', hair: '#202020', hairStyle: 'bald', body: '#d08030', trim: '#f0e0a0', legs: '#a05a20', boots: '#5a3a1a', eye: '#101010', weapon: 'fists', wcol: '#e0d0b0', wcol2: '#8a5a3a', build: 'normal', extra: 'chains' },
     combo: [
       melee({ dur: 11, t: 3, m: 0.45, box: [0, -10, 20, 14], w: 'guard', s: 'thrust', fx: { arc: 'thrust', r: 12 }, hs: 2, lunge: 1.5, sfx: 'swing' }),
@@ -92,7 +92,7 @@ export const CHARACTERS: CharDef[] = [
   {
     id: 'selin', name: '셀린', title: '불꽃 연금술사', rarity: 3, type: 'magic', crest: 'flame',
     lore: '왕실 연금술 학회의 낙제생. 폭발하는 플라스크만큼은 누구보다 잘 만든다. 본인은 의도한 것이라 주장한다.',
-    atk: 16, hp: 85, speed: 1.85, fx: '#ff9a40',
+    atk: 20, hp: 106, speed: 1.85, fx: '#ff9a40',
     look: { skin: '#f8d8c0', hair: '#e04020', hairStyle: 'bun', body: '#6a3a8a', trim: '#f0a040', legs: '#3a2a4a', boots: '#2a1a2a', eye: '#3a1a0a', weapon: 'flask', wcol: '#ff7a2a', wcol2: '#c0e0f0', build: 'slim' },
     combo: [
       shot({ dur: 18, t: 6, m: 0.7, p: { spr: 'flask', spd: 3.6, vy: -2.6, grav: 0.18, life: 80, w: 6, h: 6, col: '#ff7a2a', boom: { r: 18, m: 1, el: 'fire', st: 'burn' } }, w: 'throw', s: 'shoot', sfx: 'proj' }),
@@ -118,7 +118,7 @@ export const CHARACTERS: CharDef[] = [
   {
     id: 'nox', name: '녹스', title: '해골 강령술사', rarity: 3, type: 'magic', crest: 'soul',
     lore: '죽음을 연구하다 스스로 죽음이 된 마법사. 그가 부르는 해골들은 생전의 충성을 기억한다.',
-    atk: 15, hp: 90, speed: 1.8, fx: '#b0ff90',
+    atk: 19, hp: 112, speed: 1.8, fx: '#b0ff90',
     look: { skin: '#e8e0c8', hair: '#3a2a4a', hairStyle: 'hood', body: '#2a2a3a', trim: '#7aff6a', legs: '#1a1a2a', boots: '#101018', cape: '#1a1a2a', eye: '#7aff6a', weapon: 'staff', wcol: '#e8e0c8', wcol2: '#5a4a3a', build: 'slim', glow: '#7aff6a' },
     combo: [
       melee({ dur: 18, t: 6, m: 0.6, box: [-2, -14, 26, 22], w: 'windHigh', s: 'slashDown', fx: { arc: 'down', r: 16, col: '#b0ff90' }, hs: 3 }),
@@ -144,7 +144,7 @@ export const CHARACTERS: CharDef[] = [
   {
     id: 'raika', name: '라이카', title: '번개 창술사', rarity: 3, type: 'ranged', crest: 'storm',
     lore: '폭풍의 산에서 벼락을 맞고도 살아남은 창병. 그날 이후 그녀의 창끝에는 늘 번개가 깃든다.',
-    atk: 18, hp: 95, speed: 2.0, fx: '#80d8ff',
+    atk: 22, hp: 119, speed: 2.0, fx: '#80d8ff',
     look: { skin: '#f0d0b8', hair: '#f0f0ff', hairStyle: 'spiky', body: '#2a4a8a', trim: '#80d8ff', legs: '#2a2a4a', boots: '#1a1a3a', cape: '#4a6aaa', eye: '#40a0ff', weapon: 'spear', wcol: '#c0e8ff', wcol2: '#5a4a3a', build: 'slim' },
     combo: [
       melee({ dur: 17, t: 5, m: 0.7, box: [0, -8, 42, 12], w: 'thrustWind', s: 'thrust', fx: { arc: 'thrust', r: 38 }, hs: 3, lunge: 2 }),
@@ -172,7 +172,7 @@ export const CHARACTERS: CharDef[] = [
   {
     id: 'balt', name: '발트하르', title: '몰락한 기사', rarity: 4, type: 'power', crest: 'fury',
     lore: '왕국 최강이라 불린 기사단장. 끝없는 왕의 배신에 쓰러졌으나, 그 원한은 대검보다 무겁다.',
-    atk: 27, hp: 125, speed: 1.7, fx: '#ffb080',
+    atk: 34, hp: 156, speed: 1.7, fx: '#ffb080',
     look: { skin: '#d8b090', hair: '#505060', hairStyle: 'helm', body: '#5a5a6a', trim: '#b08a3a', legs: '#3a3a4a', boots: '#2a2a32', cape: '#4a1a1a', eye: '#ff4a2a', weapon: 'greatsword', wcol: '#c0c4d0', wcol2: '#6a3a2a', build: 'big' },
     combo: [
       melee({ dur: 32, t: 13, m: 1.5, box: [-6, -24, 50, 36], w: 'windHigh', s: 'slashDown', fx: { arc: 'h', r: 34 }, hs: 6, kb: 3, armor: true, sfx: 'swing_heavy', lunge: 2, shake: 2 }),
@@ -198,7 +198,7 @@ export const CHARACTERS: CharDef[] = [
   {
     id: 'sien', name: '시엔', title: '그림자 암살자', rarity: 4, type: 'speed', crest: 'shadow',
     lore: '왕실 첩보단 "그림자 손"의 마지막 단원. 그녀가 지나간 자리에는 발소리조차 남지 않는다.',
-    atk: 19, hp: 85, speed: 2.4, fx: '#c0a0ff',
+    atk: 24, hp: 106, speed: 2.4, fx: '#c0a0ff',
     look: { skin: '#e8d0c8', hair: '#2a1a3a', hairStyle: 'veil', body: '#2a2040', trim: '#9a6bff', legs: '#1a1428', boots: '#100c18', cape: '#3a2a5a', eye: '#c0a0ff', weapon: 'daggers', wcol: '#d0d0e8', wcol2: '#4a3a5a', build: 'slim', extra: 'scarf' },
     combo: [
       melee({ dur: 11, t: 3, m: 0.42, box: [0, -12, 24, 18], w: 'guard', s: 'slashDown', fx: { arc: 'down', r: 14 }, hs: 2, lunge: 2 }),
@@ -226,7 +226,7 @@ export const CHARACTERS: CharDef[] = [
   {
     id: 'morga', name: '모르가', title: '사슬낫 사신', rarity: 4, type: 'speed', crest: 'blood',
     lore: '망자의 강을 건너는 이들을 인도하던 사신. 계약으로 묶인 지금은 산 자들의 피를 수확한다.',
-    atk: 21, hp: 95, speed: 2.05, fx: '#ff5070',
+    atk: 26, hp: 119, speed: 2.05, fx: '#ff5070',
     look: { skin: '#c8c0c8', hair: '#101014', hairStyle: 'hood', body: '#18141c', trim: '#c02040', legs: '#100c14', boots: '#08060a', cape: '#200c14', eye: '#ff3050', weapon: 'scythe', wcol: '#d8d8e0', wcol2: '#3a2a2a', build: 'normal', extra: 'chains' },
     combo: [
       melee({ dur: 18, t: 6, m: 0.65, box: [-18, -18, 54, 28], w: 'windHigh', s: 'slashDown', fx: { arc: 'h', r: 28, col: '#ff8090' }, hs: 3, lunge: 1.5 }),
@@ -253,7 +253,7 @@ export const CHARACTERS: CharDef[] = [
   {
     id: 'aurelia', name: '아우렐리아', title: '방패 성기사', rarity: 4, type: 'guard', crest: 'ward',
     lore: '성소를 끝까지 지킨 성기사. 그녀의 방패가 무너졌을 때, 왕국도 함께 무너졌다.',
-    atk: 20, hp: 145, speed: 1.75, fx: '#fff0a0',
+    atk: 25, hp: 181, speed: 1.75, fx: '#fff0a0',
     look: { skin: '#f8e0c8', hair: '#f0d070', hairStyle: 'long', body: '#d8d8e8', trim: '#e0b040', legs: '#8a8aa0', boots: '#6a6a80', cape: '#2a4aa0', eye: '#3a6ad0', weapon: 'mace', wcol: '#e0e0f0', wcol2: '#c0a040', shield: '#e0b040', build: 'normal', extra: 'halo' },
     combo: [
       melee({ dur: 20, t: 7, m: 0.85, box: [-2, -16, 28, 26], w: 'windHigh', s: 'slashDown', fx: { arc: 'down', r: 18, col: '#fff0a0' }, hs: 4, lunge: 1.5, sfx: 'swing' }),
@@ -279,7 +279,7 @@ export const CHARACTERS: CharDef[] = [
   {
     id: 'eora', name: '에오라', title: '시간을 멈춘 마녀', rarity: 4, type: 'magic', crest: 'frost',
     lore: '왕국이 멸망하던 밤, 시계탑의 시간을 멈춰 혼자만 살아남은 마녀. 그 대가로 그녀의 시간은 영원히 겨울이다.',
-    atk: 19, hp: 88, speed: 1.9, fx: '#a8e4ff',
+    atk: 24, hp: 110, speed: 1.9, fx: '#a8e4ff',
     look: { skin: '#f0e8f0', hair: '#a0c8f0', hairStyle: 'witch', body: '#3a4a8a', trim: '#a8e4ff', legs: '#2a2a5a', boots: '#1a1a3a', cape: '#5a6ab0', eye: '#80e0ff', weapon: 'clock', wcol: '#e0d090', wcol2: '#6a5a8a', build: 'slim', glow: '#a8e4ff' },
     combo: [
       shot({ dur: 16, t: 5, m: 0.65, p: P.orb('#a8e4ff', { spr: 'shard', spd: 6, st: 'chill', el: 'frost' }), s: 'cast', sfx: 'proj' }),
@@ -306,7 +306,7 @@ export const CHARACTERS: CharDef[] = [
   {
     id: 'seres', name: '세레스', title: '저주받은 왕녀', rarity: 5, type: 'guard', crest: 'shadow',
     lore: '끝없는 왕의 유일한 혈육. 아버지의 저주를 몸에 새긴 채, 그 저주로 아버지를 끝내기 위해 계약에 응했다.',
-    atk: 27, hp: 120, speed: 2.15, fx: '#ff80d0',
+    atk: 34, hp: 150, speed: 2.15, fx: '#ff80d0',
     look: { skin: '#f8e8f0', hair: '#e8e8f8', hairStyle: 'crown', body: '#4a1a4a', trim: '#ff80d0', legs: '#2a0a2a', boots: '#1a081a', cape: '#8a1a5a', eye: '#ff4ab0', weapon: 'rapier', wcol: '#f0d0ff', wcol2: '#d0a040', build: 'slim', glow: '#ff80d0', extra: 'chains' },
     combo: [
       melee({ dur: 13, t: 4, m: 0.6, box: [0, -10, 34, 12], w: 'thrustWind', s: 'thrust', fx: { arc: 'thrust', r: 28, col: '#ffc0e8' }, hs: 3, lunge: 2 }),
@@ -333,7 +333,7 @@ export const CHARACTERS: CharDef[] = [
   {
     id: 'drakan', name: '드라칸', title: '혼돈의 용기사', rarity: 5, type: 'power', crest: 'flame',
     lore: '혼돈의 용과 피를 나눈 기사. 용의 날개와 불꽃을 얻었지만, 인간이었던 기억은 잃어가고 있다.',
-    atk: 30, hp: 130, speed: 1.95, fx: '#ff6a2a',
+    atk: 38, hp: 162, speed: 1.95, fx: '#ff6a2a',
     look: { skin: '#d0a080', hair: '#2a0a0a', hairStyle: 'horned', body: '#3a1010', trim: '#ff6a2a', legs: '#2a0a0a', boots: '#1a0505', cape: '#5a0a0a', eye: '#ffb02a', weapon: 'lance', wcol: '#ff9a4a', wcol2: '#3a1a1a', build: 'big', glow: '#ff6a2a', extra: 'wings' },
     combo: [
       melee({ dur: 20, t: 7, m: 1.0, box: [0, -10, 46, 16], w: 'thrustWind', s: 'thrust', fx: { arc: 'thrust', r: 40, col: '#ffb080' }, hs: 4, lunge: 3 }),
@@ -360,7 +360,7 @@ export const CHARACTERS: CharDef[] = [
   {
     id: 'astera', name: '아스테라', title: '별을 떨어뜨리는 점성술사', rarity: 5, type: 'magic', crest: 'soul',
     lore: '천문탑의 마지막 점성술사. 왕국의 멸망을 예언했으나 아무도 믿지 않았다. 이제 그녀는 별을 직접 떨어뜨린다.',
-    atk: 25, hp: 95, speed: 1.95, fx: '#ffe680',
+    atk: 31, hp: 119, speed: 1.95, fx: '#ffe680',
     look: { skin: '#f8e8d8', hair: '#3a3a8a', hairStyle: 'long', body: '#1a1a4a', trim: '#ffe680', legs: '#14143a', boots: '#0a0a2a', cape: '#2a2a6a', eye: '#ffe680', weapon: 'orb', wcol: '#ffe680', wcol2: '#a0a0ff', build: 'slim', glow: '#ffe680', extra: 'halo' },
     combo: [
       // 유도는 마지막 타(별 3발)에만

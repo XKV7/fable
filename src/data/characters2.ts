@@ -1,4 +1,4 @@
-import type { CharDef } from '../game/types';
+import type { ActEvent, CharDef, PoseName } from '../game/types';
 import { melee, multi, P, shot } from './actionKit';
 
 /** 카일루스 「천구 나침반」 강화 효과 id — 발밑 나침반 그림도 이 효과가 있는 동안 그린다 (Player.render) */
@@ -372,6 +372,120 @@ export const CHARACTERS_EX: CharDef[] = [
       { desc: '별의 해도 범위 +30%', mods: [{ target: 'skill2', size: 0.3 }] },
       { desc: '스킬 피해 +20%', effects: [{ stats: { skillDmg: 0.2 } }] },
       { desc: '대항해 피해 +60%', mods: [{ target: 'swap', dmg: 0.6 }] },
+      { desc: '모든 기술 피해 +35%, 스킬 쿨타임 -10%', mods: [{ target: 'all', dmg: 0.35 }], effects: [{ stats: { cdr: 0.1 } }] },
+    ],
+  },
+  {
+    // 컨셉아트: 「잊혀진 심연의 학자」 — 후드 망토, 심연의 구체 두 개, 별의 문장. 짧은 공격 간격이 장점인 암살자(스피드).
+    // 스프라이트는 전용 시트(sheets/enoch). 역할: 단일 대상 난도질 · 관통 돌진
+    id: 'enoch', name: '에녹', title: '잊혀진 심연의 학자', rarity: 6, type: 'speed', crest: 'shadow',
+    lore: '「…모든 것은, 결국 어둠으로 돌아간다.」 금지된 심연의 서고에서 이름마저 지워진 학자. 곁을 맴도는 심연의 구체가 그의 칼날이 되어, 눈 깜짝할 사이에 적을 베어 낸다.',
+    atk: 54, hp: 225, speed: 2.3, fx: '#8a6aff',
+    look: { skin: '#f0e8f0', hair: '#d8d8ec', hairStyle: 'hood', body: '#14101e', trim: '#8a6aff', legs: '#100c18', boots: '#1e1a2a', cape: '#1a1428', eye: '#a080ff', weapon: 'daggers', wcol: '#a080ff', wcol2: '#2a1e48', build: 'slim', glow: '#8a6aff' },
+    combo: [
+      // 평타: 공격 간격이 아주 짧은 5연격 (심연의 구체가 따라 베는 그림자 칼날)
+      melee({ dur: 9, t: 3, m: 0.55, box: [0, -16, 34, 22], w: 'windHigh', s: 'slashDown', fx: { arc: 'down', r: 24, col: '#a080ff' }, hs: 2, lunge: 2, el: 'shadow' }),
+      melee({ dur: 9, t: 3, m: 0.55, box: [0, -18, 34, 24], w: 'windLow', s: 'slashUp', fx: { arc: 'up', r: 24, col: '#8a6aff' }, hs: 2, lunge: 2, el: 'shadow' }),
+      melee({ dur: 9, t: 3, m: 0.6, box: [0, -10, 40, 16], w: 'thrustWind', s: 'thrust', fx: { arc: 'thrust', r: 32, col: '#c0a8ff' }, hs: 2, lunge: 3, el: 'shadow' }),
+      melee({ dur: 10, t: 3, m: 0.6, box: [-14, -18, 48, 28], w: 'windHigh', s: 'spin', fx: { arc: 'circle', r: 24, col: '#8a6aff' }, hs: 2, el: 'shadow' }),
+      {
+        // 마무리: 초승달 그림자 베기 두 번 (컨셉아트 공격 칸의 큰 검기)
+        dur: 22,
+        pose: [[0, 'windHigh'], [3, 'slashDown'], [10, 'slashUp']],
+        cancel: 18,
+        move: [[2, 3.5], [12, 0]],
+        ev: [
+          { t: 2, k: 'sfx', s: 'swing_heavy' },
+          { t: 4, k: 'pic', name: 'enoch:arc', dx: 20, dy: -12, s0: 40, s1: 56, life: 10 },
+          { t: 4, k: 'hit', box: [0, -24, 50, 34], m: 0.9, kb: 2, hs: 4, el: 'shadow' },
+          { t: 11, k: 'pic', name: 'enoch:arc2', dx: 24, dy: -10, s0: 40, s1: 60, life: 10 },
+          { t: 11, k: 'hit', box: [0, -22, 56, 32], m: 1.2, kb: 5, hs: 6, el: 'shadow', st: 'bleed', fin: true, shake: 2 },
+        ],
+      },
+    ],
+    air: melee({ dur: 12, t: 3, m: 0.6, box: [0, -6, 32, 24], w: 'windHigh', s: 'slashDown', fx: { arc: 'down', r: 24, col: '#a080ff' }, air: true, grav: 0.3, hs: 2, el: 'shadow' }),
+    dashAtk: melee({ dur: 16, t: 4, m: 1.2, box: [-10, -14, 50, 18], w: 'thrustWind', s: 'thrust', fx: { arc: 'h', r: 38, col: '#8a6aff' }, lunge: 8, hs: 4, el: 'shadow', inv: [0, 8] }),
+    skills: [
+      {
+        name: '심연 난도질',
+        desc: '가까운 적에게 순간이동해 1.7초간 난도질한다 (17회 × 45% + 마무리 150%). 시전 내내 무적.',
+        cd: 9,
+        act: {
+          dur: 112,
+          pose: [[0, 'dash'], [4, 'slashDown'], ...Array.from({ length: 17 }, (_, i): [number, PoseName] => [8 + i * 6, (['slashUp', 'thrust', 'spin', 'slashDown'] as PoseName[])[i % 4]]), [106, 'slam']],
+          inv: [0, 112],
+          move: [[0, 0]],
+          ev: [
+            { t: 0, k: 'sfx', s: 'dash' },
+            { t: 1, k: 'tp', dx: 14, toEnemy: true },
+            { t: 2, k: 'pic', name: 'enoch:sigil', dx: 0, dy: -14, s0: 20, s1: 60, life: 18, spin: 0.08 },
+            { t: 56, k: 'tp', dx: 14, toEnemy: true },
+            ...Array.from({ length: 17 }, (_, i): ActEvent[] => {
+              const t = 6 + i * 6;
+              const arc = (['down', 'up', 'x', 'h'] as const)[i % 4];
+              return [
+                { t, k: 'hit', box: [-28, -26, 62, 40], m: 0.45, kb: 0, hs: 1, el: 'shadow', fx: { arc, r: 26, col: i % 2 ? '#8a6aff' : '#c0a8ff' } },
+                ...(i % 3 === 0 ? [{ t, k: 'pic', name: i % 2 ? 'enoch:arc2' : 'enoch:arc', dx: 10, dy: -14, s0: 30, s1: 46, life: 7 } as ActEvent] : []),
+                ...(i % 2 === 0 ? [{ t, k: 'sfx', s: 'swing' } as ActEvent] : []),
+              ];
+            }).flat(),
+            { t: 106, k: 'pic', name: 'enoch:star', dx: 0, dy: -12, s0: 30, s1: 90, life: 18, spin: 0.05 },
+            { t: 106, k: 'nova', r: 50, m: 1.5, el: 'shadow', st: 'bleed', col: '#8a6aff' },
+            { t: 106, k: 'shake', v: 4 },
+            { t: 106, k: 'sfx', s: 'explode' },
+          ],
+        },
+      },
+      {
+        name: '심연 돌파',
+        desc: '정면으로 길게 돌진하며 경로의 모든 적을 벤다 (5회 × 80%, 출혈). 돌진 중 무적.',
+        cd: 7,
+        act: {
+          dur: 26,
+          pose: [[0, 'thrustWind'], [2, 'dash'], [18, 'thrust']],
+          inv: [0, 20],
+          move: [[2, 12], [17, 0]],
+          ev: [
+            { t: 1, k: 'sfx', s: 'swing_heavy' },
+            { t: 2, k: 'pic', name: 'enoch:arc2', dx: 6, dy: -12, s0: 36, s1: 50, life: 10 },
+            ...[4, 7, 10, 13, 16].map((t): ActEvent => ({ t, k: 'hit', box: [-46, -18, 66, 30], m: 0.8, kb: 1, hs: 1, el: 'shadow', st: 'bleed', fx: { arc: 'h', r: 34, col: '#8a6aff' } })),
+            { t: 18, k: 'pic', name: 'enoch:sigil', dx: 4, dy: -12, s0: 30, s1: 64, life: 16, spin: 0.06 },
+            { t: 18, k: 'sfx', s: 'explode' },
+          ],
+        },
+      },
+    ],
+    swap: {
+      name: '교대: 망각의 문장',
+      desc: '별의 문장을 펼쳐 주변의 적을 심연으로 끌어당긴 뒤 터뜨린다 (공격력 360%).',
+      act: {
+        dur: 30,
+        pose: [[0, 'castUp'], [14, 'cast']],
+        inv: [0, 18],
+        ev: [
+          { t: 2, k: 'sfx', s: 'cast' },
+          { t: 2, k: 'pic', name: 'enoch:circle', dx: 0, dy: -10, s0: 40, s1: 150, life: 24, spin: 0.03 },
+          { t: 4, k: 'nova', r: 80, m: 0.4, el: 'shadow', pull: true, col: '#5a3aaa' },
+          { t: 14, k: 'pic', name: 'enoch:star', dx: 0, dy: -12, s0: 40, s1: 120, life: 20, spin: 0.05 },
+          { t: 14, k: 'nova', r: 70, m: 3.6, el: 'shadow', up: -3, col: '#8a6aff' },
+          { t: 14, k: 'shake', v: 5 },
+          { t: 14, k: 'sfx', s: 'explode' },
+        ],
+      },
+    },
+    passive: {
+      name: '심연의 가속',
+      desc: '공격 속도 +25%, 치명타 +10%. 처치 시 2초간 이동·공격 속도 +20%.',
+      effects: [
+        { stats: { aspd: 0.25, crit: 0.1 } },
+        { on: 'kill', do: [{ k: 'buff', id: 'enoch_rush', stats: { mspd: 0.2, aspd: 0.2 }, dur: 2 }] },
+      ],
+    },
+    awaken: [
+      { desc: '심연 난도질 피해 +40%', mods: [{ target: 'skill1', dmg: 0.4 }] },
+      { desc: '심연 돌파 쿨타임 -2초', mods: [{ target: 'skill2', cd: 2 }] },
+      { desc: '치명타 피해 +30%', effects: [{ stats: { critDmg: 0.3 } }] },
+      { desc: '망각의 문장 피해 +60%', mods: [{ target: 'swap', dmg: 0.6 }] },
       { desc: '모든 기술 피해 +35%, 스킬 쿨타임 -10%', mods: [{ target: 'all', dmg: 0.35 }], effects: [{ stats: { cdr: 0.1 } }] },
     ],
   },

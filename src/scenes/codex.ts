@@ -19,6 +19,9 @@ import { Fx } from '../game/fx';
 const TABS = ['영웅', '무기', '유물', '문장'];
 
 /** 도감: 전체 목록(미획득은 실루엣), 각성/재련 단계, 상세 + 미리보기 애니메이션 */
+/** 도감 격자 한 화면 줄 수 */
+const GRID_ROWS = 6;
+
 export class CodexScene implements Scene {
   tab = 0;
   sel = 0;
@@ -63,6 +66,11 @@ export class CodexScene implements Scene {
       this.tab = Number(h.slice(3));
       this.sel = 0;
     }
+    if (this.tab !== 3) {
+      const row = Math.floor(this.sel / 5);
+      if (row < this.scroll) this.scroll = row;
+      if (row >= this.scroll + GRID_ROWS) this.scroll = row - GRID_ROWS + 1;
+    } else this.scroll = 0;
     if (prev !== this.sel) {
       audio.play('select');
       this.preview = { act: 0, f: 0, which: 0 };
@@ -128,13 +136,27 @@ export class CodexScene implements Scene {
     keyHint(g, [[`${app.input.label('skill1')}/${app.input.label('skill2')}`, '탭'], ['방향키', '선택'], ['Esc', '나가기']], 258);
   }
 
+  /** 5열 격자: 한 화면에 6줄, 넘치면 선택한 칸이 보이도록 줄 단위로 스크롤 */
   private gridCell(i: number): [number, number] {
-    return [12 + (i % 5) * 36, 34 + Math.floor(i / 5) * 36];
+    return [12 + (i % 5) * 36, 34 + (Math.floor(i / 5) - this.scroll) * 36];
+  }
+
+  private gridVisible(i: number): boolean {
+    const r = Math.floor(i / 5) - this.scroll;
+    return r >= 0 && r < GRID_ROWS;
+  }
+
+  private gridArrows(g: CanvasRenderingContext2D, n: number): void {
+    const rows = Math.ceil(n / 5);
+    if (this.scroll > 0) text(g, '▲', 100, 26, { size: 6, align: 'center', color: '#a090c0' });
+    if (this.scroll + GRID_ROWS < rows) text(g, '▼', 100, 251, { size: 6, align: 'center', color: '#a090c0' });
   }
 
   private charGrid(g: CanvasRenderingContext2D): void {
     const save = app.save;
+    this.gridArrows(g, CHARACTERS.length);
     CHARACTERS.forEach((c, i) => {
+      if (!this.gridVisible(i)) return;
       const [x, y] = this.gridCell(i);
       const own = save.chars[c.id];
       g.fillStyle = i === this.sel ? rgba(RARITY_COL[c.rarity], 0.35) : 'rgba(255,255,255,0.04)';
@@ -202,7 +224,9 @@ export class CodexScene implements Scene {
 
   private weaponGrid(g: CanvasRenderingContext2D): void {
     const save = app.save;
+    this.gridArrows(g, WEAPONS.length);
     WEAPONS.forEach((w, i) => {
+      if (!this.gridVisible(i)) return;
       const [x, y] = this.gridCell(i);
       const own = save.weapons[w.id];
       g.fillStyle = i === this.sel ? rgba(RARITY_COL[w.rarity], 0.35) : 'rgba(255,255,255,0.04)';

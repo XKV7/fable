@@ -387,6 +387,8 @@ export const CHARACTERS: CharDef[] = [
 ];
 
 CHARACTERS.push(...CHARACTERS_EX);
+// 모든 영웅 목록(도감·육성·편성·가챠)은 등급 오름차순: 높은 등급이 아래로 (같은 등급은 정의 순서)
+CHARACTERS.sort((a, b) => a.rarity - b.rarity);
 
 export const CHAR_MAP: Record<string, CharDef> = Object.fromEntries(CHARACTERS.map((c) => [c.id, c]));
 export const STARTER_CHAR = 'kael';

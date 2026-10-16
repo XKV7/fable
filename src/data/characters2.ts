@@ -37,7 +37,7 @@ export const CHARACTERS_EX: CharDef[] = [
     skills: [
       {
         name: '성흔 결정창',
-        desc: '별빛 결정 기둥이 앞으로 차례로 솟구치고(공격력 90%×5), 결정 파편 다섯 발을 흩뿌린다.',
+        desc: '별빛 결정 기둥이 앞으로 차례로 솟구치고(공격력 135%×5), 결정 파편 다섯 발을 흩뿌린다 (각 90%).',
         cd: 7,
         act: {
           dur: 30,
@@ -45,12 +45,12 @@ export const CHARACTERS_EX: CharDef[] = [
           ev: [
             { t: 8, k: 'sfx', s: 'cast' },
             { t: 8, k: 'shake', v: 3 },
-            { t: 8, k: 'field', f: { vis: 'crystal', w: 22, h: 46, life: 22, tick: 8, m: 0.9, el: 'holy' }, dx: 28, ground: true },
-            { t: 11, k: 'field', f: { vis: 'crystal', w: 22, h: 52, life: 22, tick: 8, m: 0.9, el: 'holy' }, dx: 54, ground: true },
-            { t: 14, k: 'field', f: { vis: 'crystal', w: 22, h: 58, life: 22, tick: 8, m: 0.9, el: 'holy' }, dx: 80, ground: true },
-            { t: 17, k: 'field', f: { vis: 'crystal', w: 22, h: 64, life: 22, tick: 8, m: 0.9, el: 'holy' }, dx: 106, ground: true },
-            { t: 20, k: 'field', f: { vis: 'crystal', w: 26, h: 72, life: 22, tick: 8, m: 0.9, el: 'holy' }, dx: 134, ground: true },
-            { t: 10, k: 'proj', p: { spr: 'crystal', spd: 5.5, life: 60, w: 12, h: 8, col: '#c8e8ff', el: 'holy', pierce: 2 }, m: 0.6, n: 5, spread: 12, ang: -10 },
+            { t: 8, k: 'field', f: { vis: 'crystal', w: 22, h: 46, life: 22, tick: 8, m: 1.35, el: 'holy' }, dx: 28, ground: true },
+            { t: 11, k: 'field', f: { vis: 'crystal', w: 22, h: 52, life: 22, tick: 8, m: 1.35, el: 'holy' }, dx: 54, ground: true },
+            { t: 14, k: 'field', f: { vis: 'crystal', w: 22, h: 58, life: 22, tick: 8, m: 1.35, el: 'holy' }, dx: 80, ground: true },
+            { t: 17, k: 'field', f: { vis: 'crystal', w: 22, h: 64, life: 22, tick: 8, m: 1.35, el: 'holy' }, dx: 106, ground: true },
+            { t: 20, k: 'field', f: { vis: 'crystal', w: 26, h: 72, life: 22, tick: 8, m: 1.35, el: 'holy' }, dx: 134, ground: true },
+            { t: 10, k: 'proj', p: { spr: 'crystal', spd: 5.5, life: 60, w: 12, h: 8, col: '#c8e8ff', el: 'holy', pierce: 2 }, m: 0.9, n: 5, spread: 12, ang: -10 },
           ],
         },
       },

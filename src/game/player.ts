@@ -541,7 +541,7 @@ export class Player {
     }
     const hd = this.room.demoNoHD
       ? null
-      : charFrameHD(this.def.id, pose, { t: this.animT, since: lieHD ? this.deadT : this.hdSince++, prev: this.hdPrev });
+      : charFrameHD(this.def.id, pose, { t: this.animT, since: lieHD ? this.deadT : this.hdSince++, prev: this.hdPrev }, true);
     const x = Math.round(this.cx - 24 - cx);
     const y = Math.round(this.b.y + this.b.h - 44 - cy);
     // 카일루스 「천구 나침반」: 강화 중엔 발밑에 별의 나침반 마법진이 바닥에 누워 돈다 (캐릭터 뒤)

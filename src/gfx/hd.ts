@@ -1,7 +1,7 @@
 import type { PoseName } from '../game/types';
 import { POSES } from './humanoid';
 import { OUTLINE, Pix } from './pixel';
-import { CAELUS_FRAMES, CAELUS_FX, CAELUS_FX_SHEET, CAELUS_SHEET } from './caelusSheet';
+import { CAELUS_FRAMES, CAELUS_FX, CAELUS_FX_SHEET, CAELUS_SHEET, type FxFrame, type SheetFrame } from './caelusSheet';
 
 /**
  * ★7 전용 고해상도(2배 정밀) 스프라이트. 96×96 프레임, 발 y=88, 키 약 48픽셀.
@@ -238,7 +238,7 @@ function drawCaelus(pose: PoseName): HTMLCanvasElement {
  * 컨셉아트에서 직접 잘라낸 시트 (카일루스). 게임 포즈 → 시트 프레임 이름.
  * 시트 이미지가 아직 안 불러와졌으면 손으로 찍은 픽셀 버전(drawCaelus)으로 대신 그리고 캐시하지 않는다.
  */
-const CAELUS_POSE: Record<PoseName, string> = {
+const CAELUS_POSE: Partial<Record<PoseName, string>> = {
   idle0: 'idle0', idle1: 'idle2', crouch: 'crouch',
   run0: 'run0', run1: 'run1', run2: 'run2', run3: 'run3', run4: 'run0', run5: 'run1',
   jump: 'jump', fall: 'fall', dash: 'dash',
@@ -256,16 +256,46 @@ const CYCLES: Record<string, { frames: string[]; tick: number }> = {
   hurt: { frames: ['hit0', 'hit1', 'hit2', 'hit3', 'hit4'], tick: 4 },
   dead: { frames: ['hit1', 'hit_die', 'die0', 'die0_1', 'die1', 'die1_2', 'die2', 'die2_3', 'die3'], tick: 4 },
 };
-interface Sheet { img: HTMLImageElement; ok: boolean; frames: typeof CAELUS_FRAMES; pose: Record<PoseName, string> }
+/** 컨셉아트 시트 영웅 한 명의 자료 (src/gfx/sheets/*.ts — tools/hero.py가 생성) */
+export interface HeroSheet {
+  sheet: string;
+  frames: Record<string, SheetFrame>;
+  fxSheet: string;
+  fx: Record<string, FxFrame>;
+  poses: Partial<Record<PoseName, string>>;
+  cycles: Record<string, { frames: string[]; tick: number }>;
+}
+/**
+ * 시트 영웅 목록. 카일루스는 처음부터 들어 있고, 나머지는 처음 필요할 때 따로 불러온다(번들 분리).
+ * 새 영웅: tools/hero.py로 sheets/<id>.ts를 만들고 여기에 한 줄 추가.
+ */
+const LOADERS: Record<string, () => Promise<HeroSheet>> = {
+  caelus: async () => ({ sheet: CAELUS_SHEET, frames: CAELUS_FRAMES, fxSheet: CAELUS_FX_SHEET, fx: CAELUS_FX, poses: CAELUS_POSE, cycles: CYCLES }),
+  solen: () => import('./sheets/solen').then((m) => m.SOLEN),
+  lucas: () => import('./sheets/lucas').then((m) => m.LUCAS),
+  astral: () => import('./sheets/astral').then((m) => m.ASTRAL),
+};
+/** 카일루스(96칸)보다 큰 검기가 그려진 칸이 있는 영웅은 가로 160칸 (화면 80) */
+const WIDE: Record<string, boolean> = { solen: true, lucas: true, astral: true };
+
+interface Sheet { img: HTMLImageElement; fxImg: HTMLImageElement | null; ok: boolean; fxOk: boolean; d: HeroSheet | null; w: number }
 const SHEETS: Record<string, Sheet> = {};
 function sheetOf(id: string): Sheet | null {
-  if (id !== 'caelus' || typeof Image === 'undefined') return null;
+  if (!LOADERS[id] || typeof Image === 'undefined') return null;
   let s = SHEETS[id];
   if (!s) {
-    const img = new Image();
-    s = SHEETS[id] = { img, ok: false, frames: CAELUS_FRAMES, pose: CAELUS_POSE };
-    img.onload = () => (s.ok = true);
-    img.src = CAELUS_SHEET;
+    const sh: Sheet = { img: new Image(), fxImg: null, ok: false, fxOk: false, d: null, w: WIDE[id] ? 160 : HD_FW };
+    s = SHEETS[id] = sh;
+    void LOADERS[id]().then((d) => {
+      sh.d = d;
+      sh.img.onload = () => (sh.ok = true);
+      sh.img.src = d.sheet;
+      if (d.fxSheet) {
+        sh.fxImg = new Image();
+        sh.fxImg.onload = () => (sh.fxOk = true);
+        sh.fxImg.src = d.fxSheet;
+      }
+    });
   }
   return s;
 }
@@ -278,55 +308,62 @@ export interface HDAnim {
 }
 
 function sheetFrameName(s: Sheet, pose: PoseName, an?: HDAnim): string {
-  const base = s.pose[pose];
+  const d = s.d!;
+  const base = d.poses[pose] ?? 'idle0';
   if (!an) return base;
-  const cyc = (k: string, t: number, loop = true): string => {
-    const c = CYCLES[k];
+  const cyc = (k: string, t: number, loop = true): string | null => {
+    const c = d.cycles[k];
+    if (!c) return null;
     const i = Math.floor(t / c.tick);
     return c.frames[loop ? i % c.frames.length : Math.min(i, c.frames.length - 1)];
   };
-  if (pose === 'idle0' || pose === 'idle1') return cyc('idle', an.t);
-  // 걷기 칸은 정면을 보는 그림이라 옆으로 이동할 때 어색하다 → 이동은 항상 달리기 순환
-  if (pose.startsWith('run')) return cyc('run', an.t);
-  if (pose === 'hurt') return cyc('hurt', an.since, false);
-  if (pose === 'dead') return cyc('dead', an.since, false);
-  // 공격·시전: 포즈가 막 바뀐 2틱 동안은 앞 칸 → 이 칸 사이 동작
+  if (pose === 'idle0' || pose === 'idle1') return cyc('idle', an.t) ?? base;
+  // 걷기 칸은 정면을 보는 그림이 많아 옆으로 이동할 때 어색하다 → 이동은 항상 달리기 순환
+  if (pose.startsWith('run')) return cyc('run', an.t) ?? base;
+  if (pose === 'hurt') return cyc('hurt', an.since, false) ?? base;
+  if (pose === 'dead') return cyc('dead', an.since, false) ?? base;
+  // 공격·시전: 포즈가 막 바뀐 2틱 동안은 앞 칸 → 이 칸 사이 동작 (있으면)
   if (an.prev && an.since < 2) {
-    const m = /^(attack|cast)(\d)$/.exec(base);
-    const pm = /^(attack|cast)(\d)$/.exec(s.pose[an.prev]);
+    const m = /^([a-z]+)(\d)$/.exec(base);
+    const pm = /^([a-z]+)(\d)$/.exec(d.poses[an.prev] ?? '');
     if (m && pm && m[1] === pm[1] && +m[2] === +pm[2] + 1) {
       const k = `${pm[0]}_${m[2]}`;
-      if (s.frames[k]) return k;
+      if (d.frames[k]) return k;
     }
   }
   return base;
 }
 
-function fromSheet(s: Sheet, name: string): HTMLCanvasElement {
-  const f = s.frames[name] ?? s.frames.idle0;
+function fromSheet(s: Sheet, name: string, w: number): HTMLCanvasElement {
+  const f = s.d!.frames[name] ?? s.d!.frames.idle0;
   const c = document.createElement('canvas');
-  c.width = c.height = HD_FW;
+  c.width = w;
+  c.height = HD_FW;
   const g = c.getContext('2d')!;
   g.imageSmoothingEnabled = false;
-  // 발 기준점(머리 아래 가장 낮은 점)을 96×96 칸의 (48, 88)에 맞춘다
-  g.drawImage(s.img, f.x, f.y, f.w, f.h, HD_FW / 2 - f.ax, FOOT - f.ay, f.w, f.h);
+  // 발 기준점(머리 아래 가장 낮은 점)을 칸의 (가운데, 88)에 맞춘다
+  g.drawImage(s.img, f.x, f.y, f.w, f.h, w / 2 - f.ax, FOOT - f.ay, f.w, f.h);
   return c;
 }
 
 const DRAW: Record<string, (pose: PoseName) => HTMLCanvasElement> = { caelus: drawCaelus };
 const cache = new Map<string, HTMLCanvasElement>();
 
-/** 고해상도 스프라이트가 있는 영웅이면 96×96 프레임, 없으면 null. an을 주면 사이 동작·반복 동작까지 고른다 */
-export function charFrameHD(id: string, pose: PoseName, an?: HDAnim): HTMLCanvasElement | null {
-  const d = DRAW[id];
-  if (!d) return null;
+/**
+ * 고해상도 스프라이트가 있는 영웅이면 96×96 프레임(wide면 가로가 더 넓은 전투용 칸), 없거나 아직 불러오는 중이면 null.
+ * an을 주면 사이 동작·반복 동작까지 고른다. UI는 항상 96×96(가운데)을 받는다.
+ */
+export function charFrameHD(id: string, pose: PoseName, an?: HDAnim, wide = false): HTMLCanvasElement | null {
   const s = sheetOf(id);
-  if (s && !s.ok) return d(pose === 'dead' ? 'hurt' : pose); // 시트 불러오는 중 (아주 잠깐)
-  const name = s ? sheetFrameName(s, pose, an) : pose;
-  const k = `${id}|${name}`;
+  const d = DRAW[id];
+  if (!s) return null;
+  if (!s.ok) return d ? d(pose === 'dead' ? 'hurt' : pose) : null; // 시트 불러오는 중 (아주 잠깐)
+  const name = sheetFrameName(s, pose, an);
+  const w = wide ? s.w : HD_FW;
+  const k = `${id}|${name}|${w}`;
   let c = cache.get(k);
   if (!c) {
-    c = s ? fromSheet(s, name) : d(pose);
+    c = fromSheet(s, name, w);
     cache.set(k, c);
   }
   return c;
@@ -361,9 +398,9 @@ export function charFrameLow(id: string, pose: PoseName): HTMLCanvasElement | nu
 }
 
 /** 쓰러진 모습이 그림에 들어 있는 영웅(컨셉아트 시트): 회전 없이 'dead' 프레임을 쓴다 */
-export const hasLyingFrame = (id: string): boolean => id === 'caelus';
+export const hasLyingFrame = (id: string): boolean => !!LOADERS[id];
 
-export const hasHD = (id: string): boolean => !!DRAW[id];
+export const hasHD = (id: string): boolean => !!LOADERS[id];
 
 /**
  * 고해상도 그리기 층: 월드(480×270)에 그리면 정밀도가 사라지므로,
@@ -384,34 +421,36 @@ export const hdQueue: HDDraw[] = [];
 /** 이번 프레임에 고해상도 층을 쓰지 않는 방(타이틀 데모)이면 true — Room.render가 매 프레임 설정 */
 export const hdState = { off: false };
 
-let fxImg: HTMLImageElement | null = null;
-let fxOk = false;
-function fxSheet(): HTMLImageElement | null {
-  if (typeof Image === 'undefined') return null;
-  if (!fxImg) {
-    fxImg = new Image();
-    fxImg.onload = () => (fxOk = true);
-    fxImg.src = CAELUS_FX_SHEET;
-  }
-  return fxOk ? fxImg : null;
+/** 이펙트 이름: '영웅id:그림' (영웅 생략 시 카일루스) */
+export type HDFxName = string;
+function fxOf(name: HDFxName): { img: HTMLImageElement; f: FxFrame } | null {
+  const i = name.indexOf(':');
+  const id = i < 0 ? 'caelus' : name.slice(0, i);
+  const s = sheetOf(id);
+  const f = s?.d?.fx[i < 0 ? name : name.slice(i + 1)];
+  if (!s || !s.fxOk || !s.fxImg || !f) return null;
+  return { img: s.fxImg, f };
 }
-export type HDFxName = keyof typeof CAELUS_FX;
 /**
  * 컨셉아트 이펙트 그림을 고해상도 층에 그린다. (x, y) = 월드 화면 좌표의 중심, w = 월드 단위 너비(높이는 비율대로).
  * 아직 불러오지 않았거나 고해상도를 쓰지 않는 화면이면 false → 호출한 쪽이 기존 방식으로 그린다.
+ * squash: 세로로 눌러 바닥에 눕힌 모습 (회전 후 적용 — 바닥에서 도는 마법진)
  */
-/** squash: 세로로 눌러 바닥에 눕힌 모습 (회전 후 적용 — 바닥에서 도는 마법진) */
 export function hdFx(name: HDFxName, x: number, y: number, w: number, o: { ang?: number; flip?: boolean; alpha?: number; h?: number; squash?: number } = {}): boolean {
-  const img = fxSheet();
-  if (!img || hdState.off) return false;
-  const f = CAELUS_FX[name];
+  const r = fxOf(name);
+  if (!r || hdState.off) return false;
+  const { img, f } = r;
+  if (w <= 0 && o.h) w = (o.h * f.w) / f.h; // 높이만 주면 비율대로 너비
   hdQueue.push({
     img, x, y, flip: !!o.flip, alpha: o.alpha ?? 1,
     fx: { sx: f.x, sy: f.y, sw: f.w, sh: f.h, w, h: o.h ?? (w * f.h) / f.w, ang: o.ang ?? 0, add: f.add, squash: o.squash ?? 1 },
   });
   return true;
 }
-export const hdFxSize = (name: HDFxName): { w: number; h: number } => CAELUS_FX[name];
+/** 이펙트 그림을 미리 불러 둔다 (영웅이 편성될 때) */
+export function preloadHero(id: string): void {
+  sheetOf(id);
+}
 
 /**
  * 고해상도 스프라이트보다 위에 그려야 하는 월드 요소(투사체·앞 이펙트·예고·조명·화면 색조)를 받을 층.
@@ -441,22 +480,26 @@ export function drawHDQueue(d: CanvasRenderingContext2D, shakeX: number, shakeY:
       if (f.ang) d.rotate(f.ang);
       if (q.flip) d.scale(-1, 1);
       d.drawImage(q.img, f.sx, f.sy, f.sw, f.sh, -f.w / 2, -f.h / 2, f.w, f.h);
-    } else if (q.rot) {
-      d.translate(q.x + q.rot.ox, q.y + q.rot.oy);
-      d.rotate(q.rot.a);
-      if (q.flip) d.scale(-1, 1);
-      d.drawImage(q.img, -24, -44 + 6, 48, 48);
-    } else if (q.flip) {
-      d.translate(q.x + 24, q.y);
-      d.scale(-1, 1);
-      d.drawImage(q.img, -24, 0, 48, 48);
-    } else d.drawImage(q.img, q.x, q.y, 48, 48);
+    } else {
+      // 칸은 96×96(화면 48×48) 기준, 더 넓은 칸은 가운데를 맞춰 양옆으로 넓힌다
+      const w = (q.img as HTMLCanvasElement).width / 2;
+      const ox = (w - 48) / 2;
+      if (q.rot) {
+        d.translate(q.x + q.rot.ox, q.y + q.rot.oy);
+        d.rotate(q.rot.a);
+        if (q.flip) d.scale(-1, 1);
+        d.drawImage(q.img, -24 - ox, -44 + 6, w, 48);
+      } else if (q.flip) {
+        d.translate(q.x + 24, q.y);
+        d.scale(-1, 1);
+        d.drawImage(q.img, -24 - ox, 0, w, 48);
+      } else d.drawImage(q.img, q.x - ox, q.y, w, 48);
+    }
     d.restore();
   }
   d.restore();
   hdQueue.length = 0;
 }
 
-// 시트는 시작하자마자 미리 불러 둔다
+// 카일루스 시트는 시작하자마자 미리 불러 둔다
 sheetOf('caelus');
-fxSheet();

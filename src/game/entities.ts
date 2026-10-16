@@ -116,6 +116,10 @@ export class Projectile {
     this.dead = true;
     const b = this.def.boom;
     if (b) {
+      if (this.def.boomPic) {
+        const bp = this.def.boomPic;
+        room.fx.pic(bp.name, this.x, this.y, bp.s0, bp.s1, bp.life);
+      }
       if (this.team === 'player') room.explode(this.x, this.y, b.r, this.mult * b.m, this.kind === 'normal' ? 'proc' : this.kind, b.el, b.st, undefined, b.col);
       else room.enemyExplode(this.x, this.y, b.r, this.mult * b.m, b.st);
       if (b.field) room.addField(this.team, b.field, this.x - b.field.w / 2, this.y - b.field.h / 2, this.mult, 'proc');
@@ -130,6 +134,13 @@ export class Projectile {
     const y = Math.round(this.y - cy);
     const col = d.col ?? '#ffffff';
     const ang = Math.atan2(this.vy, this.vx);
+    // 영웅 컨셉아트 에셋 그림 (고해상도 층). 왼쪽으로 날아가면 뒤집어 위아래가 거꾸로 되지 않게
+    if (d.pic) {
+      const left = this.vx < 0;
+      const rot = d.pic.rot ?? 0;
+      const a = d.pic.spin ? time * d.pic.spin : left ? ang - Math.PI + rot : ang - rot;
+      if (hdFx(d.pic.name, x, y, d.pic.w, { ang: a, flip: !d.pic.spin && left })) return;
+    }
     // 카일루스 컨셉아트 그림 (고해상도 층). 그림 속 결정 파편은 오른쪽 위(-0.58rad), 장검 끝은 왼쪽 아래(2.3rad)를 향한다
     if (d.spr === 'crystal') {
       const left = this.vx < 0;
@@ -362,6 +373,25 @@ export class Field {
     const fade = Math.min(1, this.life / 20, this.t / 8);
     const cols: Record<string, string> = { fire: '#ff6a1a', poison: '#8bdc3a', ice: '#a8e4ff', thunder: '#80d8ff', void: '#7a4aff', holy: '#ffe080', time: '#a8c8ff', blood: '#d8203a', trap: '#c0a060', star: '#ffe680', crystal: '#a8c0ff', compass: '#9a8aff' };
     const col = cols[d.vis] ?? '#ffffff';
+    // 영웅 컨셉아트 에셋 그림 (rise: 땅에서 솟는 기둥 / stand: 서 있는 마법진 / floor: 바닥에 누워 도는 마법진)
+    if (d.pic) {
+      const P = d.pic;
+      const cxp = x + d.w / 2;
+      const bot = y + d.h;
+      let ok = false;
+      if (P.mode === 'rise') {
+        const grow = Math.min(1, 0.35 + this.t / 6);
+        const hgt = P.size * grow;
+        ok = hdFx(P.name, cxp, bot - hgt / 2 + 2, 0, { h: hgt, alpha: fade });
+      } else if (P.mode === 'stand') {
+        const D = P.size * Math.min(1, 0.5 + this.t / 10);
+        ok = hdFx(P.name, cxp, bot - D / 2 + 4, D, { ang: time * (P.spin ?? 0), alpha: fade });
+      } else {
+        const D = P.size * Math.min(1, 0.4 + this.t / 8);
+        ok = hdFx(P.name, cxp, bot - 2, D, { ang: time * (P.spin ?? 0.03), squash: 0.3, alpha: fade });
+      }
+      if (ok) return;
+    }
     // 카일루스 컨셉아트 그림: 결정 기둥은 땅에서 솟구치고, 천구 나침반은 서서 천천히 돈다
     if (d.vis === 'crystal') {
       const grow = Math.min(1, 0.35 + this.t / 6);

@@ -151,6 +151,10 @@ export interface ProjDef {
   hs?: number;
   ground?: boolean; // 지면을 따라 이동
   landY?: number; // 낙하체(유성·창비): 벽·발판을 무시하고 이 높이에 닿으면 착탄
+  /** 컨셉아트 에셋 그림으로 그리기: name='영웅id:그림', w=월드 너비, rot=그림 속 진행 방향(rad), spin=회전 속도 */
+  pic?: { name: string; w: number; rot?: number; spin?: number };
+  /** 터질 때 에셋 그림 (크기 s0→s1, life 프레임) */
+  boomPic?: { name: string; s0: number; s1: number; life: number };
 }
 
 export type FieldVis = 'fire' | 'poison' | 'ice' | 'thunder' | 'void' | 'holy' | 'time' | 'blood' | 'trap' | 'star' | 'crystal' | 'compass';
@@ -168,6 +172,8 @@ export interface FieldDef {
   slow?: boolean;
   follow?: boolean;
   oneShot?: boolean; // 트랩: 적이 닿으면 폭발
+  /** 컨셉아트 에셋 그림: rise=땅에서 솟는 기둥, stand=서 있는 마법진, floor=바닥에 눕혀 도는 마법진. size=월드 크기 */
+  pic?: { name: string; mode: 'rise' | 'stand' | 'floor'; size: number; spin?: number };
 }
 
 export type SummonKind = 'skeleton' | 'wisp' | 'clone' | 'star' | 'puppet' | 'turret';
@@ -191,8 +197,8 @@ export type ActEvent =
   | { t: number; k: 'tp'; dx: number; toEnemy?: boolean }
   | { t: number; k: 'meteor'; n: number; m: number; spread: number; el?: Element; st?: StatusId; big?: boolean; spr?: ProjSprite }
   | { t: number; k: 'fx'; fx: SlashFx }
-  /** 컨셉아트 이펙트 그림 (★7 카일루스): 플레이어 기준 (dx, dy)에서 크기 s0→s1, life 프레임 */
-  | { t: number; k: 'pic'; name: 'card' | 'spike' | 'slash' | 'circle' | 'sword'; dx: number; dy: number; s0: number; s1: number; life: number; spin?: number }
+  /** 컨셉아트 이펙트 그림: name = '영웅id:그림'(생략 시 카일루스). 플레이어 기준 (dx, dy)에서 크기 s0→s1, life 프레임 */
+  | { t: number; k: 'pic'; name: string; dx: number; dy: number; s0: number; s1: number; life: number; spin?: number }
   | { t: number; k: 'sfx'; s: string }
   | { t: number; k: 'heal'; v: number }
   | { t: number; k: 'shake'; v: number }

@@ -514,7 +514,9 @@ export class GachaScene implements Scene {
         hot.add('pkopen', 262, 50, 76, 13);
       }
     } else if (k === 'char') {
-      const show = CHARACTERS.filter((c) => c.rarity >= 5).sort((a, b) => b.rarity - a.rarity);
+      // 대표 영웅: ★6 이상이 3명 이상이면 최상위 등급만 (자리가 좁아 ★5까지 다 넣으면 확률표와 겹침)
+      const top = CHARACTERS.filter((c) => c.rarity >= 6);
+      const show = (top.length >= 3 ? top : CHARACTERS.filter((c) => c.rarity >= 5)).sort((a, b) => b.rarity - a.rarity).slice(0, 6);
       show.forEach((c, i) => {
         const x = 112 + i * (show.length > 5 ? 38 : 46);
         g.drawImage(tinted(charArt(c.id, 'idle0'), save.chars[c.id] ? RARITY_COL[c.rarity] : '#1a1028'), x - 39, 62, 96, 96);

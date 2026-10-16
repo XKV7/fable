@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { GACHA } from '../src/data/gacha';
-import { newPity, pullMany, pullOnce, type BannerPool } from '../src/game/gacha';
+import { GACHA, RATE_TABLE } from '../src/data/gacha';
+import { newPity, pullMany, pullOnce, rollRarity, type BannerPool } from '../src/game/gacha';
 import { Rng } from '../src/core/rng';
 
 const pool: BannerPool = {
@@ -13,6 +13,47 @@ const pool: BannerPool = {
 };
 const pickupPool: BannerPool = { ...pool, kind: 'pickup', pickup5: ['a5'], pickup4: ['a4'] };
 
+describe('희귀도 확률표 (★7 0.01% · ★6 0.1% · ★5 0.5% · ★4 19.39% · ★3 80%)', () => {
+  it('수치와 합계', () => {
+    expect(RATE_TABLE).toEqual([
+      [7, 0.0001],
+      [6, 0.001],
+      [5, 0.005],
+      [4, 0.1939],
+      [3, expect.closeTo(0.8, 10)],
+    ]);
+    expect(RATE_TABLE.reduce((a, [, p]) => a + p, 0)).toBeCloseTo(1, 10);
+  });
+  it('난수 구간 → 희귀도', () => {
+    const at = (r: number) => rollRarity(newPity(), () => r);
+    expect(at(0.00005)).toBe(7);
+    expect(at(0.0005)).toBe(6);
+    expect(at(0.003)).toBe(5);
+    expect(at(0.1)).toBe(4);
+    expect(at(0.5)).toBe(3);
+  });
+  it('★6·★7 영웅이 있는 풀: 실제 비율과 천장 초기화', () => {
+    const full: BannerPool = { kind: 'char', items: [...pool.items, { id: 'a6', rarity: 6 }, { id: 'a7', rarity: 7 }] };
+    const rng = new Rng(9);
+    const p = newPity();
+    const n = { 6: 0, 7: 0 };
+    const N = 1_000_000;
+    for (let i = 0; i < N; i++) {
+      const r = pullOnce(full, p, () => rng.next());
+      if (r.rarity === 6 || r.rarity === 7) {
+        n[r.rarity]++;
+        expect(p.since5).toBe(0);
+      }
+    }
+    expect(Math.abs(n[6] / N - 0.001) / 0.001).toBeLessThan(0.15);
+    expect(Math.abs(n[7] / N - 0.0001) / 0.0001).toBeLessThan(0.35);
+  });
+  it('★6·★7 준비 중(풀에 없음)이면 ★5로 대체', () => {
+    expect(pullOnce(pool, newPity(), () => 0.00005).rarity).toBe(5);
+    expect(pullOnce(pool, newPity(), () => 0.0005).rarity).toBe(5);
+  });
+});
+
 describe('10만 회 시뮬레이션 (천장 100회)', () => {
   const N = 100_000;
   const rng = new Rng(12345);
@@ -24,28 +65,29 @@ describe('10만 회 시뮬레이션 (천장 100회)', () => {
   for (let i = 0; i < N; i++) {
     const r = pullOnce(pool, p, () => rng.next());
     gap++;
-    if (r.rarity === 5) {
+    if (r.rarity >= 5) {
       n5++;
       maxGap = Math.max(maxGap, gap);
       gap = 0;
     }
     if (r.rarity === 4) n4++;
   }
-  it('★5 기본 확률 0.5%, 천장 포함 실제 비율은 기대값과 일치', () => {
+  it('★5 이상(준비 중인 ★6·★7은 ★5로) 0.61%, 천장 포함 실제 비율은 기대값과 일치', () => {
     expect(GACHA.rate5).toBe(0.005);
+    const top = GACHA.rate5 + GACHA.rate6 + GACHA.rate7;
     // 100회 천장이 있을 때 ★5 1개당 기대 뽑기 수
     let survive = 1;
     let e = 0;
     for (let n = 1; n <= GACHA.hardPity; n++) {
-      const p = n >= GACHA.hardPity ? 1 : GACHA.rate5;
+      const p = n >= GACHA.hardPity ? 1 : top;
       e += n * survive * p;
       survive *= 1 - p;
     }
     expect(Math.abs(n5 / N - 1 / e) / (1 / e)).toBeLessThan(0.08);
   });
-  it('★4 ≈ 9.5%', () => {
-    expect(GACHA.rate4).toBe(0.095);
-    expect(Math.abs(n4 / N - GACHA.rate4)).toBeLessThan(0.005);
+  it('★4 ≈ 19.39%', () => {
+    expect(GACHA.rate4).toBe(0.1939);
+    expect(Math.abs(n4 / N - GACHA.rate4)).toBeLessThan(0.006);
   });
   it('천장: ★5 간격은 100회를 넘지 않고, 천장까지 가는 경우가 존재', () => {
     expect(GACHA.hardPity).toBe(100);

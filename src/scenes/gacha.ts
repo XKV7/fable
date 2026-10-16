@@ -1,7 +1,7 @@
 import { app, type Scene } from '../app';
 import { audio } from '../core/audio';
 import { CHAR_MAP, CHARACTERS, TYPE_COL, TYPE_LABEL } from '../data/characters';
-import { BANNER_INFO, GACHA, type BannerKind } from '../data/gacha';
+import { BANNER_INFO, GACHA, RATE_TABLE, type BannerKind } from '../data/gacha';
 import { WEAPON_MAP, WEAPONS, weaponDesc } from '../data/weapons';
 import { text } from '../gfx/renderer';
 import { charFrame, tinted } from '../gfx/sprites';
@@ -11,7 +11,7 @@ import { drawIcon } from '../ui/icons';
 import { RARITY_BG, RARITY_COL } from '../ui/theme';
 import { button, hot, keyHint, panel, stars } from '../ui/widgets';
 import { pct } from '../core/math';
-import type { PoseName } from '../game/types';
+import type { PoseName, Rarity } from '../game/types';
 
 type Phase = 'menu' | 'throw' | 'beam' | 'cards' | 'reveal' | 'summary';
 
@@ -41,7 +41,7 @@ export class GachaScene implements Scene {
   revealT = 0;
   sparks: Spark[] = [];
   shakeT = 0;
-  maxR: 3 | 4 | 5 = 3;
+  maxR: Rarity = 3;
   stoneAnim = 0;
   /** 디버그 픽업 선택 창 */
   picker: { row: number; col: number; five: string; four: string[] } | null = null;
@@ -80,7 +80,7 @@ export class GachaScene implements Scene {
     }
     app.persist();
     this.results = res;
-    this.maxR = Math.max(...res.map((r) => r.rarity)) as 3 | 4 | 5;
+    this.maxR = Math.max(...res.map((r) => r.rarity)) as Rarity;
     this.phase = 'throw';
     this.t = 0;
     this.flipped = 0;
@@ -108,12 +108,12 @@ export class GachaScene implements Scene {
 
   private startReveal(i: number): boolean {
     const r = this.results[i];
-    if (r.rarity === 5 || (r.rarity === 4 && r.isNew && r.type === 'char')) {
+    if (r.rarity >= 5 || (r.rarity === 4 && r.isNew && r.type === 'char')) {
       this.phase = 'reveal';
       this.revealIdx = i;
       this.revealT = 0;
-      audio.play(r.rarity === 5 ? 'reveal_5' : 'reveal_4');
-      if (r.rarity === 5) this.shakeT = 40;
+      audio.play(r.rarity >= 5 ? 'reveal_5' : 'reveal_4');
+      if (r.rarity >= 5) this.shakeT = 40;
       return true;
     }
     return false;
@@ -125,10 +125,10 @@ export class GachaScene implements Scene {
     this.flipAnim = 12;
     const r = this.results[i];
     const [x, y, w, h] = this.cardPos(i);
-    this.burst(x + w / 2, y + h / 2, RARITY_COL[r.rarity], r.rarity === 5 ? 40 : r.rarity === 4 ? 20 : 8, r.rarity === 5 ? 4 : 2.5);
-    audio.play(`reveal_${r.rarity}`);
+    this.burst(x + w / 2, y + h / 2, RARITY_COL[r.rarity], r.rarity >= 5 ? 40 : r.rarity === 4 ? 20 : 8, r.rarity >= 5 ? 4 : 2.5);
+    audio.play(`reveal_${Math.min(5, r.rarity)}`);
     audio.play('flip');
-    if (r.rarity === 5) this.shakeT = 20;
+    if (r.rarity >= 5) this.shakeT = 20;
     this.startReveal(i);
   }
 
@@ -195,14 +195,14 @@ export class GachaScene implements Scene {
         if (this.t >= 62) {
           this.phase = 'beam';
           this.t = 0;
-          audio.play(`beam_${this.maxR}`);
-          if (this.maxR === 5) this.shakeT = 60;
+          audio.play(`beam_${Math.min(5, this.maxR)}`);
+          if (this.maxR >= 5) this.shakeT = 60;
         }
         if (skip) this.toSummary();
         break;
       case 'beam':
         if (this.t % 4 === 0) this.burst(240 + (Math.random() - 0.5) * 40, 160, RARITY_COL[this.maxR], 3, 2);
-        if (this.t >= (this.maxR === 5 ? 110 : 80) || (inp.menu('ok') && this.t > 30)) {
+        if (this.t >= (this.maxR >= 5 ? 110 : 80) || (inp.menu('ok') && this.t > 30)) {
           this.phase = 'cards';
           this.t = 0;
           this.flipT = 20;
@@ -217,7 +217,7 @@ export class GachaScene implements Scene {
         if (this.flipped < this.results.length) {
           this.flipT--;
           const next = this.results[this.flipped];
-          const delay = next && next.rarity === 5 ? 40 : 12;
+          const delay = next && next.rarity >= 5 ? 40 : 12;
           if (this.flipT <= 0 || inp.menu('ok') || hot.mouse.click) {
             this.flipNext();
             this.flipT = delay;
@@ -306,7 +306,7 @@ export class GachaScene implements Scene {
     if (this.phase === 'beam' || this.phase === 'throw' && this.t > 50) {
       const col = this.phase === 'beam' ? RARITY_COL[this.maxR] : '#ffffff';
       const k = this.phase === 'beam' ? Math.min(1, this.t / 20) : 1 - (62 - this.t) / 12;
-      const w = (this.maxR === 5 ? 60 : this.maxR === 4 ? 40 : 28) * k;
+      const w = (this.maxR >= 5 ? 60 : this.maxR === 4 ? 40 : 28) * k;
       g.save();
       g.globalCompositeOperation = 'lighter';
       const bg = g.createLinearGradient(240 - w, 0, 240 + w, 0);
@@ -317,7 +317,7 @@ export class GachaScene implements Scene {
       g.fillRect(240 - w, 0, w * 2, 180);
       g.fillStyle = rgba('#ffffff', 0.7 * k);
       g.fillRect(240 - w * 0.12, 0, w * 0.24, 180);
-      if (this.maxR === 5 && this.phase === 'beam') {
+      if (this.maxR >= 5 && this.phase === 'beam') {
         for (let i = 0; i < 12; i++) {
           const a = (i / 12) * Math.PI * 2 + this.t * 0.02;
           g.strokeStyle = rgba('#ffe080', 0.25);
@@ -402,7 +402,7 @@ export class GachaScene implements Scene {
     panel(g, 36, 18, 408, 230, { border: '#80ffa0' });
     text(g, '[디버그] 픽업 직접 선택', 46, 24, { size: 10, color: '#80ffa0', bold: true });
     text(g, app.save.pickupOverride ? '현재: 직접 지정' : '현재: 자동 로테이션', 434, 27, { size: 6, align: 'right', color: '#a8a0c0' });
-    const cell = (c: { id: string; name: string; rarity: 3 | 4 | 5 }, x: number, y: number, w: number, on: boolean, cur: boolean, hid: string): void => {
+    const cell = (c: { id: string; name: string; rarity: Rarity }, x: number, y: number, w: number, on: boolean, cur: boolean, hid: string): void => {
       g.fillStyle = on ? rgba(RARITY_COL[c.rarity], 0.4) : 'rgba(255,255,255,0.05)';
       g.fillRect(x, y, w, 46);
       g.strokeStyle = cur ? '#ffffff' : on ? RARITY_COL[c.rarity] : '#3a3048';
@@ -441,14 +441,14 @@ export class GachaScene implements Scene {
       text(g, '영혼석을 바친다…', 240, 240, { size: 9, align: 'center', color: '#c0d0ff' });
       keyHint(g, [['Esc', '건너뛰기']]);
     } else if (this.phase === 'beam') {
-      const msg = this.maxR === 5 ? '하늘이 금빛으로 갈라진다…!' : this.maxR === 4 ? '보랏빛 혼이 응답한다…' : '푸른 혼이 응답한다';
+      const msg = this.maxR >= 5 ? '하늘이 금빛으로 갈라진다…!' : this.maxR === 4 ? '보랏빛 혼이 응답한다…' : '푸른 혼이 응답한다';
       text(g, msg, 240, 230, { size: 10, align: 'center', color: RARITY_COL[this.maxR], bold: true });
       keyHint(g, [[app.input.label('attack'), '계속'], ['Esc', '건너뛰기']]);
     } else if (this.phase === 'cards' || this.phase === 'summary') {
       this.renderCards(g);
       if (this.phase === 'summary') {
         const news = this.results.filter((r) => r.isNew).length;
-        text(g, `결과: ★5 ${this.results.filter((r) => r.rarity === 5).length} · ★4 ${this.results.filter((r) => r.rarity === 4).length} · 신규 ${news}`, 240, 244, { size: 8, align: 'center', color: '#ffe080' });
+        text(g, `결과: ★5↑ ${this.results.filter((r) => r.rarity >= 5).length} · ★4 ${this.results.filter((r) => r.rarity === 4).length} · 신규 ${news}`, 240, 244, { size: 8, align: 'center', color: '#ffe080' });
         keyHint(g, [[app.input.label('attack'), '확인']]);
       } else keyHint(g, [[app.input.label('attack'), '뒤집기'], ['Esc', '건너뛰기']]);
     } else if (this.phase === 'reveal') this.renderReveal(g);
@@ -535,22 +535,25 @@ export class GachaScene implements Scene {
     // 확률표
     panel(g, 348, 30, 126, 166);
     text(g, '확률표', 356, 36, { size: 8, color: '#e0d0ff', bold: true });
-    const r3 = 1 - GACHA.rate5 - GACHA.rate4;
-    [[5, GACHA.rate5], [4, GACHA.rate4], [3, r3]].forEach(([r, p], i) => {
-      stars(g, 356, 52 + i * 12, r, 6);
-      text(g, pct(p, 1), 466, 51 + i * 12, { size: 7, align: 'right', color: RARITY_COL[r as 3 | 4 | 5] });
+    const ready = (r: number): boolean => (k === 'weapon' ? WEAPONS : CHARACTERS).some((x) => x.rarity === r);
+    RATE_TABLE.forEach(([r, p], i) => {
+      const y = 47 + i * 10;
+      stars(g, 356, y + 1, r, r >= 6 ? 4 : 5);
+      text(g, pct(p, Number.isInteger(Math.round(p * 1e6) / 1e4) ? 0 : p < 0.001 ? 2 : p < 0.01 ? 1 : 2), 466, y, { size: 6, align: 'right', color: RARITY_COL[r] });
+      if (!ready(r)) text(g, '준비 중', 430, y, { size: 5, align: 'right', color: '#8a8098' });
     });
     const pity = save.pity[k];
-    text(g, '천장 (배너별)', 356, 92, { size: 7, color: '#e0d0ff' });
-    text(g, `★5 확정까지 ${GACHA.hardPity - pity.since5}회`, 356, 104, { size: 6, color: '#ffe080' });
+    text(g, '천장 (배너별)', 356, 100, { size: 7, color: '#e0d0ff' });
+    text(g, `★5 이상 확정까지 ${GACHA.hardPity - pity.since5}회`, 356, 111, { size: 6, color: '#ffe080' });
     g.fillStyle = '#1a1424';
-    g.fillRect(356, 114, 110, 5);
+    g.fillRect(356, 121, 110, 5);
     g.fillStyle = pity.since5 >= GACHA.hardPity * 0.8 ? '#ffcc40' : '#a080ff';
-    g.fillRect(356, 114, (110 * pity.since5) / GACHA.hardPity, 5);
-    text(g, `현재 ${pity.since5}/${GACHA.hardPity}회`, 356, 122, { size: 6, color: '#c8c0d8' });
-    text(g, '10회 계약: ★4 이상 확정', 356, 134, { size: 6, color: '#c080ff' });
-    if (k === 'pickup') text(g, '★5의 50%는 픽업 영웅', 356, 146, { size: 6, color: '#a8a0c0' });
-    text(g, `누적 ${pity.total}회`, 356, 164, { size: 6, color: '#8a8098' });
+    g.fillRect(356, 121, (110 * pity.since5) / GACHA.hardPity, 5);
+    text(g, `현재 ${pity.since5}/${GACHA.hardPity}회`, 356, 129, { size: 6, color: '#c8c0d8' });
+    text(g, '10회 계약: ★4 이상 확정', 356, 140, { size: 6, color: '#c080ff' });
+    if (k === 'pickup') text(g, '★5의 50%는 픽업 영웅', 356, 151, { size: 6, color: '#a8a0c0' });
+    text(g, '★6·★7 준비 중: 나오면 ★5로', 356, 163, { size: 5, color: '#8a8098' });
+    text(g, `누적 ${pity.total}회`, 356, 174, { size: 6, color: '#8a8098' });
     text(g, '중복: 영웅 각성 / 무기 재련', 356, 186, { size: 6, color: '#8a8098' });
     // 버튼
     const btns = this.buttons();
@@ -570,7 +573,7 @@ export class GachaScene implements Scene {
       g.strokeStyle = '#6a5a9a';
       g.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
       drawIcon(g, 'soul', x + w / 2 - 10, y + h / 2 - 10, 20, '#6a5a9a');
-      if (r.rarity === 5 && this.flipped < this.results.length && (this.t >> 2) % 2) {
+      if (r.rarity >= 5 && this.flipped < this.results.length && (this.t >> 2) % 2) {
         g.strokeStyle = '#ffcc40';
         g.strokeRect(x - 0.5, y - 0.5, w + 1, h + 1);
       }
@@ -583,7 +586,7 @@ export class GachaScene implements Scene {
     g.fillStyle = gr;
     g.fillRect(x, y, w, h);
     g.strokeStyle = RARITY_COL[r.rarity];
-    g.lineWidth = r.rarity === 5 ? 2 : 1;
+    g.lineWidth = r.rarity >= 5 ? 2 : 1;
     g.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
     g.lineWidth = 1;
     if (r.type === 'char') {
@@ -642,7 +645,7 @@ export class GachaScene implements Scene {
     if (r.type === 'char') {
       const c = CHAR_MAP[r.id];
       const pose = (['castUp', 'windHigh', 'slashDown', 'idle0'] as PoseName[])[Math.min(3, Math.floor(t / 18))];
-      const sc = r.rarity === 5 ? 5 : 4;
+      const sc = r.rarity >= 5 ? 5 : 4;
       const s = 48 * sc;
       g.globalAlpha = k;
       if (t < 25) g.drawImage(tinted(charFrame(r.id, pose), '#ffffff'), 180 - s / 2, 255 - s, s, s);

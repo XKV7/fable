@@ -36,7 +36,7 @@ export function bar(g: CanvasRenderingContext2D, x: number, y: number, w: number
 }
 
 export function stars(g: CanvasRenderingContext2D, x: number, y: number, n: number, size = 6, align: 'left' | 'center' = 'left'): void {
-  const col = RARITY_COL[n as 3 | 4 | 5] ?? '#ffffff';
+  const col = RARITY_COL[n as 3 | 4 | 5 | 6 | 7] ?? '#ffffff';
   const total = n * (size + 1);
   const sx = align === 'center' ? x - total / 2 : x;
   for (let i = 0; i < n; i++) {

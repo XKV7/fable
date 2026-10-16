@@ -1,7 +1,8 @@
 /** 게임 전체에서 공유하는 데이터 정의 타입. 실제 수치는 src/data/* 에 있다. */
 
 export type CharType = 'power' | 'speed' | 'ranged' | 'magic' | 'guard';
-export type Rarity = 3 | 4 | 5;
+/** 희귀도. ★6·★7은 등급만 있고 아직 해당 영웅·무기가 없다 (나오면 ★5로 대체) */
+export type Rarity = 3 | 4 | 5 | 6 | 7;
 export type Element = 'phys' | 'fire' | 'thunder' | 'poison' | 'frost' | 'shadow' | 'holy' | 'blood';
 export type StatusId = 'burn' | 'bleed' | 'poison' | 'shock' | 'chill' | 'freeze' | 'slow';
 export type CrestId = 'flame' | 'blood' | 'storm' | 'shadow' | 'ward' | 'fury' | 'swift' | 'soul' | 'venom' | 'frost';

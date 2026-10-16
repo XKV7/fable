@@ -1,4 +1,4 @@
-import { GACHA, type BannerKind } from '../data/gacha';
+import { GACHA, RATE_TABLE, type BannerKind } from '../data/gacha';
 import type { Rarity } from './types';
 
 /** 배너별 뽑기 기록. since5가 천장(100회) 카운트 */
@@ -30,15 +30,22 @@ export interface PullResult {
   pityAt: number; // 몇 번째에 나왔는지 (★5일 때 의미)
 }
 
-/** 다음 1회의 희귀도를 결정. 100번째(천장)는 ★5 확정. force4: 10연 ★4 이상 보장용. rand: [0,1) */
+/** 다음 1회의 희귀도를 결정. 100번째(천장)는 ★5 이상 확정. force4: 10연 ★4 이상 보장용. rand: [0,1) */
 export function rollRarity(p: PityState, rand: () => number, force4 = false): Rarity {
   const r = rand();
-  let rar: Rarity;
-  if (p.since5 + 1 >= GACHA.hardPity || r < GACHA.rate5) rar = 5;
-  else if (force4 || r < GACHA.rate5 + GACHA.rate4) rar = 4;
-  else rar = 3;
+  let rar: Rarity = 3;
+  let acc = 0;
+  for (const [k, rate] of RATE_TABLE) {
+    acc += rate;
+    if (r < acc) {
+      rar = k;
+      break;
+    }
+  }
+  if (p.since5 + 1 >= GACHA.hardPity && rar < 5) rar = 5;
+  else if (force4 && rar < 4) rar = 4;
   p.total++;
-  if (rar === 5) {
+  if (rar >= 5) {
     p.since5 = 0;
     p.since4 = 0;
   } else {
@@ -51,7 +58,9 @@ export function rollRarity(p: PityState, rand: () => number, force4 = false): Ra
 
 export function pullOnce(pool: BannerPool, p: PityState, rand: () => number, force4 = false): PullResult {
   const at = p.since5 + 1;
-  const rarity = rollRarity(p, rand, force4);
+  let rarity = rollRarity(p, rand, force4);
+  // 아직 그 등급의 영웅·무기가 없으면(★6·★7 준비 중) 있는 등급 중 가장 높은 아래 등급으로
+  while (rarity > 3 && !pool.items.some((i) => i.rarity === rarity)) rarity = (rarity - 1) as Rarity;
   let candidates = pool.items.filter((i) => i.rarity === rarity);
   let pickup = false;
   if (pool.kind === 'pickup' && rarity === 5 && pool.pickup5?.length) {

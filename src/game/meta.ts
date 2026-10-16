@@ -67,7 +67,7 @@ export function performPull(save: SaveData, kind: BannerKind, count: number, fre
           cur.rf++;
           out.push({ id: r.id, rarity: w.rarity, type: 'weapon', isNew: false, note: `재련 ${cur.rf}단계`, pickup: r.pickup });
         } else {
-          const c = r.rarity === 5 ? 300 : r.rarity === 4 ? 80 : 20;
+          const c = r.rarity >= 5 ? 300 * (r.rarity - 4) : r.rarity === 4 ? 80 : 20;
           save.crystals += c;
           out.push({ id: r.id, rarity: w.rarity, type: 'weapon', isNew: false, note: `영혼 결정 +${c}`, pickup: r.pickup });
         }
@@ -85,14 +85,14 @@ export function performPull(save: SaveData, kind: BannerKind, count: number, fre
           cur.aw++;
           out.push({ id: r.id, rarity: c.rarity, type: 'char', isNew: false, note: `각성 ${cur.aw}단계`, pickup: r.pickup });
         } else {
-          const cr = r.rarity === 5 ? 400 : r.rarity === 4 ? 150 : 50;
+          const cr = r.rarity >= 5 ? 400 * (r.rarity - 4) : r.rarity === 4 ? 150 : 50;
           save.crystals += cr;
           out.push({ id: r.id, rarity: c.rarity, type: 'char', isNew: false, note: `영혼 결정 +${cr}`, pickup: r.pickup });
         }
       }
     }
   }
-  if (out.some((o) => o.rarity === 5)) markAch(save, 'star5');
+  if (out.some((o) => o.rarity >= 5)) markAch(save, 'star5');
   return out;
 }
 
@@ -113,7 +113,7 @@ export function checkAchievements(save: SaveData): string[] {
   const owned = Object.keys(save.chars).filter((k) => CHAR_MAP[k]);
   m('chars5', owned.length >= 5);
   m('chars14', owned.length >= CHARACTERS.length);
-  m('star5', owned.some((k) => CHAR_MAP[k].rarity === 5) || Object.keys(save.weapons).some((k) => WEAPON_MAP[k]?.rarity === 5));
+  m('star5', owned.some((k) => CHAR_MAP[k].rarity >= 5) || Object.keys(save.weapons).some((k) => (WEAPON_MAP[k]?.rarity ?? 0) >= 5));
   m('awaken5', owned.some((k) => save.chars[k].aw >= 5));
   m('level20', owned.some((k) => save.chars[k].lv >= 20));
   m('kills100', save.stats.kills >= 100);

@@ -332,6 +332,34 @@ export function charFrameHD(id: string, pose: PoseName, an?: HDAnim): HTMLCanvas
   return c;
 }
 
+const lowCache = new Map<string, HTMLCanvasElement>();
+/**
+ * 월드 해상도(48×48)용 그림: 컨셉아트 시트가 있는 영웅은 고해상도 칸을 면적 평균으로 절반 축소해
+ * 잔상·거울 보스·타이틀 데모도 같은 모습으로 나오게 한다. 시트가 없거나 아직 불러오는 중이면 null.
+ */
+export function charFrameLow(id: string, pose: PoseName): HTMLCanvasElement | null {
+  const s = sheetOf(id);
+  if (!s || !s.ok) return null;
+  const name = sheetFrameName(s, pose);
+  const k = `${id}|${name}`;
+  let c = lowCache.get(k);
+  if (!c) {
+    const hd = charFrameHD(id, pose)!;
+    c = document.createElement('canvas');
+    c.width = c.height = HD_FW / HD;
+    const g = c.getContext('2d')!;
+    g.imageSmoothingEnabled = true;
+    g.imageSmoothingQuality = 'high';
+    g.drawImage(hd, 0, 0, c.width, c.height);
+    // 반투명 가장자리를 없애 픽셀 경계를 또렷하게
+    const im = g.getImageData(0, 0, c.width, c.height);
+    for (let i = 3; i < im.data.length; i += 4) im.data[i] = im.data[i] >= 110 ? 255 : 0;
+    g.putImageData(im, 0, 0);
+    lowCache.set(k, c);
+  }
+  return c;
+}
+
 /** 쓰러진 모습이 그림에 들어 있는 영웅(컨셉아트 시트): 회전 없이 'dead' 프레임을 쓴다 */
 export const hasLyingFrame = (id: string): boolean => id === 'caelus';
 
@@ -350,6 +378,18 @@ export interface HDDraw {
   rot?: { ox: number; oy: number; a: number }; // 회전 (쓰러짐)
 }
 export const hdQueue: HDDraw[] = [];
+
+/**
+ * 고해상도 스프라이트보다 위에 그려야 하는 월드 요소(투사체·앞 이펙트·예고·조명·화면 색조)를 받을 층.
+ * App이 프레임마다 연결하고, 이번 프레임에 쓰였는지(used) 보고 고해상도 층 다음에 표시한다.
+ */
+export const hdTop: { ctx: CanvasRenderingContext2D | null; used: boolean } = { ctx: null, used: false };
+/** 고해상도 그리기 요청이 있으면 위 층, 없으면 원래 월드 컨텍스트 */
+export function worldAbove(g: CanvasRenderingContext2D): CanvasRenderingContext2D {
+  if (!hdQueue.length || !hdTop.ctx) return g;
+  hdTop.used = true;
+  return hdTop.ctx;
+}
 
 export function drawHDQueue(d: CanvasRenderingContext2D, shakeX: number, shakeY: number): void {
   if (!hdQueue.length) return;

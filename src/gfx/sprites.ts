@@ -3,7 +3,7 @@ import { CHAR_MAP } from '../data/characters';
 import { drawHumanoid } from './humanoid';
 import { Pix, shade, silhouette } from './pixel';
 import { drawCreature } from './creatures';
-import { charFrameHD } from './hd';
+import { charFrameHD, charFrameLow } from './hd';
 import { STORY_LOOKS } from './looks2';
 import { ENEMY_MAP } from '../data/enemies';
 
@@ -23,7 +23,7 @@ export function lookFrame(key: string, look: Look, pose: PoseName): HTMLCanvasEl
 }
 
 export function charFrame(id: string, pose: PoseName): HTMLCanvasElement {
-  return lookFrame(`c:${id}`, CHAR_MAP[id].look, pose);
+  return charFrameLow(id, pose) ?? lookFrame(`c:${id}`, CHAR_MAP[id].look, pose);
 }
 
 /**

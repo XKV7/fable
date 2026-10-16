@@ -21,6 +21,7 @@ import type { SaveData } from './save';
 import type { ActEvent, CondKey, Look, EffectDo, Element, FieldDef, ProjDef, Stats, StatusId, SummonDef } from './types';
 import { Tile, TS, World } from './world';
 import { makeCanvas } from '../gfx/pixel';
+import { worldAbove } from '../gfx/hd';
 
 export interface HitOpts {
   m: number;
@@ -96,7 +97,7 @@ export class Room {
   props: Prop[] = [];
   markers: Marker[] = [];
   texts: WorldText[] = [];
-  timers: { t: number; fn: () => void }[] = [];
+  timers: { t: number; fn: () => void; enemy?: boolean }[] = [];
   torches: { x: number; y: number }[] = [];
   spawnE: { x: number; y: number }[] = [];
   spawnF: { x: number; y: number }[] = [];
@@ -491,7 +492,9 @@ export class Room {
         }
       }
     }
-    for (const f of this.fields) f.update(this);
+    // 시간 정지 중 적 쪽 시간(보스·보스 예약 공격·예고 표시·적 장판)은 3프레임에 1번만 흐른다 → 예고와 타격이 어긋나지 않음
+    const enemyTick = !(this.timestop > 0) || this.time % 3 === 0;
+    for (const f of this.fields) if (f.team === 'player' || enemyTick) f.update(this);
     for (const p of this.pickups) p.update(this);
     for (const ev of this.world.tick()) {
       if (ev.ev === 'fall') {
@@ -500,10 +503,10 @@ export class Room {
       }
     }
     // 예약 콜백
-    const due = this.timers.filter((t) => --t.t <= 0);
+    const due = this.timers.filter((t) => (t.enemy && !enemyTick ? false : --t.t <= 0));
     this.timers = this.timers.filter((t) => t.t > 0);
     for (const t of due) t.fn();
-    for (const m of this.markers) m.t++;
+    if (enemyTick) for (const m of this.markers) m.t++;
     this.markers = this.markers.filter((m) => m.t < m.max);
     for (const t of this.texts) t.t++;
     this.texts = this.texts.filter((t) => t.t < 70);
@@ -1415,6 +1418,10 @@ export class Room {
   later(t: number, fn: () => void): void {
     this.timers.push({ t: Math.max(1, t), fn });
   }
+  /** 보스가 예약하는 공격: 시간 정지 중엔 보스와 같은 속도(1/3)로 흐른다 */
+  enemyLater(t: number, fn: () => void): void {
+    this.timers.push({ t: Math.max(1, t), fn, enemy: true });
+  }
   spike(x: number, gy: number, col: string): void {
     for (let i = 0; i < 8; i++) this.fx.parts.push({ x: x + (Math.random() - 0.5) * 14, y: gy, vx: (Math.random() - 0.5) * 0.6, vy: -3 - Math.random() * 3, life: 0, max: 20, col, size: 2, grav: 0.2, kind: 'px', drag: 0.95 });
     this.fx.parts.push({ x, y: gy - 25, vx: 0, vy: 0, life: 0, max: 18, col, size: 50, grav: 0, kind: 'ring', drag: 1 });
@@ -1481,6 +1488,8 @@ export class Room {
     this.boss?.render(g, cx, cy, t);
     this.fx.renderBack(g, cx, cy);
     this.player.render(g, cx, cy, t);
+    // 고해상도 영웅은 월드 다음에 확대 화면에 그려지므로, 그 위에 와야 할 것들은 위 층에 그린다
+    g = worldAbove(g);
     for (const p of this.projs) p.render(g, cx, cy, t);
     this.fx.renderFront(g, cx, cy);
     // 예고 표시

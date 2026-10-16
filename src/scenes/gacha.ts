@@ -255,7 +255,7 @@ export class GachaScene implements Scene {
     this.flipT = 0;
     this.flipped = this.results.length;
     this.t = 0;
-    audio.play(`reveal_${this.maxR}`);
+    audio.play(`reveal_${Math.min(5, this.maxR)}`);
   }
 
   shake(): [number, number] {
@@ -320,7 +320,7 @@ export class GachaScene implements Scene {
       if (this.maxR >= 5 && this.phase === 'beam') {
         for (let i = 0; i < 12; i++) {
           const a = (i / 12) * Math.PI * 2 + this.t * 0.02;
-          g.strokeStyle = rgba('#ffe080', 0.25);
+          g.strokeStyle = rgba(this.maxR >= 6 ? RARITY_COL[this.maxR] : '#ffe080', 0.25);
           g.lineWidth = 6;
           g.beginPath();
           g.moveTo(240, 150);
@@ -441,7 +441,7 @@ export class GachaScene implements Scene {
       text(g, '영혼석을 바친다…', 240, 240, { size: 9, align: 'center', color: '#c0d0ff' });
       keyHint(g, [['Esc', '건너뛰기']]);
     } else if (this.phase === 'beam') {
-      const msg = this.maxR >= 5 ? '하늘이 금빛으로 갈라진다…!' : this.maxR === 4 ? '보랏빛 혼이 응답한다…' : '푸른 혼이 응답한다';
+      const msg = this.maxR >= 7 ? '별빛이 하늘을 가른다…!!' : this.maxR === 6 ? '붉은 혼이 하늘을 찢는다…!' : this.maxR >= 5 ? '하늘이 금빛으로 갈라진다…!' : this.maxR === 4 ? '보랏빛 혼이 응답한다…' : '푸른 혼이 응답한다';
       text(g, msg, 240, 230, { size: 10, align: 'center', color: RARITY_COL[this.maxR], bold: true });
       keyHint(g, [[app.input.label('attack'), '계속'], ['Esc', '건너뛰기']]);
     } else if (this.phase === 'cards' || this.phase === 'summary') {

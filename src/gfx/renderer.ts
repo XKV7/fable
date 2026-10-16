@@ -13,6 +13,9 @@ export class Renderer {
   d: CanvasRenderingContext2D;
   world: HTMLCanvasElement;
   w: CanvasRenderingContext2D;
+  /** 고해상도 스프라이트 위에 올라갈 월드 층 (투사체·이펙트·조명 등). 쓸 때만 표시 */
+  top: HTMLCanvasElement;
+  t: CanvasRenderingContext2D;
   scale = 2;
 
   constructor(canvas: HTMLCanvasElement) {
@@ -21,6 +24,9 @@ export class Renderer {
     this.world = makeCanvas(W, H);
     this.w = this.world.getContext('2d')!;
     this.w.imageSmoothingEnabled = false;
+    this.top = makeCanvas(W, H);
+    this.t = this.top.getContext('2d')!;
+    this.t.imageSmoothingEnabled = false;
     this.resize();
     window.addEventListener('resize', () => this.resize());
   }
@@ -43,6 +49,20 @@ export class Renderer {
     this.w.globalCompositeOperation = 'source-over';
     this.w.fillStyle = '#000';
     this.w.fillRect(0, 0, W, H);
+    this.t.setTransform(1, 0, 0, 1, 0, 0);
+    this.t.globalAlpha = 1;
+    this.t.globalCompositeOperation = 'source-over';
+    this.t.clearRect(0, 0, W, H);
+  }
+
+  /** 위 월드 층을 확대된 화면에 그린다 (고해상도 층 다음) */
+  presentTop(shakeX = 0, shakeY = 0): void {
+    const d = this.d;
+    d.save();
+    d.setTransform(1, 0, 0, 1, 0, 0);
+    d.imageSmoothingEnabled = false;
+    d.drawImage(this.top, Math.round(shakeX) * this.scale, Math.round(shakeY) * this.scale, W * this.scale, H * this.scale);
+    d.restore();
   }
 
   present(shakeX = 0, shakeY = 0): void {

@@ -28,12 +28,22 @@ export class LoadoutScene implements Scene {
   t = 0;
   constructor(public back: Scene) {}
 
+  /** 직전 프레임의 디버그 상태 (편성 화면에서 디버그를 끄면 바로 원복) */
+  private wasDebug = app.debug;
+
   enter(): void {
-    // 디버그로 골랐던 미보유 영웅·무기는 디버그를 끄면 보유한 것으로 되돌린다
+    this.wasDebug = app.debug;
+    this.fixOwned();
+  }
+
+  /** 디버그로 골랐던 미보유 영웅·무기는 디버그를 끄면 보유한 것으로 되돌린다 */
+  private fixOwned(): void {
     if (app.debug) return;
     const lo = app.save.loadout;
     const owned = this.ownedChars();
-    for (const i of [0, 1] as const) if (lo.chars[i] && !app.save.chars[lo.chars[i]]) lo.chars[i] = owned.find((id) => !lo.chars.includes(id)) ?? (i === 0 ? owned[0] : '');
+    for (const i of [0, 1] as const) if (lo.chars[i] && !app.save.chars[lo.chars[i]]) lo.chars[i] = owned.find((id) => !lo.chars.includes(id)) ?? '';
+    // 1번 칸이 비면 2번 칸 영웅을 당겨 온다
+    if (!lo.chars[0]) [lo.chars[0], lo.chars[1]] = [lo.chars[1] || owned[0] || '', ''];
     if (!app.save.weapons[lo.weapon]) lo.weapon = this.ownedWeapons()[0];
   }
 
@@ -49,8 +59,14 @@ export class LoadoutScene implements Scene {
     this.t++;
     const inp = app.input;
     const lo = app.save.loadout;
+    if (this.wasDebug && !app.debug) {
+      this.fixOwned();
+      this.picking = null;
+    }
+    this.wasDebug = app.debug;
     if (this.picking) {
       const list = this.picking === 'char' ? this.ownedChars() : this.ownedWeapons();
+      this.pick = Math.max(0, Math.min(this.pick, list.length - 1));
       const cols = 8;
       const before = this.pick;
       // 좌우는 끝에서 반대쪽으로 순환, 상하는 같은 열 유지
@@ -73,10 +89,18 @@ export class LoadoutScene implements Scene {
         audio.play('back');
       } else if (inp.menu('ok') || click) {
         const id = list[this.pick];
+        if (!id) return;
         if (this.picking === 'char') {
           const slot = this.focus as 0 | 1;
           const other = lo.chars[1 - slot];
-          if (other === id) lo.chars[1 - slot] = lo.chars[slot];
+          // 다른 칸의 영웅을 고르면 서로 맞바꾼다. 이 칸이 비어 있으면 맞바꾸지 않는다 (1번 칸이 비는 것 방지)
+          if (other === id) {
+            if (!lo.chars[slot]) {
+              audio.play('error');
+              return;
+            }
+            lo.chars[1 - slot] = lo.chars[slot];
+          }
           lo.chars[slot] = id;
         } else lo.weapon = id;
         audio.play('confirm');
@@ -188,11 +212,13 @@ export class LoadoutScene implements Scene {
 
   private depart(): void {
     const lo = app.save.loadout;
-    if (!lo.chars[1] || lo.chars[0] === lo.chars[1] || (!app.debug && !app.save.chars[lo.chars[1]])) {
+    const ok = (id: string): boolean => !!id && !!CHAR_MAP[id] && (app.debug || !!app.save.chars[id]);
+    if (!ok(lo.chars[0]) || !ok(lo.chars[1]) || lo.chars[0] === lo.chars[1]) {
       audio.play('error');
       app.toast('영웅 2명이 필요하다 — 계약의 제단에서 영웅을 부르자', '#ff8080');
       return;
     }
+    if (!WEAPON_MAP[lo.weapon] || (!app.debug && !app.save.weapons[lo.weapon])) lo.weapon = Object.keys(app.save.weapons)[0];
     app.persist();
     const run = new RunState(app.save);
     if (markAch(app.save, 'first_run')) app.achToast(['first_run']);

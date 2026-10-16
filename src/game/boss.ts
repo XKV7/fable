@@ -260,7 +260,7 @@ export class Boss extends Enemy {
     const fall = Math.max(1, Math.round((gy - 24) / 6));
     const dur = Math.max(delay, fall + 1);
     room.marker(x - 6, gy - 4, 12, 4, dur, '#ff3030');
-    room.later(dur - fall, () => {
+    room.enemyLater(dur - fall, () => {
       room.addProj('enemy', { spr, spd: 6, life: 80, w: spr === 'rock' ? 14 : 8, h: spr === 'rock' ? 14 : 12, col, st, landY: gy - 2 }, x, 24, Math.PI / 2, Math.round(this.atk * dmgMul), 'normal');
     });
   }
@@ -268,7 +268,7 @@ export class Boss extends Enemy {
   private pillar(room: Room, x: number, delay: number, vis: FieldVis, w = 22, h = 110, st?: StatusId): void {
     const gy = room.world.groundBelow(x, 60);
     room.marker(x - w / 2, gy - h, w, h, delay, '#ff3030', true);
-    room.later(delay, () => {
+    room.enemyLater(delay, () => {
       room.addField('enemy', { vis, w, h, life: 34, tick: 12, m: 1, st }, x - w / 2, gy - h, Math.round(this.atk * 0.9), 'normal');
       room.fx.burst(x, gy - 4, this.bd.elem?.col ?? (vis === 'fire' ? '#ff8a2a' : vis === 'holy' ? '#ffe080' : vis === 'poison' ? '#8bdc3a' : vis === 'ice' ? '#d0f4ff' : '#9a6bff'), 14, 3);
       audio.play(vis === 'fire' ? 'burn' : 'cast', 0.7);
@@ -401,7 +401,7 @@ export class Boss extends Enemy {
             const x = p.cx + (i - 1) * 60 + (Math.random() - 0.5) * 20;
             const gy = room.world.groundBelow(x, p.b.y - 20);
             room.marker(x - 25, gy - 30, 50, 30, 30, '#8bdc3a', true);
-            room.later(30, () => room.addField('enemy', { vis: 'poison', w: 50, h: 30, life: 220, tick: 30, m: 1, st: 'poison' }, x - 25, gy - 30, Math.round(this.atk * 0.45), 'normal'));
+            room.enemyLater(30, () => room.addField('enemy', { vis: 'poison', w: 50, h: 30, life: 220, tick: 30, m: 1, st: 'poison' }, x - 25, gy - 30, Math.round(this.atk * 0.45), 'normal'));
           }
         }
         return t > 80;
@@ -465,7 +465,7 @@ export class Boss extends Enemy {
           const x = p.cx;
           const gy = room.world.groundBelow(x, p.b.y);
           room.marker(x - 10, gy - 4, 20, 4, 34, '#ff3030');
-          room.later(34, () => {
+          room.enemyLater(34, () => {
             room.enemyHit({ x: x - 10, y: gy - 50, w: 20, h: 50 }, this.atk, x, this.name);
             room.spike(x, gy, '#6ab03a');
             audio.play('spike');
@@ -629,7 +629,7 @@ export class Boss extends Enemy {
             const bx = this.cx + (i - (n - 1) / 2) * 26;
             const by = this.b.y - 30 - Math.abs(i - (n - 1) / 2) * 6;
             room.marker(bx - 3, by - 3, 6, 6, 40 + i * 5, '#c8a8ff');
-            room.later(40 + i * 5, () => {
+            room.enemyLater(40 + i * 5, () => {
               const a = Math.atan2(room.player.cy - by, room.player.cx - bx);
               room.addProj('enemy', { spr: 'blade', spd: 5, life: 90, w: 10, h: 6, col: '#c8a8ff' }, bx, by, a, Math.round(this.atk * 0.7), 'normal');
               audio.play('proj', 0.6);
@@ -899,7 +899,7 @@ export class Boss extends Enemy {
           const hy = Math.random() < 0.5 ? gy - 16 : gy - 62;
           const w = room.world.pxW - 32;
           room.marker(16, hy, w, 14, 50, E.col, true);
-          room.later(50, () => {
+          room.enemyLater(50, () => {
             room.addField('enemy', { vis: E.vis, w, h: 14, life: 30, tick: 8, m: 1, st: E.st }, 16, hy, Math.round(this.atk * 0.8), 'normal');
             room.cam.shake(4);
           });
@@ -934,7 +934,7 @@ export class Boss extends Enemy {
               const gy = room.world.groundBelow(x, this.b.y);
               const d = 24 + i * 5;
               room.marker(x - 9, gy - 4, 18, 4, d, '#ff3030');
-              room.later(d, () => {
+              room.enemyLater(d, () => {
                 room.enemyHit({ x: x - 9, y: gy - 40, w: 18, h: 40 }, this.atk * 0.9, x, this.name);
                 room.spike(x, gy, E.col);
               });
@@ -963,7 +963,7 @@ export class Boss extends Enemy {
           const w = room.world.pxW / 2 - 16;
           const x0 = this.side === 0 ? 16 : room.world.pxW / 2;
           room.marker(x0, gy - 56, w, 56, 50, E.col, true);
-          room.later(50, () => {
+          room.enemyLater(50, () => {
             room.addField('enemy', { vis: E.vis, w, h: 56, life: 24, tick: 8, m: 1, st: E.st }, x0, gy - 56, Math.round(this.atk * 0.9), 'normal');
             audio.play('explode', 0.9);
           });
@@ -986,7 +986,7 @@ export class Boss extends Enemy {
             const y = ys[i];
             const d = 40 + i * 30;
             room.marker(16, y, w, 12, d, E.col, true);
-            room.later(d, () => {
+            room.enemyLater(d, () => {
               room.addField('enemy', { vis: E.vis, w, h: 12, life: 24, tick: 8, m: 1, st: E.st }, 16, y, Math.round(this.atk * 0.8), 'normal');
               audio.play('explode', 1.3);
               room.cam.shake(3);
@@ -1146,7 +1146,7 @@ export class Boss extends Enemy {
           const x = p.cx;
           const gy = room.world.groundBelow(x, p.b.y);
           room.marker(x - 50, gy - 30, 100, 30, 40, '#80d0ff', true);
-          room.later(40, () => room.addField('enemy', { vis: 'ice', w: 100, h: 30, life: 180, tick: 24, m: 1, pull: 1.4 }, x - 50, gy - 30, Math.round(this.atk * 0.5), 'normal'));
+          room.enemyLater(40, () => room.addField('enemy', { vis: 'ice', w: 100, h: 30, life: 180, tick: 24, m: 1, pull: 1.4 }, x - 50, gy - 30, Math.round(this.atk * 0.5), 'normal'));
         }
         return t > 80;
       }
@@ -1161,7 +1161,7 @@ export class Boss extends Enemy {
             const bx = this.cx + (i - (n - 1) / 2) * 22;
             const by = this.b.y - 26 - Math.abs(i - (n - 1) / 2) * 5;
             room.marker(bx - 3, by - 3, 6, 6, 36 + i * 5, '#a8e4ff');
-            room.later(36 + i * 5, () => {
+            room.enemyLater(36 + i * 5, () => {
               const a = Math.atan2(room.player.cy - by, room.player.cx - bx);
               room.addProj('enemy', { spr: 'shard', spd: 5, life: 90, w: 10, h: 6, col: '#d0f4ff', st: 'chill' }, bx, by, a, Math.round(this.atk * 0.65), 'normal');
             });
@@ -1256,7 +1256,7 @@ export class Boss extends Enemy {
         }
         if (this.phase >= 1 && t === 80) {
           room.marker(16, gy - 46, room.world.pxW - 32, 12, 30, '#ff80d0', true);
-          room.later(30, () => room.addField('enemy', { vis: 'void', w: room.world.pxW - 32, h: 12, life: 30, tick: 8, m: 1 }, 16, gy - 46, Math.round(this.atk * 0.7), 'normal'));
+          room.enemyLater(30, () => room.addField('enemy', { vis: 'void', w: room.world.pxW - 32, h: 12, life: 30, tick: 8, m: 1 }, 16, gy - 46, Math.round(this.atk * 0.7), 'normal'));
         }
         return t > 120;
       }

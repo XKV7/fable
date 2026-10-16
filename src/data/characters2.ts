@@ -75,7 +75,7 @@ export const CHARACTERS_EX: CharDef[] = [
         inv: [0, 30],
         ev: [
           { t: 0, k: 'tp', dx: 18, toEnemy: true },
-          { t: 4, k: 'timestop', dur: 50 },
+          { t: 4, k: 'timestop', dur: 0.85 },
           { t: 6, k: 'fx', fx: { arc: 'circle', r: 60, col: '#9a8aff' } },
           { t: 6, k: 'sfx', s: 'cast' },
           { t: 24, k: 'nova', r: 90, m: 4.5, el: 'holy', up: -3 },

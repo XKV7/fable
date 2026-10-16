@@ -195,7 +195,8 @@ export class RunState {
   rollChar(): string {
     const inParty = this.party.map((p) => p.id);
     const pool = CHARACTERS.filter((c) => !inParty.includes(c.id));
-    return this.rng.weighted(pool, (c) => (c.rarity === 3 ? 6 : c.rarity === 4 ? 3 : 1)).id;
+    // 희귀도가 높을수록 드물게 (★6·★7은 ★5보다 훨씬 드묾)
+    return this.rng.weighted(pool, (c) => ({ 3: 6, 4: 3, 5: 1, 6: 0.3, 7: 0.1 })[c.rarity] ?? 1).id;
   }
 
   rollWeapons(n: number): string[] {

@@ -1,6 +1,8 @@
 import { app, type Scene } from '../app';
 import { audio } from '../core/audio';
 import { CHAPTERS } from '../data/meta';
+import { CHAR_MAP } from '../data/characters';
+import { WEAPON_MAP } from '../data/weapons';
 import { ROOMS } from '../data/rooms';
 import { text } from '../gfx/renderer';
 import { Room } from '../game/room';
@@ -25,12 +27,14 @@ export class HubScene implements Scene {
   enter(): void {
     const save = app.save;
     // 편성 보정
+    // 디버그 모드에서는 미보유 영웅·무기 편성(테스트용)을 그대로 둔다
     const owned = Object.keys(save.chars);
-    if (!save.chars[save.loadout.chars[0]]) save.loadout.chars[0] = owned[0];
-    if (!save.loadout.chars[1] || !save.chars[save.loadout.chars[1]] || save.loadout.chars[1] === save.loadout.chars[0]) {
+    const has = (id: string): boolean => !!CHAR_MAP[id] && (app.debug || !!save.chars[id]);
+    if (!has(save.loadout.chars[0])) save.loadout.chars[0] = owned[0];
+    if (!save.loadout.chars[1] || !has(save.loadout.chars[1]) || save.loadout.chars[1] === save.loadout.chars[0]) {
       save.loadout.chars[1] = owned.find((id) => id !== save.loadout.chars[0]) ?? '';
     }
-    if (!save.weapons[save.loadout.weapon]) save.loadout.weapon = Object.keys(save.weapons)[0];
+    if (!WEAPON_MAP[save.loadout.weapon] || (!app.debug && !save.weapons[save.loadout.weapon])) save.loadout.weapon = Object.keys(save.weapons)[0];
     app.achToast(checkAchievements(save));
     app.persist();
     const run = new RunState(save);

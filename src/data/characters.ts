@@ -358,7 +358,7 @@ export const CHARACTERS: CharDef[] = [
     ],
   },
   {
-    id: 'astera', name: '아스테라', title: '별을 떨어뜨리는 점성술사', rarity: 5, type: 'magic', crest: 'soul',
+    id: 'astera', name: '아스테라', title: '별을 떨어뜨리는 점성술사', rarity: 6, type: 'magic', crest: 'soul',
     lore: '천문탑의 마지막 점성술사. 왕국의 멸망을 예언했으나 아무도 믿지 않았다. 이제 그녀는 별을 직접 떨어뜨린다.',
     atk: 25, hp: 95, speed: 1.95, fx: '#ffe680',
     look: { skin: '#f8e8d8', hair: '#3a3a8a', hairStyle: 'long', body: '#1a1a4a', trim: '#ffe680', legs: '#14143a', boots: '#0a0a2a', cape: '#2a2a6a', eye: '#ffe680', weapon: 'orb', wcol: '#ffe680', wcol2: '#a0a0ff', build: 'slim', glow: '#ffe680', extra: 'halo' },

@@ -12,7 +12,6 @@ import type { Rarity } from './types';
 export const PICKUPS: { five: string; four: [string, string] }[] = [
   { five: 'seres', four: ['sien', 'aurelia'] },
   { five: 'drakan', four: ['balt', 'morga'] },
-  { five: 'astera', four: ['eora', 'sien'] },
   { five: 'marionne', four: ['seira', 'bram'] },
   { five: 'ignia', four: ['jolly', 'freya'] },
 ];

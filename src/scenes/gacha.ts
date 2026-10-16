@@ -514,12 +514,12 @@ export class GachaScene implements Scene {
         hot.add('pkopen', 262, 50, 76, 13);
       }
     } else if (k === 'char') {
-      const show = CHARACTERS.filter((c) => c.rarity === 5);
+      const show = CHARACTERS.filter((c) => c.rarity >= 5).sort((a, b) => b.rarity - a.rarity);
       show.forEach((c, i) => {
         const x = 118 + i * 46;
-        g.drawImage(tinted(charFrame(c.id, 'idle0'), save.chars[c.id] ? RARITY_COL[5] : '#1a1028'), x - 39, 62, 96, 96);
+        g.drawImage(tinted(charFrame(c.id, 'idle0'), save.chars[c.id] ? RARITY_COL[c.rarity] : '#1a1028'), x - 39, 62, 96, 96);
         g.drawImage(charFrame(c.id, i === Math.floor(this.t / 60) % show.length ? 'castUp' : 'idle0'), x - 38, 62, 96, 96);
-        text(g, c.name, x + 10, i % 2 ? 168 : 160, { size: 7, align: 'center', color: '#ffe080' });
+        text(g, c.name, x + 10, i % 2 ? 168 : 160, { size: 7, align: 'center', color: c.rarity >= 6 ? RARITY_COL[c.rarity] : '#ffe080' });
       });
       text(g, `영웅 ${CHARACTERS.length}명 · 보유 ${Object.keys(save.chars).length}명`, 116, 180, { size: 7, color: '#c8c0d8' });
     } else {
@@ -552,7 +552,12 @@ export class GachaScene implements Scene {
     text(g, `현재 ${pity.since5}/${GACHA.hardPity}회`, 356, 129, { size: 6, color: '#c8c0d8' });
     text(g, '10회 계약: ★4 이상 확정', 356, 140, { size: 6, color: '#c080ff' });
     if (k === 'pickup') text(g, '★5의 50%는 픽업 영웅', 356, 151, { size: 6, color: '#a8a0c0' });
-    text(g, '★6·★7 준비 중: 나오면 ★5로', 356, 163, { size: 5, color: '#8a8098' });
+    const notReady = RATE_TABLE.map(([r]) => r).filter((r) => r > 5 && !ready(r));
+    if (notReady.length) {
+      let to = Math.min(...notReady) - 1;
+      while (to > 5 && !ready(to)) to--;
+      text(g, `${notReady.sort().map((r) => `★${r}`).join('·')} 준비 중: 나오면 ★${to}로`, 356, 163, { size: 5, color: '#8a8098' });
+    }
     text(g, `누적 ${pity.total}회`, 356, 174, { size: 6, color: '#8a8098' });
     text(g, '중복: 영웅 각성 / 무기 재련', 356, 186, { size: 6, color: '#8a8098' });
     // 버튼

@@ -380,7 +380,7 @@ export const CHARACTERS_EX: CharDef[] = [
     // 스프라이트는 전용 시트(sheets/enoch). 역할: 단일 대상 난도질 · 관통 돌진
     id: 'enoch', name: '에녹', title: '잊혀진 심연의 학자', rarity: 7, type: 'speed', crest: 'shadow',
     lore: '「…모든 것은, 결국 어둠으로 돌아간다.」 금지된 심연의 서고에서 이름마저 지워진 학자. 곁을 맴도는 심연의 구체가 그의 칼날이 되어, 눈 깜짝할 사이에 적을 베어 낸다.',
-    atk: 70, hp: 290, speed: 2.3, fx: '#8a6aff',
+    atk: 54, hp: 225, speed: 2.3, fx: '#8a6aff',
     look: { skin: '#f0e8f0', hair: '#d8d8ec', hairStyle: 'hood', body: '#14101e', trim: '#8a6aff', legs: '#100c18', boots: '#1e1a2a', cape: '#1a1428', eye: '#a080ff', weapon: 'daggers', wcol: '#a080ff', wcol2: '#2a1e48', build: 'slim', glow: '#8a6aff' },
     combo: [
       // 평타: 공격 간격이 아주 짧은 5연격 (심연의 구체가 따라 베는 그림자 칼날)

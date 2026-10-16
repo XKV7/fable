@@ -7,8 +7,8 @@ import { STORY_LOOKS } from '../src/gfx/looks2';
 import { CREATURES } from '../src/gfx/creatures';
 
 describe('스토리 구성', () => {
-  it('스토리 4개, 각 6단계', () => {
-    expect(STORIES.map((s) => s.id)).toEqual([1, 2, 3, 4]);
+  it('스토리 6개, 각 6단계', () => {
+    expect(STORIES.map((s) => s.id)).toEqual([1, 2, 3, 4, 5, 6]);
     for (const s of STORIES) {
       expect(s.route.length).toBe(6);
       expect(s.cards.length).toBe(6);
@@ -30,14 +30,30 @@ describe('스토리 구성', () => {
       }
     }
   });
-  it('스토리 2~4의 테마·보스·적이 모두 새것이고 겹치지 않는다', () => {
+  it('스토리 2~6의 테마·보스·적이 모두 새것이고 겹치지 않는다', () => {
     const later = STORIES.slice(1).flatMap((s) => s.route.flat());
-    expect(new Set(later).size).toBe(18);
+    expect(new Set(later).size).toBe(30);
     const bosses = later.map((n) => chapterDef(n).boss);
-    expect(new Set(bosses).size).toBe(18);
+    expect(new Set(bosses).size).toBe(30);
     for (const b of bosses) expect(['graven', 'mycora', 'ignis', 'king', 'morten', 'libra', 'oblivion']).not.toContain(b);
     const enemies = ENEMIES.filter((e) => later.includes(e.chapter));
-    expect(enemies.length).toBe(72);
+    expect(enemies.length).toBe(120);
+    expect(new Set(ENEMIES.map((e) => e.id)).size).toBe(ENEMIES.length);
+  });
+  it('스토리 5~6 보스: 3개 이상 동시 패턴, 5번째는 비행, 6번째는 분열, 5·6번째는 즉사기', () => {
+    const EXEC = ['eclipseDive', 'worldSever'];
+    for (const s of STORIES.slice(4)) {
+      s.route.forEach((stage, i) => {
+        const b = BOSS_MAP[chapterDef(stage[0]).boss];
+        expect(b.multi?.length, b.id).toBe(b.patterns.length);
+        for (const m of b.multi!) expect(m, b.id).toBeGreaterThanOrEqual(3);
+        expect(STORY_LOOKS[b.id], b.id).toBeTruthy();
+        const ex = [...new Set(b.patterns.flat().filter((p) => EXEC.includes(p)))];
+        expect(ex.length, b.id).toBe(i >= 4 ? 1 : 0);
+        expect(!!b.flying, b.id).toBe(i === 4);
+        expect(b.split, b.id).toBe(i === 5 ? 1 : undefined);
+      });
+    }
   });
   it('스토리 적은 모두 외형(인간형 또는 생물)이 하나씩 있다', () => {
     for (const e of ENEMIES.filter((x) => x.chapter >= 11)) {
@@ -91,9 +107,9 @@ describe('저장: 스토리 해금', () => {
     const a = sanitize({});
     expect(a.story).toBe(1);
     expect(a.storyMax).toBe(1);
-    const b = sanitize({ story: 9, storyMax: 7 });
-    expect(b.storyMax).toBe(4);
-    expect(b.story).toBe(4);
+    const b = sanitize({ story: 9, storyMax: 9 });
+    expect(b.storyMax).toBe(6);
+    expect(b.story).toBe(6);
     expect(sanitize({ story: 3, storyMax: 2 }).story).toBe(2);
   });
 });

@@ -540,7 +540,11 @@ export class Room {
     for (const e of this.enemies) e.update(this);
     if (this.boss) {
       this.boss.update(this);
-      if (this.boss.dead && this.boss.deadT === 60) this.hooks.onBossDefeated?.(this.boss);
+      // 분열 보스: 본체와 분열체(enemies 안의 보스)가 모두 쓰러져야 처치
+      if (this.boss.dead && this.boss.deadT >= 60 && !this.bossDefeatSent && !this.enemies.some((e) => e.isBoss)) {
+        this.bossDefeatSent = true;
+        this.hooks.onBossDefeated?.(this.boss);
+      }
     }
     for (const p of this.projs) {
       if (p.team === 'enemy' && this.timestop > 0) continue;
@@ -1199,6 +1203,8 @@ export class Room {
   }
 
   bossHit = false;
+  /** onBossDefeated를 이미 불렀는지 */
+  private bossDefeatSent = false;
   /** 고해상도 층을 쓰지 않는 방 (타이틀 데모처럼 위에 반투명 막을 덮는 화면) */
   demoNoHD = false;
 

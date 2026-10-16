@@ -30,6 +30,44 @@ npm install && npm run dev     # http://localhost:5173
 
 `npm run build:pages`로 `docs/`를 다시 만들고 커밋하면, 저장소 **Settings → Pages**에서 *Deploy from a branch* · 이 브랜치 · `/docs` 폴더로 지정된 사이트가 자동 갱신됩니다. 주소: https://xkv7.github.io/fable/
 
+## 계정과 저장
+
+게임을 켜면 **로그인 / 회원가입** 화면이 먼저 나옵니다. 게임 전용 아이디(영문 소문자·숫자·_ 4~16자)와 비밀번호(6자 이상)로 가입하며, 다음부터는 자동 로그인됩니다. 타이틀 메뉴의 **로그아웃**으로 다른 계정으로 바꿀 수 있습니다.
+
+- 계정마다 기록(영웅·무기·재화·가챠 천장·스토리 진행·업적·설정)이 따로 저장됩니다.
+- **런 이어하기**: 방에 들어갈 때·방을 정화했을 때·보상을 받았을 때 진행 중인 런이 저장됩니다. 런 도중 창을 닫거나 새로고침해도 타이틀의 **런 이어하기**로 마지막으로 들어간 방부터 계속합니다(정화한 방은 정화된 채로, 열어 본 상자·제단은 사용한 채로). 전투 도중에 나가면 그 방에 들어온 순간부터 다시 시작합니다.
+- 계정이 생기기 전에 이 브라우저에서 하던 기록은 처음 만드는 계정으로 자동으로 옮겨집니다.
+
+### 저장 위치
+
+| 모드 | 조건 | 저장 위치 | 다른 기기 |
+|---|---|---|---|
+| 온라인 계정 | `src/data/firebase.ts`에 Firebase `apiKey`·`projectId` 입력 | Firebase Authentication(이메일/비밀번호) + Firestore `saves/{uid}` | 같은 아이디로 어디서든 이어서 플레이 |
+| 이 기기 전용 계정 | 설정이 비어 있을 때 (기본) | 이 브라우저 localStorage (비밀번호는 PBKDF2 해시) | 불가 — 설정의 내보내기/가져오기로 옮김 |
+
+Firebase SDK 없이 REST API(`identitytoolkit`, `securetoken`, `firestore`)로 직접 통신하므로 외부 런타임 라이브러리는 여전히 0개입니다. 아이디는 내부적으로 `아이디@pact-of-the-fallen.game` 형식의 가짜 이메일로 바뀌며 메일은 보내지 않습니다. 기록은 로컬에 즉시 캐시되고 클라우드에는 2초씩 모아서, 창을 닫을 때는 바로 보냅니다. 로그인할 때 로컬 캐시와 클라우드 중 더 최근 기록을 씁니다.
+
+### Firebase 연결 방법
+
+1. [Firebase 콘솔](https://console.firebase.google.com/)에서 프로젝트를 만들고 **웹 앱**을 추가
+2. **Authentication → 로그인 방법 → 이메일/비밀번호** 사용 설정
+3. **Firestore Database** 만들기 → **규칙**에 아래를 붙여넣고 게시
+
+   ```
+   rules_version = '2';
+   service cloud.firestore {
+     match /databases/{database}/documents {
+       match /saves/{uid} {
+         allow read, write: if request.auth != null && request.auth.uid == uid;
+       }
+     }
+   }
+   ```
+4. 프로젝트 설정 → 일반 → 내 앱의 `apiKey`, `projectId`를 `src/data/firebase.ts`에 입력 후 `npm run build:pages`
+5. (권장) Authentication → 설정 → **승인된 도메인**에 `xkv7.github.io` 추가
+
+`apiKey`는 웹앱에 원래 공개되는 값이고, 다른 사람의 기록을 읽거나 쓰지 못하게 막는 것은 3번의 규칙입니다.
+
 ## 조작법
 
 기본 배치(설정 → 키 재설정에서 개별 변경 가능, 이전 **방향키 배치** 프리셋도 제공)
@@ -188,7 +226,7 @@ scripts/     e2e.mjs (+ 개발용 soak/bot/probe 스크립트)
 - **효과 훅** (`Effect`): 유물·무기·문장·패시브·각성은 모두 같은 형식 — 상시 스탯 / 조건부 스탯(`lowHp` `shielded` `comboHigh` …) / 플래그(`burnSpread` `bleedRupture` `revive` …) / 트리거(`hit` `crit` `finisher` `kill` `dash` `swap` `swapHit` `skill` `hurt` `roomStart` `interval` `parry` …) → 프리미티브(`status` `explode` `chain` `heal` `shield` `proj` `buff` `cdr` `echo` `wave` `strike` `nova` `slowTime` `meteor` `summon`). 무기 재련은 효과 수치를 일괄 스케일링합니다.
 - **엔티티**: `Body`(AABB·속도·접지) 위에 플레이어/적/보스가 각자 상태 머신을 가집니다. 플레이어: normal/act/dash/hurt/dead + 액션 실행기. 적: spawn/idle/move/wind(예고)/atk/recover/hurt/stun/skill. 보스: 페이즈 → 패턴 풀 → 프레임 타임라인 패턴.
 - **장면 상태 머신**: Title → Intro → Hub ⇄ (Gacha · Codex · Loadout · Growth · Upgrade · Ach · Settings · Controls) → Run(+오버레이: 일시정지·빌드·유물 선택·상점·제단·무기고·휴식·이벤트) → Result → Hub
-- **저장**: `localStorage['pact_save_v1']` JSON — 재화, 보유 영웅(레벨·각성), 무기(재련), 배너별 뽑기 기록, 스토리 해금·완수, 영구 강화, 업적, 저주, 통계, 설정·키 설정. 모든 접근은 try/catch이며 실패해도 메모리 상태로 계속 동작. 불러올 때 누락 필드를 보정합니다.
+- **저장**: 계정별(기기 전용 localStorage 또는 Firebase Firestore) JSON — 재화, 보유 영웅(레벨·각성), 무기(재련), 배너별 뽑기 기록, 스토리 해금·완수, 영구 강화, 업적, 저주, 통계, 설정·키 설정. 모든 접근은 try/catch이며 실패해도 메모리 상태로 계속 동작. 불러올 때 누락 필드를 보정합니다.
 
 ### 데미지 공식
 

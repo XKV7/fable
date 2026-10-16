@@ -2,6 +2,7 @@ import { cloneBindings, DEFAULT_BINDINGS, type Bindings } from '../core/input';
 import { newPity, type PityState } from './gacha';
 import type { BannerKind } from '../data/gacha';
 import { CHAR_MAP, STARTER_CHAR, STARTER_WEAPON } from '../data/characters';
+import { validSnap, type RunSnap } from './runsave';
 
 export interface Settings {
   music: number;
@@ -42,6 +43,8 @@ export interface SaveData {
   /** 스토리별 인트로를 봤는지 / 클리어했는지 */
   storySeen: Record<number, boolean>;
   storyClear: Record<number, boolean>;
+  /** 진행 중인 런 (런 도중 나가도 이어하기). 없으면 null */
+  run: RunSnap | null;
   loadout: { chars: [string, string]; weapon: string };
   pickupIndex: number;
   /** 디버그: 직접 지정한 픽업 (null이면 자동 로테이션) */
@@ -80,6 +83,7 @@ export function newSave(): SaveData {
     storyMax: 1,
     storySeen: {},
     storyClear: {},
+    run: null,
     loadout: { chars: [STARTER_CHAR, ''], weapon: STARTER_WEAPON },
     pickupIndex: 0,
     pickupOverride: null,
@@ -125,6 +129,7 @@ export function sanitize(raw: unknown): SaveData {
     newChars: Array.isArray(r.newChars) ? r.newChars : [],
     storySeen: { ...(r.storySeen ?? {}) },
     storyClear: { ...(r.storyClear ?? {}) },
+    run: validSnap(r.run),
     pickupOverride: validOverride(r.pickupOverride),
   };
   for (const k of ['stones', 'crystals', 'curse', 'curseMax', 'pickupIndex', 'runsSinceRotation', 'story', 'storyMax'] as const) {

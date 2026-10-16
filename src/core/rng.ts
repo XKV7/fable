@@ -4,6 +4,13 @@ export class Rng {
   constructor(seed: number = (Math.random() * 0xffffffff) >>> 0) {
     this.s = seed >>> 0;
   }
+  /** 내부 상태 (런 이어하기 저장용) */
+  get state(): number {
+    return this.s;
+  }
+  set state(v: number) {
+    this.s = v >>> 0;
+  }
   next(): number {
     let t = (this.s = (this.s + 0x6d2b79f5) >>> 0);
     t = Math.imul(t ^ (t >>> 15), t | 1);

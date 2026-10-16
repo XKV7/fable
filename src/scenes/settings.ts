@@ -2,7 +2,7 @@ import { app, type Scene } from '../app';
 import { audio } from '../core/audio';
 import { ACTIONS, ACTION_LABELS, cloneBindings, DEFAULT_BINDINGS, keyName, padName, ARROW_BINDINGS, type Action } from '../core/input';
 import { text } from '../gfx/renderer';
-import { clearSave, newSave, sanitize } from '../game/save';
+import { newSave, sanitize } from '../game/save';
 import { button, hot, keyHint, Menu, panel } from '../ui/widgets';
 
 type Mode = 'main' | 'keys' | 'capture' | 'reset' | 'io';
@@ -75,10 +75,10 @@ export class SettingsScene implements Scene {
       const r = this.confirm.update(inp, true);
       if (r === 'back' || (r === 'ok' && this.confirm.sel === 1)) this.mode = 'main';
       else if (r === 'ok') {
-        clearSave();
         app.save = newSave();
-        app.hasSave = false;
         app.applySettings();
+        app.persist();
+        app.hasSave = false;
         app.toast('저장 데이터를 초기화했다', '#ff8090');
         this.mode = 'main';
         this.refresh();

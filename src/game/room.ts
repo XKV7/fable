@@ -578,6 +578,14 @@ export class Room {
   }
 
   /** 보스 처치 후 출구 문들 (nodeId -1 + nextCh: 다음 장 테마, -2: 런 클리어) */
+  /** 이어하기: 이미 정화한 방으로 복원 (적·웨이브 없음, 문 열림) */
+  markCleared(): void {
+    this.enemies = [];
+    this.waves = [];
+    this.cleared = true;
+    this.openDoors(false);
+  }
+
   addExitDoors(doors: { nodeId: number; nextCh?: number }[]): void {
     const d = this.bossDoor ?? { x: this.world.pxW - 40, y: 14 * TS };
     doors.forEach((o, i) => {

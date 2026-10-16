@@ -2,7 +2,8 @@ import { audio } from './core/audio';
 import { Input } from './core/input';
 import { Loop } from './core/loop';
 import { Renderer, text, W, H } from './gfx/renderer';
-import { loadSave, newSave, writeSave, type SaveData } from './game/save';
+import { newSave, sanitize, type SaveData } from './game/save';
+import { accounts } from './core/account';
 import { hot } from './ui/widgets';
 import { ACHIEVEMENTS } from './data/meta';
 import type { Room } from './game/room';
@@ -43,10 +44,15 @@ export class App {
   constructor(canvas: HTMLCanvasElement) {
     this.r = new Renderer(canvas);
     this.input = new Input(canvas);
-    const s = loadSave();
-    this.hasSave = !!s;
-    this.save = s ?? newSave();
+    // 기록은 로그인 후 계정에서 불러온다 (login)
+    this.hasSave = false;
+    this.save = newSave();
     this.applySettings();
+    // 창을 닫거나 탭을 숨길 때 남은 클라우드 저장을 바로 보낸다
+    window.addEventListener('pagehide', () => accounts.flush());
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') accounts.flush();
+    });
     this.loop = new Loop(
       () => this.update(),
       () => this.render(),
@@ -95,9 +101,24 @@ export class App {
     this.fadeDir = 1;
   }
 
+  /** 로그인한 계정의 기록으로 교체 */
+  login(raw: unknown): void {
+    this.hasSave = !!raw;
+    this.save = raw ? sanitize(raw) : newSave();
+    this.applySettings();
+  }
+
+  /** 로그아웃: 저장을 마무리하고 빈 기록으로 */
+  logout(): void {
+    this.persist();
+    accounts.signOut();
+    this.login(null);
+  }
+
   persist(): void {
+    if (!accounts.session) return;
     this.hasSave = true;
-    this.saveFailed = !writeSave(this.save);
+    this.saveFailed = !accounts.write(this.save);
   }
 
   toast(msg: string, col = '#f0e8d8'): void {

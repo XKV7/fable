@@ -135,6 +135,9 @@ export class Input {
 
   constructor(target: HTMLElement) {
     window.addEventListener('keydown', (e) => {
+      // 로그인 창 등 HTML 입력칸에 타이핑할 때는 게임 입력으로 받지 않는다
+      const el = e.target as HTMLElement | null;
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) return;
       if (['Tab', 'Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Backquote'].includes(e.code)) e.preventDefault();
       this.lastDevice = 'kb';
       if (this.captureHandler) {

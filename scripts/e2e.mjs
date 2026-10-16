@@ -1,4 +1,4 @@
-// E2E: 헤드리스 브라우저로 타이틀 → 첫 가챠 10연 → 편성 → 런 시작 → 이동/공격/교대 → 디버그 치트로 보스방
+// E2E: 헤드리스 브라우저로 회원가입 → 타이틀 → 첫 가챠 10연 → 편성 → 런 시작 → 이동/공격/교대 → 디버그 치트로 보스방
 // 콘솔 에러 0개를 확인하고 주요 장면 스크린샷을 screenshots/ 에 저장한다.
 import { chromium } from 'playwright';
 import { spawn } from 'node:child_process';
@@ -57,7 +57,21 @@ try {
   await page.goto(URL);
   await page.evaluate(() => localStorage.clear());
   await page.reload();
-  await wait(2500);
+  await wait(2000);
+  step(`회원가입 (${await scene()})`);
+  await shot('00_signup');
+  await page.click('.pact-auth .tabs button[data-m=signup]');
+  await page.fill('.pact-auth input[name=id]', 'tester01');
+  await page.fill('.pact-auth input[name=pw]', 'pass1234');
+  await page.fill('.pact-auth input[name=pw2]', 'pass9999');
+  await page.click('.pact-auth .go');
+  await wait(300);
+  if (!(await page.textContent('.pact-auth .err')).includes('확인')) throw new Error('비밀번호 확인 불일치 안내가 없음');
+  await page.fill('.pact-auth input[name=pw2]', 'pass1234');
+  await page.click('.pact-auth .go');
+  await wait(2000);
+  if ((await scene()) !== 'TitleScene') throw new Error(`가입 후 타이틀로 가지 않음: ${await scene()}`);
+  if (await page.$('.pact-auth')) throw new Error('가입 후 로그인 창이 남아 있음');
   await page.locator('canvas').click();
   step('타이틀');
   await shot('01_title');
@@ -132,6 +146,37 @@ try {
   await shot('13_boss_fight');
   const bossOk = await page.evaluate(() => !!window.__app.scene.room.boss);
   if (!bossOk) throw new Error('보스방에 보스가 없음');
+
+  step('런 도중 새로고침 → 자동 로그인 → 런 이어하기');
+  const before = await page.evaluate(() => { const r = window.__app.scene.run; return { ch: r.chapter, theme: r.theme, cur: r.cur, relics: r.relics.length }; });
+  await page.reload();
+  await wait(2500);
+  if ((await scene()) !== 'TitleScene') throw new Error(`새로고침 후 자동 로그인 실패: ${await scene()}`);
+  const items = await page.evaluate(() => window.__app.scene.menu.items.map((i) => i.label));
+  if (items[0] !== '런 이어하기') throw new Error(`런 이어하기 메뉴 없음: ${items}`);
+  await page.focus('canvas'); // 클릭하면 마우스 위치의 메뉴가 눌리므로 포커스만
+  await press('Enter', 2500);
+  await shot('14_resume');
+  const after = await page.evaluate(() => { const s = window.__app.scene; const r = s.run; return { scene: s.constructor.name, ch: r?.chapter, theme: r?.theme, cur: r?.cur, relics: r?.relics.length, boss: !!s.room?.boss }; });
+  if (after.scene !== 'RunScene' || after.cur !== before.cur || after.theme !== before.theme || after.relics !== before.relics || !after.boss) throw new Error(`이어하기 상태 불일치: ${JSON.stringify(before)} → ${JSON.stringify(after)}`);
+
+  step('로그아웃 → 다른 계정 → 원래 계정 로그인');
+  await page.evaluate(async () => {
+    const { AuthScene } = await import('/src/scenes/auth.ts');
+    window.__app.logout();
+    window.__app.go(new AuthScene(), false);
+  });
+  await wait(500);
+  await page.fill('.pact-auth input[name=id]', 'tester01');
+  await page.fill('.pact-auth input[name=pw]', 'wrongpw1');
+  await page.click('.pact-auth .go');
+  await wait(800);
+  if (!(await page.textContent('.pact-auth .err')).includes('틀렸다')) throw new Error('잘못된 비밀번호 안내가 없음');
+  await page.fill('.pact-auth input[name=pw]', 'pass1234');
+  await page.click('.pact-auth .go');
+  await wait(2000);
+  const owned2 = await page.evaluate(() => Object.keys(window.__app.save.chars).length);
+  if (owned2 < 2 || !(await page.evaluate(() => !!window.__app.save.run))) throw new Error('다시 로그인했는데 기록이 없음');
 } catch (e) {
   errors.push(`E2E 실패: ${e.message}`);
   await shot('99_failure');

@@ -13,7 +13,10 @@ import { HubScene } from './hub';
 import { IntroScene } from './intro';
 import { SettingsScene } from './settings';
 import { ControlsScene } from './controls';
-import { clearSave } from '../game/save';
+import { accounts } from '../core/account';
+import { restoreRun } from '../game/runsave';
+import { RunScene } from './run';
+import { AuthScene } from './auth';
 
 /** 타이틀: 배경에서 영웅들이 자동 전투하는 데모 + 메뉴 */
 export class TitleScene implements Scene {
@@ -30,12 +33,9 @@ export class TitleScene implements Scene {
   }
 
   private buildMenu(): void {
-    this.menu = new Menu(
-      app.hasSave
-        ? [{ label: '이어하기' }, { label: '새로 시작' }, { label: '설정' }, { label: '조작법' }]
-        : [{ label: '시작하기' }, { label: '설정' }, { label: '조작법' }],
-      'title',
-    );
+    const items = app.hasSave ? [{ label: '이어하기' }, { label: '새로 시작' }, { label: '설정' }, { label: '조작법' }, { label: '로그아웃' }] : [{ label: '시작하기' }, { label: '설정' }, { label: '조작법' }, { label: '로그아웃' }];
+    if (app.save.run) items.unshift({ label: '런 이어하기' });
+    this.menu = new Menu(items, 'title');
   }
 
   private makeDemo(): void {
@@ -118,10 +118,10 @@ export class TitleScene implements Scene {
       const r = this.confirm.update(app.input, true);
       if (r === 'back' || (r === 'ok' && this.confirm.sel === 1)) this.confirm = null;
       else if (r === 'ok') {
-        clearSave();
         app.save = newSave();
-        app.hasSave = false;
         app.applySettings();
+        app.persist();
+        app.hasSave = false;
         this.confirm = null;
         this.start();
       }
@@ -130,7 +130,14 @@ export class TitleScene implements Scene {
     const r = this.menu.update(app.input);
     if (r === 'ok') {
       const label = this.menu.items[this.menu.sel].label;
-      if (label === '이어하기') app.go(new HubScene());
+      if (label === '런 이어하기' && app.save.run) {
+        const snap = app.save.run;
+        app.go(new RunScene(restoreRun(app.save, snap), snap));
+      } else if (label === '이어하기') app.go(new HubScene());
+      else if (label === '로그아웃') {
+        app.logout();
+        app.go(new AuthScene());
+      }
       else if (label === '시작하기') this.start();
       else if (label === '새로 시작') {
         this.confirm = new Menu([{ label: '새로 시작', col: '#ff4060' }, { label: '취소' }], 'tconf');
@@ -168,10 +175,16 @@ export class TitleScene implements Scene {
     text(g, '망자의 계약', 241, 40, { size: 30, align: 'center', color: '#3a1a10', bold: true, alpha: a, shadow: null });
     text(g, '망자의 계약', 240, 38, { size: 30, align: 'center', color: '#ffd070', bold: true, alpha: a, shadow: '#5a2a10' });
     text(g, 'PACT  OF  THE  FALLEN', 240, 76, { size: 8, align: 'center', color: '#c0a0ff', alpha: a });
-    this.menu.render(g, 190, 140, 100, 18, 4, 8);
+    const many = this.menu.items.length > 5;
+    this.menu.render(g, 190, many ? 116 : 136, 100, many ? 16 : 18, many ? 3 : 4, 8);
+    const s = accounts.session;
+    if (s) {
+      const cloud = s.kind === 'firebase' ? (accounts.cloud === 'error' ? ' · 클라우드 저장 실패(재시도 중)' : ' · 온라인 저장') : ' · 이 기기에 저장';
+      text(g, `계정: ${s.id}${cloud}`, 4, 260, { size: 6, color: accounts.cloud === 'error' ? '#ff9090' : '#8a8098' });
+    }
     if (this.confirm) {
       panel(g, 130, 112, 220, 64, { border: '#ff4060' });
-      text(g, '기존 저장 데이터를 지우고 새로 시작할까요?', 240, 122, { size: 8, align: 'center', color: '#ffffff' });
+      text(g, '이 계정의 기록을 지우고 새로 시작할까요?', 240, 122, { size: 8, align: 'center', color: '#ffffff' });
       this.confirm.items.forEach((it, i) => {
         button(g, 150 + i * 94, 144, 86, 20, it.label, this.confirm!.sel === i, { col: it.col });
         hot.add(`tconf:${i}`, 150 + i * 94, 144, 86, 20);

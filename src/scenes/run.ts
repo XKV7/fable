@@ -20,6 +20,7 @@ import { Pickup, type Prop } from '../game/entities';
 import { ResultScene } from './result';
 import { SettingsScene } from './settings';
 import { ControlsScene } from './controls';
+import { snapRun, type RunSnap } from '../game/runsave';
 
 /** 런 진행 장면: 방 이동, 보상, 오버레이, HUD */
 export class RunScene implements Scene {
@@ -36,12 +37,53 @@ export class RunScene implements Scene {
   nextTheme = 0;
   bossCard = 0;
 
-  constructor(public run: RunState) {}
+  /** 이어하기용: 현재 방에 들어가기 직전의 난수 상태·방 템플릿 기록 */
+  private entryRng = 0;
+  private entryTemplate = '';
+  private bossDone = false;
+
+  constructor(
+    public run: RunState,
+    private resume: RunSnap | null = null,
+  ) {}
 
   enter(): void {
     if (this.started) return;
     this.started = true;
-    this.enterNode(0, true);
+    if (this.resume) this.resumeRun(this.resume);
+    else this.enterNode(0, true);
+  }
+
+  /** 저장된 런 이어하기: 같은 방을 같은 난수로 다시 만들고, 정화·사용 상태를 되돌린다 */
+  private resumeRun(s: RunSnap): void {
+    const run = this.run;
+    this.lastTemplate = s.template;
+    this.enterNode(run.cur, false, true);
+    run.rng.state = s.rngNow;
+    const room = this.room;
+    room.props.filter((p) => p.kind !== 'door').forEach((p, i) => (p.used = s.room.used[i] ?? p.used));
+    if (s.room.bossDown) {
+      this.bossDone = true;
+      room.boss = null;
+      room.markCleared();
+      this.exitDoors();
+      audio.playMusic('none');
+    } else if (s.room.cleared) room.markCleared();
+    this.card = { title: '이어하기', sub: `제${run.chapter}장 ${chapterDef(run.theme).name}`, t: 120 };
+    this.checkpoint();
+  }
+
+  /** 현재 런 상태 저장 (런 이어하기) */
+  checkpoint(): void {
+    if (this.ended || !this.room) return;
+    app.save.run = snapRun(this.run, {
+      rngEntry: this.entryRng,
+      template: this.entryTemplate,
+      cleared: this.room.cleared,
+      bossDown: this.bossDone,
+      used: this.room.props.filter((p) => p.kind !== 'door').map((p) => p.used),
+    });
+    app.persist();
   }
 
   private template(type: string): typeof ROOMS[number] {
@@ -56,8 +98,11 @@ export class RunScene implements Scene {
     return ROOMS.find((r) => r.id === 's_room')!;
   }
 
-  enterNode(id: number, chapterStart = false): void {
+  enterNode(id: number, chapterStart = false, resuming = false): void {
     const run = this.run;
+    this.entryRng = run.rng.state;
+    this.entryTemplate = this.lastTemplate;
+    this.bossDone = false;
     run.cur = id;
     const node = run.nodes[id];
     node.visited = true;
@@ -86,6 +131,7 @@ export class RunScene implements Scene {
     if (chapterStart) this.card = { title: `제${run.chapter}장  ${ch.name}`, sub: run.storyDef.cards[run.chapter - 1] ?? '더 깊은 곳으로', t: 180 };
     else if (node.type !== 'combat' && node.type !== 'boss') this.card = { title: { start: '입구', tutorial: '훈련의 방', elite: '정예의 방', altar: '영혼 제단', armory: '무기고', shop: '상점', rest: '휴식처', event: '???', treasure: '보물방', combat: '', boss: '' }[node.type], sub: '', t: 90 };
     if (node.type === 'elite') this.card = { title: '정예의 방', sub: '강력한 적이 유물을 지키고 있다', t: 100 };
+    if (!resuming) this.checkpoint();
   }
 
   private onClear(): void {
@@ -110,6 +156,7 @@ export class RunScene implements Scene {
       app.toast('훈련 완료! 문으로 나아가자', '#80ffa0');
     }
     if (room.build.crests.some((c) => c.tier >= 3) && markAch(app.save, 'crest6')) app.achToast(['crest6']);
+    this.checkpoint();
   }
 
   private onInteract(p: Prop): void {
@@ -135,6 +182,7 @@ export class RunScene implements Scene {
         room.dropReward('stone', p.x, p.y - 12, big ? 15 : 10, 3);
         if (big) this.relicChoice(3, '보물 상자');
         else if (Math.random() < 0.45 || p.hidden === false) room.dropReward('relicOrb', p.x, p.y - 20, 1, 1);
+        this.checkpoint();
         break;
       }
       case 'shop': {
@@ -232,11 +280,20 @@ export class RunScene implements Scene {
     app.toast(`${nm} 처치!`, '#ffe080');
     audio.play('victory');
     this.relicChoice(3, `${nm}의 유산`, 2);
+    if (run.chapter >= run.storyDef.finalStage) run.kingDown = true;
+    if (run.storyDef.trueStage && run.chapter >= run.storyDef.trueStage) run.trueEnd = true;
+    this.bossDone = true;
+    this.exitDoors();
+    audio.playMusic('none');
+    this.checkpoint();
+  }
+
+  /** 보스 처치 후 출구 문 */
+  private exitDoors(): void {
+    const run = this.run;
     const sd = run.storyDef;
-    if (run.chapter >= sd.finalStage) run.kingDown = true;
     const next = run.nextThemes();
     if (sd.trueStage && run.chapter >= sd.trueStage) {
-      run.trueEnd = true;
       this.room.addExitDoors([{ nodeId: -2 }]);
     } else if (run.chapter >= sd.finalStage) {
       if (sd.trueStage && next.length) {
@@ -244,7 +301,6 @@ export class RunScene implements Scene {
         app.toast('계약을 완수할 수 있다 — 혹은 망각의 심연으로…', '#ff80d0');
       } else this.room.addExitDoors([{ nodeId: -2 }]);
     } else this.room.addExitDoors((next.length ? next : [run.theme]).map((n) => ({ nodeId: -1, nextCh: n })));
-    audio.playMusic('none');
   }
 
   private useItem(): void {
@@ -289,6 +345,7 @@ export class RunScene implements Scene {
     this.ended = true;
     this.run.finished = true;
     this.run.victory = victory || this.run.kingDown;
+    app.save.run = null; // 끝난 런은 이어하기 대상에서 제외 (결과 화면에서 저장)
     audio.playMusic('none');
     app.go(new ResultScene(this.run));
   }
@@ -340,6 +397,7 @@ export class RunScene implements Scene {
           this.queued = null;
           q();
         }
+        if (!this.overlay) this.checkpoint(); // 보상·구매·이벤트 결과 저장
       }
       return;
     }

@@ -65,7 +65,7 @@ export class GachaScene implements Scene {
     const s = app.save.stones;
     const out = [
       { label: '1회 계약', sub: `영혼석 ${pullCost(1)}`, count: 1, free: false, ok: s >= pullCost(1) },
-      { label: '10회 계약', sub: `영혼석 ${pullCost(10)}`, count: 10, free: false, ok: s >= pullCost(10) },
+      { label: '10회 계약', sub: `영혼석 ${pullCost(10)} · ★4↑ 확정`, count: 10, free: false, ok: s >= pullCost(10) },
     ];
     if (this.freeAvailable()) out.push({ label: '첫 계약 · 무료 10회', sub: '★4 이상 확정!', count: 10, free: true, ok: true });
     return out;
@@ -420,7 +420,7 @@ export class GachaScene implements Scene {
       button(g, 70 + i * 116, 184, 108, 22, l, pk.row === 2 && pk.col === i, { col: i === 0 ? '#80ffa0' : '#9ef0ff' });
       hot.add(`pkb:${i}`, 70 + i * 116, 184, 108, 22);
     });
-    text(g, '뽑기 기록은 그대로 유지된다', 240, 214, { size: 6, align: 'center', color: '#8a8098' });
+    text(g, '천장 카운트는 그대로 유지된다', 240, 214, { size: 6, align: 'center', color: '#8a8098' });
     keyHint(g, [['방향키', '이동'], [app.input.label('attack'), '선택'], ['Esc', '취소']]);
   }
 
@@ -541,10 +541,15 @@ export class GachaScene implements Scene {
       text(g, pct(p, 1), 466, 51 + i * 12, { size: 7, align: 'right', color: RARITY_COL[r as 3 | 4 | 5] });
     });
     const pity = save.pity[k];
-    text(g, '천장 없음', 356, 92, { size: 7, color: '#e0d0ff' });
-    text(g, '매 회 독립 확률 · 보장 없음', 356, 104, { size: 6, color: '#c8c0d8' });
-    if (k === 'pickup') text(g, '★5의 50%는 픽업 영웅', 356, 116, { size: 6, color: '#a8a0c0' });
-    text(g, `마지막 ★5 이후 ${pity.since5}회`, 356, 152, { size: 6, color: '#8a8098' });
+    text(g, '천장 (배너별)', 356, 92, { size: 7, color: '#e0d0ff' });
+    text(g, `★5 확정까지 ${GACHA.hardPity - pity.since5}회`, 356, 104, { size: 6, color: '#ffe080' });
+    g.fillStyle = '#1a1424';
+    g.fillRect(356, 114, 110, 5);
+    g.fillStyle = pity.since5 >= GACHA.hardPity * 0.8 ? '#ffcc40' : '#a080ff';
+    g.fillRect(356, 114, (110 * pity.since5) / GACHA.hardPity, 5);
+    text(g, `현재 ${pity.since5}/${GACHA.hardPity}회`, 356, 122, { size: 6, color: '#c8c0d8' });
+    text(g, '10회 계약: ★4 이상 확정', 356, 134, { size: 6, color: '#c080ff' });
+    if (k === 'pickup') text(g, '★5의 50%는 픽업 영웅', 356, 146, { size: 6, color: '#a8a0c0' });
     text(g, `누적 ${pity.total}회`, 356, 164, { size: 6, color: '#8a8098' });
     text(g, '중복: 영웅 각성 / 무기 재련', 356, 186, { size: 6, color: '#8a8098' });
     // 버튼

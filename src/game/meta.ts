@@ -50,7 +50,8 @@ export function performPull(save: SaveData, kind: BannerKind, count: number, fre
   if (save.stones < cost) return null;
   save.stones -= cost;
   if (free) save.freePullUsed = true;
-  const results = pullMany(bannerPool(kind, save), save.pity[kind], rand, count, free);
+  // 10연은 유료·무료 모두 ★4 이상 확정
+  const results = pullMany(bannerPool(kind, save), save.pity[kind], rand, count, free || count >= 10);
   save.stats.pulls += count;
   const out: PullOutcome[] = [];
   for (const r of results) {

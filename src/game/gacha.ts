@@ -1,7 +1,7 @@
 import { GACHA, type BannerKind } from '../data/gacha';
 import type { Rarity } from './types';
 
-/** 배너별 뽑기 기록 (통계용). 천장이 없으므로 확률에는 영향이 없다. */
+/** 배너별 뽑기 기록. since5가 천장(100회) 카운트 */
 export interface PityState {
   since5: number; // 마지막 ★5 이후 뽑은 횟수
   since4: number; // 마지막 ★4 이상 이후 뽑은 횟수
@@ -30,11 +30,11 @@ export interface PullResult {
   pityAt: number; // 몇 번째에 나왔는지 (★5일 때 의미)
 }
 
-/** 다음 1회의 희귀도를 결정. 천장 없이 매 회 독립 확률. force4: 첫 무료 10연 보장용. rand: [0,1) */
+/** 다음 1회의 희귀도를 결정. 100번째(천장)는 ★5 확정. force4: 10연 ★4 이상 보장용. rand: [0,1) */
 export function rollRarity(p: PityState, rand: () => number, force4 = false): Rarity {
   const r = rand();
   let rar: Rarity;
-  if (r < GACHA.rate5) rar = 5;
+  if (p.since5 + 1 >= GACHA.hardPity || r < GACHA.rate5) rar = 5;
   else if (force4 || r < GACHA.rate5 + GACHA.rate4) rar = 4;
   else rar = 3;
   p.total++;
@@ -74,7 +74,7 @@ export function pullOnce(pool: BannerPool, p: PityState, rand: () => number, for
   return { id: it.id, rarity, pickup, pityAt: at };
 }
 
-/** count회 뽑기. guarantee4: 10연 중 ★4 이상 보장 (첫 무료 10연 전용) */
+/** count회 뽑기. guarantee4: 10연 중 ★4 이상 보장 (마지막 장에서 강제) */
 export function pullMany(pool: BannerPool, p: PityState, rand: () => number, count: number, guarantee4 = false): PullResult[] {
   const out: PullResult[] = [];
   for (let i = 0; i < count; i++) {

@@ -13,7 +13,7 @@ const pool: BannerPool = {
 };
 const pickupPool: BannerPool = { ...pool, kind: 'pickup', pickup5: ['a5'], pickup4: ['a4'] };
 
-describe('10만 회 시뮬레이션 (천장 없음)', () => {
+describe('10만 회 시뮬레이션 (천장 100회)', () => {
   const N = 100_000;
   const rng = new Rng(12345);
   const p = newPity();
@@ -31,26 +31,38 @@ describe('10만 회 시뮬레이션 (천장 없음)', () => {
     }
     if (r.rarity === 4) n4++;
   }
-  it('★5 ≈ 0.5%', () => {
+  it('★5 기본 확률 0.5%, 천장 포함 실제 비율은 기대값과 일치', () => {
     expect(GACHA.rate5).toBe(0.005);
-    expect(Math.abs(n5 / N - GACHA.rate5)).toBeLessThan(GACHA.rate5 * 0.15);
+    // 100회 천장이 있을 때 ★5 1개당 기대 뽑기 수
+    let survive = 1;
+    let e = 0;
+    for (let n = 1; n <= GACHA.hardPity; n++) {
+      const p = n >= GACHA.hardPity ? 1 : GACHA.rate5;
+      e += n * survive * p;
+      survive *= 1 - p;
+    }
+    expect(Math.abs(n5 / N - 1 / e) / (1 / e)).toBeLessThan(0.08);
   });
-  it('★4 ≈ 9.5%, ★3 ≈ 90%', () => {
+  it('★4 ≈ 9.5%', () => {
     expect(GACHA.rate4).toBe(0.095);
-    expect(Math.abs(n4 / N - GACHA.rate4)).toBeLessThan(0.004);
-    expect(Math.abs((N - n4 - n5) / N - 0.9)).toBeLessThan(0.004);
+    expect(Math.abs(n4 / N - GACHA.rate4)).toBeLessThan(0.005);
   });
-  it('천장 없음: ★5 간격이 60회를 넘는 경우가 존재', () => {
-    expect(maxGap).toBeGreaterThan(60);
+  it('천장: ★5 간격은 100회를 넘지 않고, 천장까지 가는 경우가 존재', () => {
+    expect(GACHA.hardPity).toBe(100);
+    expect(maxGap).toBeLessThanOrEqual(100);
+    expect(maxGap).toBe(100);
   });
-  it('항상 ★3만 나오는 난수에서는 유료 10연도 ★3만 나온다 (보장 없음)', () => {
-    const res = pullMany(pool, newPity(), () => 0.999, 10);
-    expect(res.every((r) => r.rarity === 3)).toBe(true);
+  it('항상 ★3만 나오는 난수에서도 100번째는 ★5', () => {
+    const p = newPity();
+    const res = pullMany(pool, p, () => 0.999, 100);
+    expect(res.slice(0, 99).some((r) => r.rarity === 5)).toBe(false);
+    expect(res[99].rarity).toBe(5);
+    expect(p.since5).toBe(0);
   });
 });
 
 describe('픽업 배너', () => {
-  it('★5 픽업 비율 ≈ 50%, 픽업 실패 후 보장 없음', () => {
+  it('★5 픽업 비율 ≈ 50% (픽업 확정은 없음)', () => {
     const rng = new Rng(777);
     const p = newPity();
     let five = 0;
@@ -77,6 +89,26 @@ describe('픽업 배너', () => {
     pullMany(pool, a, () => rng.next(), 10);
     expect(a.total).toBe(10);
     expect(b.total).toBe(0);
+  });
+});
+
+describe('10연 ★4 이상 확정 (유료·무료)', () => {
+  it('유료 10연도 항상 ★4 이상 1개 이상', async () => {
+    const { newSave } = await import('../src/game/save');
+    const { performPull } = await import('../src/game/meta');
+    const s = newSave();
+    s.stones = 1600 * 300;
+    for (let i = 0; i < 300; i++) {
+      const res = performPull(s, 'char', 10, false, () => 0.999)!;
+      expect(res.some((r) => r.rarity >= 4)).toBe(true);
+    }
+  });
+  it('1회 계약은 보장 없음', async () => {
+    const { newSave } = await import('../src/game/save');
+    const { performPull } = await import('../src/game/meta');
+    const s = newSave();
+    s.stones = 160;
+    expect(performPull(s, 'char', 1, false, () => 0.999)![0].rarity).toBe(3);
   });
 });
 

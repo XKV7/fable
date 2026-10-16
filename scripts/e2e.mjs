@@ -55,7 +55,11 @@ const step = (msg) => console.log(`▶ ${msg}`);
 
 try {
   await page.goto(URL);
-  await page.evaluate(() => localStorage.clear());
+  // 실제 Firebase 프로젝트에 테스트 계정을 만들지 않도록 기기 전용 계정으로 고정
+  await page.evaluate(() => {
+    localStorage.clear();
+    localStorage.setItem('pact_force_local', '1');
+  });
   await page.reload();
   await wait(2000);
   step(`회원가입 (${await scene()})`);

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /** 노드 테스트용 localStorage */
 class MemStorage {
@@ -17,9 +17,23 @@ class MemStorage {
 beforeEach(() => {
   (globalThis as unknown as { localStorage: MemStorage }).localStorage = new MemStorage();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 describe('이 기기 전용 계정 (Firebase 설정 없음)', () => {
+  const saved = { apiKey: '', projectId: '' };
+  beforeEach(async () => {
+    const { FIREBASE } = await import('../src/data/firebase');
+    saved.apiKey = FIREBASE.apiKey;
+    saved.projectId = FIREBASE.projectId;
+    FIREBASE.apiKey = '';
+    FIREBASE.projectId = '';
+  });
+  afterEach(async () => {
+    const { FIREBASE } = await import('../src/data/firebase');
+    FIREBASE.apiKey = saved.apiKey;
+    FIREBASE.projectId = saved.projectId;
+  });
   it('가입 → 로그인 → 잘못된 비밀번호·중복 아이디·형식 오류', async () => {
     const { AccountStore } = await import('../src/core/account');
     const a = new AccountStore();
@@ -57,6 +71,15 @@ describe('이 기기 전용 계정 (Firebase 설정 없음)', () => {
     expect(await new AccountStore().restore()).toBeNull();
   });
 
+  it('pact_force_local이면 Firebase 설정이 있어도 기기 전용', async () => {
+    const { FIREBASE, firebaseEnabled } = await import('../src/data/firebase');
+    FIREBASE.apiKey = 'K';
+    FIREBASE.projectId = 'P';
+    expect(firebaseEnabled()).toBe(true);
+    localStorage.setItem('pact_force_local', '1');
+    expect(firebaseEnabled()).toBe(false);
+  });
+
   it('계정 이전의 기존 기록은 첫 가입 계정으로 옮겨진다 (한 번만)', async () => {
     const { AccountStore } = await import('../src/core/account');
     localStorage.setItem('pact_save_v1', JSON.stringify({ stones: 999 }));
@@ -74,6 +97,7 @@ describe('이 기기 전용 계정 (Firebase 설정 없음)', () => {
 describe('온라인 계정 (Firebase REST, fetch 모의)', () => {
   it('가입은 가짜 이메일로 Auth에, 기록은 Firestore saves/{uid}에', async () => {
     const { FIREBASE } = await import('../src/data/firebase');
+    const keep = { ...FIREBASE };
     FIREBASE.apiKey = 'KEY';
     FIREBASE.projectId = 'proj';
     const docs = new Map<string, string>();
@@ -118,8 +142,7 @@ describe('온라인 계정 (Firebase REST, fetch 모의)', () => {
     expect(await b.load()).toEqual({ stones: 5 });
     expect(calls.some((c) => c.startsWith('PATCH'))).toBe(true);
     vi.useRealTimers();
-    FIREBASE.apiKey = '';
-    FIREBASE.projectId = '';
+    Object.assign(FIREBASE, keep);
   });
 });
 

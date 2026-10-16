@@ -42,8 +42,8 @@ npm install && npm run dev     # http://localhost:5173
 
 | 모드 | 조건 | 저장 위치 | 다른 기기 |
 |---|---|---|---|
-| 온라인 계정 | `src/data/firebase.ts`에 Firebase `apiKey`·`projectId` 입력 | Firebase Authentication(이메일/비밀번호) + Firestore `saves/{uid}` | 같은 아이디로 어디서든 이어서 플레이 |
-| 이 기기 전용 계정 | 설정이 비어 있을 때 (기본) | 이 브라우저 localStorage (비밀번호는 PBKDF2 해시) | 불가 — 설정의 내보내기/가져오기로 옮김 |
+| 온라인 계정 (**현재 배포본**) | `src/data/firebase.ts`에 Firebase `apiKey`·`projectId` 입력 — 프로젝트 `contract-d6cf3` 연결됨 | Firebase Authentication(이메일/비밀번호) + Firestore `saves/{uid}` | 같은 아이디로 어디서든 이어서 플레이 |
+| 이 기기 전용 계정 | 설정이 비어 있을 때, 또는 localStorage `pact_force_local`=`1` (E2E가 사용) | 이 브라우저 localStorage (비밀번호는 PBKDF2 해시) | 불가 — 설정의 내보내기/가져오기로 옮김 |
 
 Firebase SDK 없이 REST API(`identitytoolkit`, `securetoken`, `firestore`)로 직접 통신하므로 외부 런타임 라이브러리는 여전히 0개입니다. 아이디는 내부적으로 `아이디@pact-of-the-fallen.game` 형식의 가짜 이메일로 바뀌며 메일은 보내지 않습니다. 기록은 로컬에 즉시 캐시되고 클라우드에는 2초씩 모아서, 창을 닫을 때는 바로 보냅니다. 로그인할 때 로컬 캐시와 클라우드 중 더 최근 기록을 씁니다.
 

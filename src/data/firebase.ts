@@ -1,5 +1,5 @@
 /**
- * Firebase 설정. Firebase 콘솔 → 프로젝트 설정 → 일반 → 내 앱(웹)의 apiKey와 projectId를 넣으면
+ * Firebase 설정 (프로젝트 contract-d6cf3). Firebase 콘솔 → 프로젝트 설정 → 일반 → 내 앱(웹)의 apiKey와 projectId를 넣으면
  * 온라인 계정(어느 기기에서든 같은 아이디로 로그인)으로 동작한다.
  * 비워 두면 같은 로그인 화면이 "이 기기 전용 계정"(브라우저 저장소)으로 동작한다.
  *
@@ -18,8 +18,17 @@
  *  apiKey는 웹앱에 원래 공개되는 값이다(보안은 위 규칙이 담당).
  */
 export const FIREBASE = {
-  apiKey: '',
-  projectId: '',
+  apiKey: 'AIzaSyANYHUCo7ZNBDt5VZxE_3AAk5KhoFBS_7U',
+  projectId: 'contract-d6cf3',
 };
 
-export const firebaseEnabled = (): boolean => !!FIREBASE.apiKey && !!FIREBASE.projectId;
+/** 개발·자동 테스트용: localStorage 'pact_force_local' = '1'이면 Firebase 대신 기기 전용 계정 */
+function forceLocal(): boolean {
+  try {
+    return globalThis.localStorage?.getItem('pact_force_local') === '1';
+  } catch {
+    return false;
+  }
+}
+
+export const firebaseEnabled = (): boolean => !!FIREBASE.apiKey && !!FIREBASE.projectId && !forceLocal();

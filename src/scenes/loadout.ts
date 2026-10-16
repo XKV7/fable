@@ -1,4 +1,5 @@
 import { app, type Scene } from '../app';
+import { drawWeaponArt } from '../gfx/weaponArt';
 import { audio } from '../core/audio';
 import { CHARACTERS, CHAR_MAP, TYPE_COL, TYPE_LABEL } from '../data/characters';
 import { CURSES } from '../data/meta';
@@ -312,7 +313,7 @@ export class LoadoutScene implements Scene {
     const wsel = this.focus === 2;
     panel(g, 12, 166, 294, 42, { border: wsel ? '#ffffff' : RARITY_COL[w.rarity] });
     hot.add('lf:2', 12, 166, 294, 42);
-    drawIcon(g, w.icon, 18, 171, 30, w.col);
+    if (!drawWeaponArt(g, w.id, 18, 171, 30)) drawIcon(g, w.icon, 18, 171, 30, w.col);
     stars(g, 54, 171, w.rarity, 5);
     text(g, `${w.name} (재련 ${save.weapons[w.id]?.rf ?? 1})`, 84, 170, { size: 8, color: '#ffffff', bold: true, maxW: 216 });
     text(g, weaponDesc(w, save.weapons[w.id]?.rf ?? 1), 54, 184, { size: 6, color: '#c8c0d8', maxW: 246 });
@@ -370,7 +371,7 @@ export class LoadoutScene implements Scene {
           g.fillRect(x, y, 46, 42);
           g.strokeStyle = RARITY_COL[wd.rarity];
           g.strokeRect(x + 0.5, y + 0.5, 45, 41);
-          drawIcon(g, wd.icon, x + 13, y + 3, 20, wd.col);
+          if (!drawWeaponArt(g, wd.id, x + 13, y + 3, 20)) drawIcon(g, wd.icon, x + 13, y + 3, 20, wd.col);
           text(g, wd.name.replace(/「.*」/, '').trim(), x + 23, y + 26, { size: 5, align: 'center', color: '#ffffff', maxW: 44 });
           text(g, save.weapons[id] ? `재련${save.weapons[id].rf}` : '디버그', x + 23, y + 34, { size: 5, align: 'center', color: save.weapons[id] ? '#a8a0c0' : '#80ffa0' });
         }

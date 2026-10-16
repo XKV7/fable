@@ -1,4 +1,5 @@
 import { app, type Scene } from '../app';
+import { drawWeaponArt } from '../gfx/weaponArt';
 import { audio } from '../core/audio';
 import { CHAR_MAP } from '../data/characters';
 import { CREST_MAP } from '../data/crests';
@@ -107,7 +108,7 @@ export class ResultScene implements Scene {
       text(g, CHAR_MAP[p.id].name, 40 + i * 34, 228, { size: 6, align: 'center', color: '#c8c0d8' });
     });
     const w = WEAPON_MAP[run.weapon.id];
-    drawIcon(g, w.icon, 100, 200, 24, w.col);
+    if (!drawWeaponArt(g, w.id, 100, 200, 24)) drawIcon(g, w.icon, 100, 200, 24, w.col);
     text(g, w.name, 112, 228, { size: 6, align: 'center', color: '#c8c0d8', maxW: 60 });
     const relics = run.relics.filter((r) => RELIC_MAP[r]);
     relics.slice(0, 16).forEach((id, i) => {

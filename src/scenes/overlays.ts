@@ -1,4 +1,5 @@
 import { app } from '../app';
+import { drawWeaponArt } from '../gfx/weaponArt';
 import { audio } from '../core/audio';
 import { CHAR_MAP, TYPE_COL, TYPE_LABEL } from '../data/characters';
 import { CREST_MAP } from '../data/crests';
@@ -441,7 +442,7 @@ export class BuildOverlay implements Overlay {
     // 무기
     panel(g, 8, 124, 196, 48);
     const w = WEAPON_MAP[run.weapon.id];
-    drawIcon(g, w.icon, 14, 130, 24, w.col);
+    if (!drawWeaponArt(g, w.id, 14, 130, 24)) drawIcon(g, w.icon, 14, 130, 24, w.col);
     text(g, `${w.name}`, 44, 129, { size: 7, color: '#ffffff', bold: true });
     stars(g, 44, 139, w.rarity, 5);
     text(g, `재련 ${run.weapon.rf}`, 70, 139, { size: 6, color: '#a8a0c0' });

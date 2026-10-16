@@ -1,4 +1,5 @@
 import { app, type Scene } from '../app';
+import { drawWeaponArt } from '../gfx/weaponArt';
 import { audio } from '../core/audio';
 import { CHARACTERS, CHAR_MAP, TYPE_COL, TYPE_LABEL } from '../data/characters';
 import { CRESTS } from '../data/crests';
@@ -208,7 +209,7 @@ export class CodexScene implements Scene {
       g.fillRect(x, y, 32, 32);
       g.strokeStyle = own ? RARITY_COL[w.rarity] : '#2a2238';
       g.strokeRect(x + 0.5, y + 0.5, 31, 31);
-      drawIcon(g, w.icon, x + 4, y + 4, 24, own ? w.col : '#2e2640');
+      if (!drawWeaponArt(g, w.id, x + 4, y + 4, 24, own ? undefined : '#2e2640')) drawIcon(g, w.icon, x + 4, y + 4, 24, own ? w.col : '#2e2640');
       if (own && own.rf > 1) text(g, `${own.rf}`, x + 29, y + 22, { size: 6, align: 'right', color: '#ffe080', bold: true });
       hot.add(`cx:${i}`, x, y, 32, 32);
     });
@@ -217,7 +218,7 @@ export class CodexScene implements Scene {
     panel(g, 200, 28, 274, 226, { border: RARITY_COL[w.rarity] });
     g.fillStyle = 'rgba(0,0,0,0.3)';
     g.fillRect(208, 36, 80, 80);
-    drawIcon(g, w.icon, 216, 44, 64, own ? w.col : '#2e2640');
+    if (!drawWeaponArt(g, w.id, 216, 44, 64, own ? undefined : '#2e2640')) drawIcon(g, w.icon, 216, 44, 64, own ? w.col : '#2e2640');
     stars(g, 296, 38, w.rarity, 8);
     text(g, w.name, 296, 52, { size: 10, color: '#ffffff', bold: true, maxW: 172 });
     text(g, `공격력 +${w.atk}`, 296, 68, { size: 7, color: '#c8c0d8' });

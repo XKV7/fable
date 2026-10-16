@@ -1,4 +1,5 @@
 import { app, type Scene } from '../app';
+import { drawWeaponArt } from '../gfx/weaponArt';
 import { audio } from '../core/audio';
 import { CHAR_MAP, CHARACTERS, TYPE_COL, TYPE_LABEL } from '../data/characters';
 import { BANNER_INFO, GACHA, RATE_TABLE, type BannerKind } from '../data/gacha';
@@ -548,7 +549,7 @@ export class GachaScene implements Scene {
         const y = 66 + Math.floor(i / 3) * 56;
         g.fillStyle = 'rgba(255,200,80,0.1)';
         g.fillRect(x, y, 64, 50);
-        drawIcon(g, w.icon, x + 18, y + 4, 28, w.col);
+        if (!drawWeaponArt(g, w.id, x + 18, y + 4, 28)) drawIcon(g, w.icon, x + 18, y + 4, 28, w.col);
         text(g, w.name.replace(/「.*」/, '').trim(), x + 32, y + 36, { size: 6, align: 'center', color: '#ffe080', maxW: 62 });
       });
     }
@@ -619,7 +620,7 @@ export class GachaScene implements Scene {
       text(g, CHAR_MAP[r.id].name, x + w / 2, y + h - 26, { size: 7, align: 'center', color: '#ffffff', bold: true });
     } else {
       const wd = WEAPON_MAP[r.id];
-      drawIcon(g, wd.icon, x + w / 2 - 16, y + 12, 32, wd.col);
+      if (!drawWeaponArt(g, wd.id, x + w / 2 - 16, y + 12, 32)) drawIcon(g, wd.icon, x + w / 2 - 16, y + 12, 32, wd.col);
       text(g, wd.name.replace(/「.*」/, '').trim(), x + w / 2, y + h - 26, { size: 6, align: 'center', color: '#ffffff', bold: true, maxW: w - 4 });
     }
     stars(g, x + w / 2, y + h - 36, r.rarity, 5, 'center');
@@ -689,7 +690,7 @@ export class GachaScene implements Scene {
     } else {
       const w = WEAPON_MAP[r.id];
       g.globalAlpha = k;
-      drawIcon(g, w.icon, 120, 80, 120, w.col);
+      if (!drawWeaponArt(g, w.id, 120, 80, 120)) drawIcon(g, w.icon, 120, 80, 120, w.col);
       g.globalAlpha = 1;
       stars(g, 300, 80, r.rarity, 12);
       text(g, w.name, 300, 100, { size: 14, color: '#ffffff', bold: true, maxW: 175 });

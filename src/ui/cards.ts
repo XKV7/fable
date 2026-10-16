@@ -1,4 +1,5 @@
 import { CHAR_MAP, TYPE_COL, TYPE_LABEL } from '../data/characters';
+import { drawWeaponArt } from '../gfx/weaponArt';
 import { CREST_MAP } from '../data/crests';
 import { RELIC_MAP } from '../data/relics';
 import { WEAPON_MAP, weaponDesc } from '../data/weapons';
@@ -57,7 +58,7 @@ export function weaponCard(g: CanvasRenderingContext2D, id: string, rf: number, 
   gr.addColorStop(1, b1);
   g.fillStyle = gr;
   g.fillRect(x + w / 2 - 22, y + 6, 44, 44);
-  drawIcon(g, wd.icon, x + w / 2 - 16, y + 12, 32, wd.col);
+  if (!drawWeaponArt(g, wd.id, x + w / 2 - 16, y + 12, 32)) drawIcon(g, wd.icon, x + w / 2 - 16, y + 12, 32, wd.col);
   stars(g, x + w / 2, y + 54, wd.rarity, 6, 'center');
   text(g, wd.name, x + w / 2, y + 63, { size: 7, align: 'center', color: '#ffffff', bold: true, maxW: w - 6 });
   text(g, `공격력 +${wd.atk} · 재련 ${rf}`, x + w / 2, y + 74, { size: 6, align: 'center', color: '#a8a0c0' });

@@ -408,7 +408,7 @@ export const CHARACTERS_EX: CharDef[] = [
     skills: [
       {
         name: '심연 난도질',
-        desc: '가까운 적의 정확한 위치로 순간이동해 2초간 35번 난도질한다 (35회 × 25% + 마무리 150%). 시전 내내 무적, 공중의 적에게 붙어도 떨어지지 않는다.',
+        desc: '가까운 적의 정확한 위치로 순간이동해 2초간 35번 난도질한다 (35회 × 45% + 마무리 150%). 시전 내내 무적, 공중의 적에게 붙어도 떨어지지 않는다.',
         cd: 9,
         act: {
           dur: 126,
@@ -425,7 +425,7 @@ export const CHARACTERS_EX: CharDef[] = [
               const t = 4 + Math.round((i * 114) / 34);
               const arc = (['down', 'up', 'x', 'h'] as const)[i % 4];
               return [
-                { t, k: 'hit', box: [-28, -26, 62, 40], m: 0.25, kb: 0, hs: 0, el: 'shadow', fx: { arc, r: 26, col: i % 2 ? '#8a6aff' : '#c0a8ff' } },
+                { t, k: 'hit', box: [-28, -26, 62, 40], m: 0.45, kb: 0, hs: 0, el: 'shadow', fx: { arc, r: 26, col: i % 2 ? '#8a6aff' : '#c0a8ff' } },
                 ...(i % 4 === 0 ? [{ t, k: 'pic', name: i % 8 ? 'enoch:arc2' : 'enoch:arc', dx: 10, dy: -14, s0: 30, s1: 46, life: 6 } as ActEvent] : []),
                 ...(i % 3 === 0 ? [{ t, k: 'sfx', s: 'swing' } as ActEvent] : []),
               ];

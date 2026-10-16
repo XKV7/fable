@@ -1,6 +1,7 @@
 import type { PoseName } from '../game/types';
 import { POSES } from './humanoid';
 import { OUTLINE, Pix } from './pixel';
+import { CAELUS_FRAMES, CAELUS_SHEET } from './caelusSheet';
 
 /**
  * ★7 전용 고해상도(2배 정밀) 스프라이트. 96×96 프레임, 발 y=88, 키 약 48픽셀.
@@ -233,6 +234,45 @@ function drawCaelus(pose: PoseName): HTMLCanvasElement {
   return p.c;
 }
 
+/**
+ * 컨셉아트에서 직접 잘라낸 시트 (카일루스). 게임 포즈 → 시트 프레임 이름.
+ * 시트 이미지가 아직 안 불러와졌으면 손으로 찍은 픽셀 버전(drawCaelus)으로 대신 그리고 캐시하지 않는다.
+ */
+const CAELUS_POSE: Record<PoseName, string> = {
+  idle0: 'idle0', idle1: 'idle2', crouch: 'idle0',
+  run0: 'run0', run1: 'run1', run2: 'run2', run3: 'run3', run4: 'run0', run5: 'run1',
+  jump: 'run1', fall: 'run3', dash: 'run2',
+  hurt: 'hit1', guard: 'hit0', dead: 'die3',
+  windHigh: 'attack0', slashDown: 'attack1', windLow: 'attack2', slashUp: 'attack3',
+  thrustWind: 'attack4', thrust: 'attack5', spin: 'attack3', slamWind: 'attack0', slam: 'attack1',
+  kick: 'attack5', uppercut: 'attack3', throw: 'attack5',
+  cast: 'cast0', castUp: 'cast1', shootWind: 'cast0', shoot: 'cast1',
+};
+interface Sheet { img: HTMLImageElement; ok: boolean; frames: typeof CAELUS_FRAMES; pose: Record<PoseName, string> }
+const SHEETS: Record<string, Sheet> = {};
+function sheetOf(id: string): Sheet | null {
+  if (id !== 'caelus' || typeof Image === 'undefined') return null;
+  let s = SHEETS[id];
+  if (!s) {
+    const img = new Image();
+    s = SHEETS[id] = { img, ok: false, frames: CAELUS_FRAMES, pose: CAELUS_POSE };
+    img.onload = () => (s.ok = true);
+    img.src = CAELUS_SHEET;
+  }
+  return s;
+}
+function fromSheet(s: Sheet, pose: PoseName): HTMLCanvasElement {
+  const f = s.frames[s.pose[pose]] ?? s.frames.idle0;
+  const c = document.createElement('canvas');
+  c.width = c.height = HD_FW;
+  const g = c.getContext('2d')!;
+  g.imageSmoothingEnabled = false;
+  // 발 기준점을 96×96 칸의 (48, 88)에 맞춘다. 쓰러진 프레임은 몸 가운데를 맞춘다
+  const ax = pose === 'dead' ? Math.round(f.w / 2) : f.ax;
+  g.drawImage(s.img, f.x, f.y, f.w, f.h, HD_FW / 2 - ax, FOOT - f.ay, f.w, f.h);
+  return c;
+}
+
 const DRAW: Record<string, (pose: PoseName) => HTMLCanvasElement> = { caelus: drawCaelus };
 const cache = new Map<string, HTMLCanvasElement>();
 
@@ -243,11 +283,16 @@ export function charFrameHD(id: string, pose: PoseName): HTMLCanvasElement | nul
   const k = `${id}|${pose}`;
   let c = cache.get(k);
   if (!c) {
-    c = d(pose);
+    const s = sheetOf(id);
+    if (s && !s.ok) return d(pose === 'dead' ? 'hurt' : pose); // 시트 불러오는 중 (아주 잠깐)
+    c = s ? fromSheet(s, pose) : d(pose);
     cache.set(k, c);
   }
   return c;
 }
+
+/** 쓰러진 모습이 그림에 들어 있는 영웅(컨셉아트 시트): 회전 없이 'dead' 프레임을 쓴다 */
+export const hasLyingFrame = (id: string): boolean => id === 'caelus';
 
 export const hasHD = (id: string): boolean => !!DRAW[id];
 
@@ -289,3 +334,6 @@ export function drawHDQueue(d: CanvasRenderingContext2D, shakeX: number, shakeY:
   hdQueue.length = 0;
 }
 
+
+// 시트는 시작하자마자 미리 불러 둔다
+sheetOf('caelus');

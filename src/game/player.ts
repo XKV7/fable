@@ -2,7 +2,7 @@ import { CHAR_MAP } from '../data/characters';
 import { WEAPON_MAP } from '../data/weapons';
 import { audio } from '../core/audio';
 import { charFrame, white, tinted } from '../gfx/sprites';
-import { charFrameHD, hdQueue } from '../gfx/hd';
+import { charFrameHD, hasLyingFrame, hdQueue } from '../gfx/hd';
 import { charAtk, charHp } from './combat';
 import type { Room } from './room';
 import type { ActEvent, ActionDef, CharDef, PoseName } from './types';
@@ -524,15 +524,16 @@ export class Player {
   render(g: CanvasRenderingContext2D, cx: number, cy: number, time: number): void {
     const img = this.frame();
     // ★7 고해상도 스프라이트: 월드 대신 확대된 화면 층에 그린다
-    const hd = this.room.demoNoHD ? null : charFrameHD(this.def.id, this.pose());
+    const lying = this.state === 'dead' && this.deadT > 14;
+    const lieHD = lying && hasLyingFrame(this.def.id);
+    const hd = this.room.demoNoHD ? null : charFrameHD(this.def.id, lieHD ? 'dead' : this.pose());
     const x = Math.round(this.cx - 24 - cx);
     const y = Math.round(this.b.y + this.b.h - 44 - cy);
     g.save();
     if (this.inv > 0 && this.state !== 'dead' && (time >> 2) % 2 === 0) g.globalAlpha = 0.45;
     const draw = (im: HTMLCanvasElement, hdIm?: HTMLCanvasElement | null): void => {
       if (hdIm) {
-        const dead = this.state === 'dead' && this.deadT > 14;
-        hdQueue.push({ img: hdIm, x, y, flip: this.facing < 0, alpha: g.globalAlpha, rot: dead ? { ox: 24, oy: 44, a: ((this.facing > 0 ? -1 : 1) * Math.PI) / 2 } : undefined });
+        hdQueue.push({ img: hdIm, x, y, flip: this.facing < 0, alpha: g.globalAlpha, rot: lying && !lieHD ? { ox: 24, oy: 44, a: ((this.facing > 0 ? -1 : 1) * Math.PI) / 2 } : undefined });
         return;
       }
       if (this.state === 'dead' && this.deadT > 14) {

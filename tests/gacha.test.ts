@@ -219,8 +219,8 @@ describe('키 설정 v5: 궁극기(X) 추가', () => {
   });
 });
 
-describe('같은 등급 안 고정 비율 (에녹 = ★7 중 1%)', () => {
-  it('★7 후보 4명 중 에녹은 약 1%, 나머지는 약 33%씩', async () => {
+describe('같은 등급 안 비율 (에녹 정상화)', () => {
+  it('★7 후보 4명은 약 25%씩 똑같이', async () => {
     const { pickShared } = await import('../src/game/gacha');
     const items = [{ id: 'caelus', rarity: 7 }, { id: 'astral', rarity: 7 }, { id: 'ashen', rarity: 7 }, { id: 'enoch', rarity: 7 }] as const;
     let seed = 7;
@@ -231,9 +231,7 @@ describe('같은 등급 안 고정 비율 (에녹 = ★7 중 1%)', () => {
       const it = pickShared([...items], rand);
       cnt[it.id] = (cnt[it.id] ?? 0) + 1;
     }
-    expect(cnt.enoch / N).toBeGreaterThan(0.008);
-    expect(cnt.enoch / N).toBeLessThan(0.012);
-    for (const id of ['caelus', 'astral', 'ashen']) expect(Math.abs(cnt[id] / N - 0.33)).toBeLessThan(0.01);
+    for (const id of ['caelus', 'astral', 'ashen', 'enoch']) expect(Math.abs(cnt[id] / N - 0.25)).toBeLessThan(0.01);
   });
 });
 

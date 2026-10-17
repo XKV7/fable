@@ -48,6 +48,10 @@ export class GachaScene implements Scene {
   picker: { row: number; col: number; five: string; four: string[] } | null = null;
   /** 상세 보기 (배너에 나오는 전체 영웅·무기와 개별 확률) — 스크롤 줄 */
   detail: { scroll: number } | null = null;
+  /** [디버그] 다음 뽑기 첫 장으로 나올 영웅·무기 (배너 종류별, 한 번 쓰면 해제) */
+  forceNext: Partial<Record<'char' | 'weapon', string>> = {};
+  /** [디버그] 다음 뽑기 지정 창 (선택 칸·스크롤 줄) */
+  forcePick: { sel: number; scroll: number } | null = null;
 
   constructor(public back: Scene) {}
 
@@ -75,7 +79,10 @@ export class GachaScene implements Scene {
   }
 
   private doPull(count: number, free: boolean): void {
-    const res = performPull(app.save, this.kind, count, free);
+    const fk = this.kind === 'weapon' ? 'weapon' : 'char';
+    const force = app.debug ? this.forceNext[fk] : undefined;
+    const res = performPull(app.save, this.kind, count, free, Math.random, force);
+    if (res && force) delete this.forceNext[fk];
     if (!res) {
       audio.play('error');
       app.toast('영혼석이 부족하다 — 런에서 영혼석을 모으자', '#ff8080');
@@ -157,6 +164,17 @@ export class GachaScene implements Scene {
         }
         if (this.detail) {
           this.updateDetail();
+          break;
+        }
+        if (this.forcePick) {
+          this.updateForcePick();
+          break;
+        }
+        if (app.debug && (inp.raw('KeyN') || (hot.hover() === 'gforce' && hot.mouse.click))) {
+          const list = this.forceList();
+          const cur = this.forceNext[this.kind === 'weapon' ? 'weapon' : 'char'];
+          this.forcePick = { sel: Math.max(0, list.findIndex((x) => x.id === cur)), scroll: 0 };
+          audio.play('select');
           break;
         }
         if (inp.raw('KeyI') || (hot.hover() === 'gdetail' && hot.mouse.click)) {
@@ -463,6 +481,100 @@ export class GachaScene implements Scene {
     return out;
   }
 
+  /** [디버그] 지정할 수 있는 목록 (높은 등급부터) */
+  private forceList(): { id: string; name: string; rarity: Rarity }[] {
+    const list: { id: string; name: string; rarity: Rarity }[] = this.kind === 'weapon' ? WEAPONS : CHARACTERS;
+    return [...list].sort((a, b) => b.rarity - a.rarity);
+  }
+
+  private static readonly FCOLS = 9;
+  private static readonly FROWS = 4;
+
+  private updateForcePick(): void {
+    const inp = app.input;
+    const fp = this.forcePick!;
+    const list = this.forceList();
+    const C = GachaScene.FCOLS;
+    const fk = this.kind === 'weapon' ? 'weapon' : 'char';
+    const h = hot.hover();
+    if (inp.menu('back') || inp.raw('KeyN')) {
+      this.forcePick = null;
+      audio.play('cancel');
+      return;
+    }
+    if (inp.menu('mleft')) fp.sel = Math.max(0, fp.sel - 1);
+    if (inp.menu('mright')) fp.sel = Math.min(list.length - 1, fp.sel + 1);
+    if (inp.menu('mup')) fp.sel = Math.max(0, fp.sel - C);
+    if (inp.menu('mdown')) fp.sel = Math.min(list.length - 1, fp.sel + C);
+    if (h?.startsWith('gf:') && hot.mouse.moved) fp.sel = Number(h.slice(3));
+    const row = Math.floor(fp.sel / C);
+    if (row < fp.scroll) fp.scroll = row;
+    if (row >= fp.scroll + GachaScene.FROWS) fp.scroll = row - GachaScene.FROWS + 1;
+    if ((h === 'gfclear' && hot.mouse.click) || inp.raw('KeyC')) {
+      delete this.forceNext[fk];
+      this.forcePick = null;
+      app.toast('[디버그] 다음 뽑기 지정 해제', '#80ffa0');
+      return;
+    }
+    if (inp.menu('ok') || (h?.startsWith('gf:') && hot.mouse.click)) {
+      const it = list[fp.sel];
+      this.forceNext[fk] = it.id;
+      this.forcePick = null;
+      audio.play('gem');
+      app.toast(`[디버그] 다음 뽑기 첫 장: ${it.name}`, '#80ffa0');
+    }
+  }
+
+  private renderForcePick(g: CanvasRenderingContext2D): void {
+    const fp = this.forcePick!;
+    const list = this.forceList();
+    const C = GachaScene.FCOLS;
+    const weapon = this.kind === 'weapon';
+    g.fillStyle = 'rgba(4,2,10,0.95)';
+    g.fillRect(0, 0, 480, 270);
+    panel(g, 20, 14, 440, 236, { border: '#80ffa0' });
+    text(g, `[디버그] 다음 뽑기에 나올 ${weapon ? '무기' : '영웅'} 지정`, 30, 20, { size: 10, color: '#80ffa0', bold: true });
+    text(g, '1회·10회 계약의 첫 장이 이것으로 나온다 (한 번 쓰면 해제, 천장 카운트는 그대로)', 30, 34, { size: 6, color: '#a8a0c0' });
+    const rows = Math.ceil(list.length / C);
+    for (let r = fp.scroll; r < Math.min(rows, fp.scroll + GachaScene.FROWS); r++) {
+      for (let c = 0; c < C; c++) {
+        const i = r * C + c;
+        const it = list[i];
+        if (!it) break;
+        const x = 30 + c * 47;
+        const y = 46 + (r - fp.scroll) * 46;
+        const sel = i === fp.sel;
+        g.fillStyle = sel ? rgba(RARITY_COL[it.rarity], 0.45) : rgba(RARITY_COL[it.rarity], 0.1);
+        g.fillRect(x, y, 44, 43);
+        g.strokeStyle = sel ? '#ffffff' : rgba(RARITY_COL[it.rarity], 0.6);
+        g.strokeRect(x + 0.5, y + 0.5, 43, 42);
+        g.save();
+        g.beginPath();
+        g.rect(x + 1, y + 1, 42, 30);
+        g.clip();
+        if (weapon) {
+          const w = WEAPON_MAP[it.id];
+          if (!drawWeaponArt(g, w.id, x + 9, y + 3, 26)) drawIcon(g, w.icon, x + 9, y + 3, 26, w.col);
+        } else g.drawImage(charArt(it.id, 'idle0'), x + 22 - 24, y + 33 - 44, 48, 48);
+        g.restore();
+        text(g, it.name.replace(/「.*」/, '').trim(), x + 22, y + 32, { size: 5, align: 'center', color: '#ffffff', maxW: 42 });
+        hot.add(`gf:${i}`, x, y, 44, 43);
+      }
+    }
+    if (fp.scroll > 0) text(g, '▲', 240, 40, { size: 7, align: 'center', color: '#c0b0e0' });
+    if (fp.scroll + GachaScene.FROWS < rows) text(g, '▼', 240, 230, { size: 7, align: 'center', color: '#c0b0e0' });
+    const cur = this.forceNext[weapon ? 'weapon' : 'char'];
+    const hov = hot.hover() === 'gfclear';
+    g.fillStyle = hov ? 'rgba(255,128,128,0.3)' : 'rgba(255,128,128,0.12)';
+    g.fillRect(360, 230, 92, 13);
+    g.strokeStyle = '#ff9090';
+    g.strokeRect(360.5, 230.5, 91, 12);
+    text(g, '지정 해제 (C)', 406, 233, { size: 6, align: 'center', color: '#ffb0b0' });
+    hot.add('gfclear', 360, 230, 92, 13);
+    text(g, cur ? `현재 지정: ${(weapon ? WEAPON_MAP[cur] : CHAR_MAP[cur]).name}` : '현재 지정 없음', 30, 233, { size: 6, color: '#80ffa0' });
+    keyHint(g, [['방향키', '선택'], [app.input.label('attack'), '지정'], ['C', '해제'], ['N / Esc', '닫기']]);
+  }
+
   private static readonly DCOLS = 5;
   private static readonly DROWS = 5;
 
@@ -582,6 +694,7 @@ export class GachaScene implements Scene {
     } else if (this.phase === 'reveal') this.renderReveal(g);
     if (this.picker) this.renderPicker(g);
     if (this.detail) this.renderDetail(g);
+    if (this.forcePick) this.renderForcePick(g);
     // 파티클
     g.save();
     g.globalCompositeOperation = 'lighter';
@@ -693,6 +806,18 @@ export class GachaScene implements Scene {
         if (!drawWeaponArt(g, w.id, x + 18, y + 4, 28)) drawIcon(g, w.icon, x + 18, y + 4, 28, w.col);
         text(g, w.name.replace(/「.*」/, '').trim(), x + 32, y + 36, { size: 6, align: 'center', color: '#ffe080', maxW: 62 });
       });
+    }
+    // [디버그] 다음 뽑기 지정 버튼 (배너 제목 오른쪽) + 지정 상태
+    if (app.debug) {
+      const cur = this.forceNext[k === 'weapon' ? 'weapon' : 'char'];
+      const hov = hot.hover() === 'gforce';
+      g.fillStyle = hov ? 'rgba(128,255,160,0.3)' : 'rgba(128,255,160,0.12)';
+      g.fillRect(196, 34, 82, 12);
+      g.strokeStyle = '#80ffa0';
+      g.strokeRect(196.5, 34.5, 81, 11);
+      const nm = cur ? (k === 'weapon' ? WEAPON_MAP[cur] : CHAR_MAP[cur]).name.replace(/「.*」/, '').trim() : '';
+      text(g, cur ? `다음: ${nm}` : '다음 뽑기 지정 (N)', 237, 36, { size: 6, align: 'center', color: '#80ffa0', maxW: 78 });
+      hot.add('gforce', 196, 34, 82, 12);
     }
     // 상세 보기 버튼 (배너 오른쪽 아래)
     {

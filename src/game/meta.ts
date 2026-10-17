@@ -46,13 +46,16 @@ export function pullCost(count: number): number {
 }
 
 /** 실제 뽑기 수행 + 보유 목록 반영. 영혼석 차감은 호출 측에서 검증 후 여기서 처리 */
-export function performPull(save: SaveData, kind: BannerKind, count: number, free: boolean, rand: () => number = Math.random): PullOutcome[] | null {
+/** forceFirst: [디버그] 이번 뽑기의 첫 장을 이 영웅·무기로 (천장 카운트는 그대로) */
+export function performPull(save: SaveData, kind: BannerKind, count: number, free: boolean, rand: () => number = Math.random, forceFirst?: string): PullOutcome[] | null {
   const cost = free ? 0 : pullCost(count);
   if (save.stones < cost) return null;
   save.stones -= cost;
   if (free) save.freePullUsed = true;
   // 10연은 유료·무료 모두 ★4 이상 확정
   const results = pullMany(bannerPool(kind, save), save.pity[kind], rand, count, free || count >= 10);
+  const forced = forceFirst ? (kind === 'weapon' ? WEAPON_MAP[forceFirst] : CHAR_MAP[forceFirst]) : undefined;
+  if (forced && results.length) results[0] = { id: forced.id, rarity: forced.rarity, pickup: false, pityAt: results[0].pityAt };
   save.stats.pulls += count;
   const out: PullOutcome[] = [];
   for (const r of results) {

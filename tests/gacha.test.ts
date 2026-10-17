@@ -236,3 +236,19 @@ describe('같은 등급 안 고정 비율 (에녹 = ★7 중 1%)', () => {
     for (const id of ['caelus', 'astral', 'ashen']) expect(Math.abs(cnt[id] / N - 0.33)).toBeLessThan(0.01);
   });
 });
+
+describe('[디버그] 다음 뽑기 지정', () => {
+  it('forceFirst를 주면 첫 장이 그 영웅·무기, 나머지는 평소대로', async () => {
+    const { performPull } = await import('../src/game/meta');
+    const { newSave } = await import('../src/game/save');
+    const s = newSave();
+    s.stones = 99999;
+    const r = performPull(s, 'char', 10, false, Math.random, 'enoch')!;
+    expect(r[0].id).toBe('enoch');
+    expect(r[0].rarity).toBe(7);
+    expect(r.length).toBe(10);
+    expect(s.chars.enoch).toBeTruthy();
+    const w = performPull(s, 'weapon', 1, false, Math.random, 'eternis')!;
+    expect(w[0].id).toBe('eternis');
+  });
+});

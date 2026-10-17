@@ -516,26 +516,31 @@ export const CHARACTERS_EX: CharDef[] = [
     skills: [
       {
         name: '잿불 창우',
-        desc: '하늘에서 붉은 창 7자루를 대각선으로 내리꽂는다. 창은 가까운 적들에게 나눠 날아가 꿰뚫고 폭발한다 (각 110% + 폭발 60%, 화상).',
+        desc: '머리 위 하늘에 성흔 구체 4개를 띄우고, 구체마다 붉은 창 3자루씩(모두 12자루)을 가까운 적들에게 대각선으로 사출한다 (각 110% + 폭발 60%, 화상).',
         cd: 8,
         act: {
-          dur: 38,
-          pose: [[0, 'castUp'], [26, 'cast']],
+          dur: 44,
+          pose: [[0, 'castUp'], [32, 'cast']],
           inv: [0, 12],
           ev: [
             { t: 2, k: 'sfx', s: 'cast' },
-            { t: 2, k: 'pic', name: 'ashen:emblem', dx: -20, dy: -60, s0: 20, s1: 70, life: 32, spin: 0.05 },
-            ...Array.from({ length: 7 }, (_, i): ActEvent => ({
-              t: 6 + i * 4,
-              k: 'proj',
-              aim: true,
-              dx: -40 + (i % 3) * 22,
-              dy: -84 - (i % 2) * 10,
-              m: 1.1,
-              p: { spr: 'spear', spd: 8, life: 70, w: 12, h: 12, col: '#ff3050', el: 'fire', st: 'burn', pierce: 2, boom: { r: 22, m: 0.6, el: 'fire', col: '#ff3050' }, boomPic: { name: 'ashen:burst', s0: 10, s1: 44, life: 12 }, pic: { name: 'ashen:spears', w: 26, rot: Math.PI / 2 } },
-            })),
-            { t: 6, k: 'sfx', s: 'throw' },
-            { t: 18, k: 'sfx', s: 'throw' },
+            // 창을 사출하는 성흔 구체 4개 (뒤쪽 하늘에 줄지어)
+            ...[0, 1, 2, 3].map((j): ActEvent => ({ t: 2 + j * 2, k: 'pic', name: 'ashen:emblem', dx: -44 + j * 22, dy: -70 - (j % 2) * 12, s0: 10, s1: 34, life: 38 - j * 2, spin: 0.06 })),
+            ...Array.from({ length: 12 }, (_, i): ActEvent => {
+              const j = i % 4; // 어느 구체에서 나가는지
+              return {
+                t: 8 + i * 2,
+                k: 'proj',
+                aim: true,
+                dx: -44 + j * 22,
+                dy: -70 - (j % 2) * 12,
+                m: 1.1,
+                p: { spr: 'spear', spd: 8, life: 70, w: 12, h: 12, col: '#ff3050', el: 'fire', st: 'burn', pierce: 2, boom: { r: 22, m: 0.6, el: 'fire', col: '#ff3050' }, boomPic: { name: 'ashen:burst', s0: 10, s1: 44, life: 12 }, pic: { name: 'ashen:spears', w: 26, rot: Math.PI / 2 } },
+              };
+            }),
+            { t: 8, k: 'sfx', s: 'throw' },
+            { t: 16, k: 'sfx', s: 'throw' },
+            { t: 24, k: 'sfx', s: 'throw' },
           ],
         },
       },
@@ -635,7 +640,7 @@ export const CHARACTERS_EX: CharDef[] = [
     skills: [
       {
         name: '성역 가르기',
-        desc: '정면을 크게 내려 벤 뒤(180%), 빛의 기둥 검격이 땅을 따라 길게 뻗으며 가까운 적을 쫓아간다 (유도, 관통 220%).',
+        desc: '정면을 크게 내려 벤 뒤(180%), 땅을 따라 빛의 기둥이 길게 솟구치며 앞으로 뻗어 나간다 (기둥마다 100%).',
         cd: 7,
         act: {
           dur: 34,
@@ -644,15 +649,17 @@ export const CHARACTERS_EX: CharDef[] = [
           ev: [
             { t: 4, k: 'sfx', s: 'swing_heavy' },
             { t: 7, k: 'hit', box: [-4, -44, 46, 62], m: 1.8, kb: 4, up: -2, hs: 6, el: 'holy', fx: { arc: 'down', r: 44, col: '#ffe8a0' }, shake: 4 },
-            // 땅을 따라 적을 쫓는 빛기둥 검격 (지나간 적은 모두 관통)
-            { t: 9, k: 'proj', dx: 30, dy: 0, p: { spr: 'wave', spd: 5, life: 80, w: 26, h: 52, col: '#ffe8a0', el: 'holy', pierce: 99, ground: true, home: 0.12, kb: 1, up: -2, pic: { name: 'luciel:pillar', w: 44 } }, m: 2.2 },
+            ...Array.from({ length: 8 }, (_, i): ActEvent[] => [
+              { t: 9 + i * 2, k: 'pic', name: 'luciel:pillar', dx: 38 + i * 26, dy: -16, s0: 40, s1: 54, life: 14 },
+              { t: 9 + i * 2, k: 'hit', box: [24 + i * 26, -46, 28, 60], m: 1.0, kb: 1, up: -2, hs: 1, el: 'holy' },
+            ]).flat(),
             { t: 9, k: 'sfx', s: 'explode' },
           ],
         },
       },
       {
         name: '타락한 검무',
-        desc: '정면을 쉬지 않고 난도질한 뒤(8회, 각 130% = 평타의 150%), 금빛 검기 5개를 한꺼번에 날린다 (각 120%, 관통).',
+        desc: '정면을 쉬지 않고 난도질한 뒤(8회, 각 130% = 평타의 150%), 금빛 검기 5개를 한꺼번에 날린다 (유도, 각 120%, 관통).',
         cd: 9,
         act: {
           dur: 48,
@@ -664,7 +671,7 @@ export const CHARACTERS_EX: CharDef[] = [
             ...[4, 12, 20, 28].map((t): ActEvent => ({ t, k: 'sfx', s: 'swing' })),
             { t: 38, k: 'sfx', s: 'swing_heavy' },
             { t: 38, k: 'pic', name: 'luciel:arc3', dx: 18, dy: -12, s0: 44, s1: 64, life: 10 },
-            { t: 38, k: 'proj', n: 5, spread: 12, p: { spr: 'crescent', spd: 6.5, life: 50, w: 20, h: 30, col: '#ffd060', el: 'holy', pierce: 99, pic: { name: 'luciel:arc2', w: 32 } }, m: 1.2, dx: 12, dy: -8 },
+            { t: 38, k: 'proj', n: 5, spread: 12, p: { spr: 'crescent', spd: 6.5, life: 70, w: 20, h: 30, col: '#ffd060', el: 'holy', pierce: 99, home: 0.1, pic: { name: 'luciel:arc2', w: 32 } }, m: 1.2, dx: 12, dy: -8 },
           ],
         },
       },

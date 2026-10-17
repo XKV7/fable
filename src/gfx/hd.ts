@@ -446,6 +446,9 @@ export interface HDDraw {
   flip: boolean;
   alpha: number;
   rot?: { ox: number; oy: number; a: number }; // 회전 (쓰러짐)
+  /** 월드 단위 그릴 칸 크기 (적·보스: 비율 확대·대형 보스). 주면 (x, y)가 칸의 왼쪽 위이고 좌우 반전은 칸 가운데 기준 */
+  w?: number;
+  h?: number;
   /** 이펙트 그림: 원본 시트의 잘라낼 칸, 월드 단위 크기, 중심 기준 회전, 가산 혼합 */
   fx?: { sx: number; sy: number; sw: number; sh: number; w: number; h: number; ang: number; add: boolean; squash: number };
 }
@@ -513,6 +516,14 @@ export function drawHDQueue(d: CanvasRenderingContext2D, shakeX: number, shakeY:
       if (f.ang) d.rotate(f.ang);
       if (q.flip) d.scale(-1, 1);
       d.drawImage(q.img, f.sx, f.sy, f.sw, f.sh, -f.w / 2, -f.h / 2, f.w, f.h);
+    } else if (q.w) {
+      const bw = q.w;
+      const bh = q.h ?? q.w;
+      if (q.flip) {
+        d.translate(q.x + bw / 2, q.y);
+        d.scale(-1, 1);
+        d.drawImage(q.img, -bw / 2, 0, bw, bh);
+      } else d.drawImage(q.img, q.x, q.y, bw, bh);
     } else {
       // 칸은 96×96(화면 48×48) 기준, 더 넓은 칸은 가운데를 맞춰 양옆으로 넓힌다
       const w = (q.img as HTMLCanvasElement).width / 2;

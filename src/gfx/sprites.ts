@@ -317,7 +317,7 @@ const DRAW: Record<string, Drawer> = {
   },
 };
 
-const HUMANOID_ANIM: Record<string, Record<string, PoseName>> = {
+export const HUMANOID_ANIM: Record<string, Record<string, PoseName>> = {
   default: { wind: 'windHigh', atk: 'slashDown', hurt: 'hurt' },
   bone_archer: { wind: 'shootWind', atk: 'shoot', hurt: 'hurt' },
   shadow_mage: { wind: 'castUp', atk: 'cast', hurt: 'hurt' },
@@ -332,7 +332,7 @@ const HUMANOID_ANIM: Record<string, Record<string, PoseName>> = {
 };
 
 /** AI 유형별 기본 공격 포즈 (HUMANOID_ANIM에 없는 인간형 적) */
-const AI_ANIM: Record<string, Record<string, PoseName>> = {
+export const AI_ANIM: Record<string, Record<string, PoseName>> = {
   archer: { wind: 'shootWind', atk: 'shoot', hurt: 'hurt' },
   caster: { wind: 'castUp', atk: 'cast', hurt: 'hurt' },
   turret: { wind: 'castUp', atk: 'cast', hurt: 'hurt' },

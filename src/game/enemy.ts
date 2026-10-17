@@ -2,6 +2,8 @@ import { CHAPTER_SCALE, ELITE_MULT, ENEMIES, type EnemyDef } from '../data/enemi
 import { audio } from '../core/audio';
 import { enemyFrame, tinted, white } from '../gfx/sprites';
 import { rgba } from '../gfx/pixel';
+import { enemyFrameHD } from '../gfx/enemyHD';
+import { hdQueue, hdState, worldAbove } from '../gfx/hd';
 import type { Room } from './room';
 import type { StatusId } from './types';
 import { newBody, Tile, type Body } from './world';
@@ -681,7 +683,8 @@ export class Enemy {
     return dir !== 0 && Math.sign(dir) === -this.facing;
   }
 
-  frame(): HTMLCanvasElement {
+  /** 지금 상태의 애니메이션 이름과 프레임 번호 */
+  private animFrame(): [string, number] {
     let anim = 'idle';
     let f = Math.floor(this.animT / 12);
     switch (this.state) {
@@ -706,12 +709,19 @@ export class Enemy {
         break;
     }
     if (this.blocks(-this.facing) && this.state === 'idle' && (this.def.id === 'royal_guard' || this.def.id === 'bone_shield')) anim = 'block';
-    return enemyFrame(this.def.id, anim, f);
+    return [anim, f];
+  }
+
+  frame(): HTMLCanvasElement {
+    return enemyFrame(this.def.id, ...this.animFrame());
   }
 
   render(g: CanvasRenderingContext2D, cx: number, cy: number, time: number): void {
     if (this.dead && this.deadT > 24) return;
-    const img = this.frame();
+    const [anim, af] = this.animFrame();
+    const img = enemyFrame(this.def.id, anim, af);
+    // 인간형 적은 영웅처럼 2배 정밀 그림을 고해상도 층에 (타이틀 데모·그림 없는 크리처는 기존 월드 경로)
+    const hd = hdState.off ? null : enemyFrameHD(this.def.id, anim, af);
     const sc = this.scale;
     const fw = img.width * sc;
     const fh = img.height * sc;
@@ -728,7 +738,11 @@ export class Enemy {
     }
     if (this.dead) g.globalAlpha = 1 - this.deadT / 24;
     const flip = this.facing < 0;
-    const draw = (im: HTMLCanvasElement, ox = 0, oy = 0): void => {
+    const draw = (im: HTMLCanvasElement, ox = 0, oy = 0, hdIm?: HTMLCanvasElement | null): void => {
+      if (hdIm) {
+        hdQueue.push({ img: hdIm, x: x + ox, y: y + oy, flip, alpha: g.globalAlpha, w: fw, h: fh });
+        return;
+      }
       if (flip) {
         g.save();
         g.translate(x + fw / 2 + ox, 0);
@@ -740,26 +754,28 @@ export class Enemy {
     if (this.elite || this.enraged) {
       const ac = this.enraged ? '#ff3030' : '#ff5a8a';
       const t = tinted(img, ac);
+      const th = hd && tinted(hd, ac);
       g.globalAlpha *= 0.55 + 0.25 * Math.sin(time * 0.15);
-      draw(t, -1, 0);
-      draw(t, 1, 0);
-      draw(t, 0, -1);
+      draw(t, -1, 0, th);
+      draw(t, 1, 0, th);
+      draw(t, 0, -1, th);
       g.globalAlpha = this.dead ? 1 - this.deadT / 24 : this.state === 'spawn' ? 1 - this.st / 50 : 1;
     }
     let shakeX = 0;
     if (this.state === 'wind' || this.state === 'skill') shakeX = (time % 4 < 2 ? 1 : -1) * (this.st < 12 ? 1 : 0);
-    draw(img, shakeX, 0);
-    if (this.flash > 0 || this.dead) draw(white(img), shakeX, 0);
+    draw(img, shakeX, 0, hd);
+    if (this.flash > 0 || this.dead) draw(white(img), shakeX, 0, hd && white(hd));
     else if (this.status.freeze) {
       g.globalAlpha *= 0.6;
-      draw(tinted(img, '#bfefff'));
+      draw(tinted(img, '#bfefff'), 0, 0, hd && tinted(hd, '#bfefff'));
     } else if ((this.state === 'wind' || this.state === 'skill' || this.state === 'tele') && (time >> 2) % 2 === 0) {
       g.globalAlpha *= 0.45;
-      draw(tinted(img, '#ff3030'));
+      draw(tinted(img, '#ff3030'), 0, 0, hd && tinted(hd, '#ff3030'));
     }
     g.restore();
-    // 예고 느낌표
+    // 예고 느낌표 (고해상도 그림에 가리지 않게 위 층에)
     if ((this.state === 'wind' || this.state === 'skill' || this.state === 'tele') && !this.dead) {
+      g = worldAbove(g);
       const ex = Math.round(this.cx - cx);
       const ey = Math.round(this.b.y - cy - 10 - (this.isBoss ? 8 : 0));
       g.fillStyle = '#ff3030';

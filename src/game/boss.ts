@@ -3,6 +3,8 @@ import type { EnemyDef } from '../data/enemies';
 import { audio } from '../core/audio';
 import { orbFrame } from '../gfx/orb';
 import { ENEMY_LOOKS, ignisFrame, lookFrame, mycoraFrame, white, tinted, charFrame } from '../gfx/sprites';
+import { bossFrameHD } from '../gfx/enemyHD';
+import { charFrameHD, hdQueue, hdState, worldAbove } from '../gfx/hd';
 import { CHAR_MAP } from '../data/characters';
 import type { FieldVis, PoseName, StatusId } from './types';
 import { Enemy } from './enemy';
@@ -1838,6 +1840,8 @@ export class Boss extends Enemy {
   override render(g: CanvasRenderingContext2D, cx: number, cy: number, time: number): void {
     if (this.dead && this.deadT > 60) return;
     let img: HTMLCanvasElement;
+    // 인간형 보스·거울 보스: 2배 정밀 그림(96칸)을 월드 96칸에 그대로 → 고해상도 층 (없으면 기존 경로)
+    let hd: HTMLCanvasElement | null = null;
     let sc = 1;
     let footOff = 44;
     const f = Math.floor(this.animT / 10);
@@ -1863,6 +1867,7 @@ export class Boss extends Enemy {
         if (this.anim === 'move') pose = (['run0', 'run1', 'run2', 'run3', 'run4', 'run5'] as PoseName[])[Math.floor(this.animT / 6) % 6];
         else if (this.anim === 'idle') pose = f % 2 ? 'idle1' : 'idle0';
         img = this.mirrorOf ? charFrame(this.mirrorOf, pose) : lookFrame(`b:${this.bd.id}`, ENEMY_LOOKS[this.bd.id], pose);
+        if (!hdState.off) hd = this.mirrorOf ? charFrameHD(this.mirrorOf, pose) : bossFrameHD(this.bd.id, pose);
       }
     }
     const fw = img.width * sc;
@@ -1873,7 +1878,11 @@ export class Boss extends Enemy {
     if (this.dead) g.globalAlpha = 1 - this.deadT / 60;
     if (this.intro > 0) g.globalAlpha = Math.min(1, (100 - this.intro) / 40);
     const flip = this.facing < 0 && this.bd.id !== 'mycora';
-    const draw = (im: HTMLCanvasElement, ox = 0, oy = 0): void => {
+    const draw = (im: HTMLCanvasElement, ox = 0, oy = 0, hdIm?: HTMLCanvasElement | null): void => {
+      if (hdIm) {
+        hdQueue.push({ img: hdIm, x: x + ox, y: y + oy, flip, alpha: g.globalAlpha, w: fw, h: fh });
+        return;
+      }
       if (flip) {
         g.save();
         g.translate(x + fw / 2 + ox, 0);
@@ -1884,49 +1893,58 @@ export class Boss extends Enemy {
     };
     // 오라
     const aura = tinted(img, this.bd.col);
+    const auraHD = hd && tinted(hd, this.bd.col);
     const a0 = g.globalAlpha;
     g.globalAlpha = a0 * (0.35 + 0.2 * Math.sin(time * 0.1) + (this.phase > 0 ? 0.2 : 0));
-    draw(aura, -2, 0);
-    draw(aura, 2, 0);
-    draw(aura, 0, -2);
+    draw(aura, -2, 0, auraHD);
+    draw(aura, 2, 0, auraHD);
+    draw(aura, 0, -2, auraHD);
     g.globalAlpha = a0;
     let sx = 0;
     if (this.state === 'wind' && (time >> 1) % 2) sx = 1;
-    draw(img, sx);
+    draw(img, sx, 0, hd);
     if (this.flash > 0 || this.dead) {
       g.globalAlpha = a0 * (this.dead ? 1 : 0.55);
-      draw(white(img), sx);
+      draw(white(img), sx, 0, hd && white(hd));
       g.globalAlpha = a0;
     }
     else if (this.status.freeze) {
       g.globalAlpha = a0 * 0.5;
-      draw(tinted(img, '#bfefff'));
+      draw(tinted(img, '#bfefff'), 0, 0, hd && tinted(hd, '#bfefff'));
     } else if (this.state === 'wind' && (time >> 2) % 2 === 0) {
       g.globalAlpha = a0 * 0.35;
-      draw(tinted(img, '#ff3030'));
+      draw(tinted(img, '#ff3030'), 0, 0, hd && tinted(hd, '#ff3030'));
     }
     g.restore();
+    // 고해상도 그림보다 위에 와야 하는 것(분열체 체력 바·그림자 눈빛)은 위 층에
+    const top = worldAbove(g);
     // 분열체: 머리 위 체력 바 (본체 체력은 HUD)
     if (this.twin && !this.dead && this.intro < 60) {
       const bw = 44;
       const bx = Math.round(this.cx - bw / 2 - cx);
       const by = Math.round(this.b.y - 16 - cy);
-      g.fillStyle = 'rgba(10,4,12,0.8)';
-      g.fillRect(bx - 1, by - 1, bw + 2, 5);
-      g.fillStyle = '#d02050';
-      g.fillRect(bx, by, Math.max(0, Math.round((bw * this.hp) / this.maxHp)), 3);
-      g.fillStyle = '#ffd0e0';
-      g.fillRect(bx, by, Math.max(0, Math.round((bw * this.hp) / this.maxHp)), 1);
+      top.fillStyle = 'rgba(10,4,12,0.8)';
+      top.fillRect(bx - 1, by - 1, bw + 2, 5);
+      top.fillStyle = '#d02050';
+      top.fillRect(bx, by, Math.max(0, Math.round((bw * this.hp) / this.maxHp)), 3);
+      top.fillStyle = '#ffd0e0';
+      top.fillRect(bx, by, Math.max(0, Math.round((bw * this.hp) / this.maxHp)), 1);
     }
     // 분신 돌진
     for (const c of this.clones) {
       if (c.done || c.t < 1) continue;
-      const base = this.mirrorOf ? charFrame(this.mirrorOf, c.t > 36 ? 'dash' : 'thrustWind') : lookFrame(`b:${this.bd.id}`, ENEMY_LOOKS[this.bd.id], c.t > 36 ? 'dash' : 'thrustWind');
+      const cp: PoseName = c.t > 36 ? 'dash' : 'thrustWind';
+      const base = this.mirrorOf ? charFrame(this.mirrorOf, cp) : lookFrame(`b:${this.bd.id}`, ENEMY_LOOKS[this.bd.id], cp);
       const im = tinted(base, this.ec('#9a6bff'));
-      g.save();
-      g.globalAlpha = Math.min(1, c.t / 20) * 0.75;
       const cxp = Math.round(c.x - 24 - cx);
       const cyp = Math.round(c.y - 44 - cy);
+      const cHD = hdState.off ? null : this.mirrorOf ? charFrameHD(this.mirrorOf, cp) : bossFrameHD(this.bd.id, cp);
+      if (cHD) {
+        hdQueue.push({ img: tinted(cHD, this.ec('#9a6bff')), x: cxp, y: cyp, flip: c.dir < 0, alpha: Math.min(1, c.t / 20) * 0.75 });
+        continue;
+      }
+      g.save();
+      g.globalAlpha = Math.min(1, c.t / 20) * 0.75;
       if (c.dir < 0) {
         g.translate(cxp + 24, 0);
         g.scale(-1, 1);
@@ -1937,19 +1955,24 @@ export class Boss extends Enemy {
     // 계약의 그림자
     for (const s of this.shadows) {
       if (s.done || s.t < 1) continue;
-      const im = tinted(charFrame(s.id, s.t > 40 ? 'thrust' : 'thrustWind'), '#2a0e40');
-      g.save();
-      g.globalAlpha = Math.min(1, s.t / 20) * 0.9;
+      const sp: PoseName = s.t > 40 ? 'thrust' : 'thrustWind';
       const sxp = Math.round(s.x - 24 - cx);
       const syp = Math.round(s.y - 44 - cy);
-      if (s.dir < 0) {
-        g.translate(sxp + 24, 0);
-        g.scale(-1, 1);
-        g.drawImage(im, -24, syp);
-      } else g.drawImage(im, sxp, syp);
-      g.restore();
-      g.fillStyle = '#ff40c0';
-      g.fillRect(Math.round(s.x - cx) + s.dir * 2, Math.round(s.y - 34 - cy), 2, 1);
+      const sHD = hdState.off ? null : charFrameHD(s.id, sp);
+      if (sHD) hdQueue.push({ img: tinted(sHD, '#2a0e40'), x: sxp, y: syp, flip: s.dir < 0, alpha: Math.min(1, s.t / 20) * 0.9 });
+      else {
+        const im = tinted(charFrame(s.id, sp), '#2a0e40');
+        g.save();
+        g.globalAlpha = Math.min(1, s.t / 20) * 0.9;
+        if (s.dir < 0) {
+          g.translate(sxp + 24, 0);
+          g.scale(-1, 1);
+          g.drawImage(im, -24, syp);
+        } else g.drawImage(im, sxp, syp);
+        g.restore();
+      }
+      top.fillStyle = '#ff40c0';
+      top.fillRect(Math.round(s.x - cx) + s.dir * 2, Math.round(s.y - 34 - cy), 2, 1);
     }
   }
 }

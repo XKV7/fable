@@ -9,10 +9,16 @@ export interface StoryDef {
   route: number[][]; // 단계별 테마 (index = 단계 - 1)
   finalStage: number; // 이 단계의 보스를 쓰러뜨리면 스토리 클리어
   trueStage?: number; // 클리어 후 선택 가능한 진엔딩 단계
-  power: { hp: number; atk: number }; // 적·보스 체력·공격력 배율 (스토리 1 = 1). 진행 단계 배율은 스토리마다 1장부터 다시 곱해진다
+  power: { hp: number; atk: number }; // 적·보스 체력·공격력 배율 (스토리 1 = 1, n번째 = 1.1^(n-1) — storyPower). 진행 단계 배율은 스토리마다 1장부터 다시 곱해진다
   intro: string[]; // 스토리를 처음 시작할 때 나오는 이야기
   ending: string[]; // 스토리를 클리어했을 때 나오는 이야기
   cards: string[]; // 단계별 장 시작 문구
+}
+
+/** 스토리 n의 적·보스 체력·공격력 배율 = 스토리 1(a) × 1.1^(n-1) */
+export function storyPower(n: number): { hp: number; atk: number } {
+  const k = Math.pow(1.1, n - 1);
+  return { hp: k, atk: k };
 }
 
 export const STORIES: StoryDef[] = [
@@ -23,7 +29,7 @@ export const STORIES: StoryDef[] = [
     route: [[1], [2, 5], [3], [6], [4], [7]],
     finalStage: 5,
     trueStage: 6,
-    power: { hp: 1, atk: 1 },
+    power: storyPower(1),
     intro: [
       '한때 빛나던 왕국 아스펠은 하룻밤 사이에 무너졌다.',
       '왕은 죽음을 거부했고, 스스로 「끝없는 왕」이 되어',
@@ -53,7 +59,7 @@ export const STORIES: StoryDef[] = [
     sub: '혼을 삼키는 별을 꺼뜨려라',
     route: [[11], [12], [13], [14], [15], [16]],
     finalStage: 6,
-    power: { hp: 1.5, atk: 1.3 },
+    power: storyPower(2),
     intro: [
       '왕이 쓰러진 밤, 풀려난 혼들은 별이 되기 위해 하늘로 올랐다.',
       '그러나 하늘 끝에는 이미 죽은 별 하나가 기다리고 있었다.',
@@ -81,7 +87,7 @@ export const STORIES: StoryDef[] = [
     sub: '피의 여제의 대관식을 막아라',
     route: [[21], [22], [23], [24], [25], [26]],
     finalStage: 6,
-    power: { hp: 2, atk: 1.6 },
+    power: storyPower(3),
     intro: [
       '동쪽의 옛 제국 베르미온. 백 년 전 피의 저주로 멸망한 땅.',
       '별이 꺼지던 밤, 그 땅의 무덤에서 핏빛 왕관이 다시 빛났다.',
@@ -111,7 +117,7 @@ export const STORIES: StoryDef[] = [
     sub: '최초의 계약자를 만나라',
     route: [[31], [32], [33], [34], [35], [36]],
     finalStage: 6,
-    power: { hp: 2.6, atk: 1.9 },
+    power: storyPower(4),
     intro: [
       '모든 계약에는 같은 문장이 새겨져 있다.',
       '그 문장을 처음 그린 자 — 「최초의 계약자」 아르케.',
@@ -144,7 +150,7 @@ export const STORIES: StoryDef[] = [
     sub: '하늘의 상처를 꿰매라',
     route: [[41], [42], [43], [44], [45], [46]],
     finalStage: 6,
-    power: { hp: 3.2, atk: 2.2 },
+    power: storyPower(5),
     intro: [
       '첫 번째 계약이 풀린 밤, 하늘이 찢어졌다.',
       '균열 너머에서 쏟아진 폭풍이 하늘 항구를 삼키고,',
@@ -177,7 +183,7 @@ export const STORIES: StoryDef[] = [
     sub: '세계 너머의 전령을 막아라',
     route: [[51], [52], [53], [54], [55], [56]],
     finalStage: 6,
-    power: { hp: 3.9, atk: 2.5 },
+    power: storyPower(6),
     intro: [
       '세계는 끝없는 검은 바다 위에 떠 있는 한 방울의 빛이었다.',
       '첫 번째 계약은 그 빛을 감싼 껍질이었고 — 이제 그 껍질은 없다.',

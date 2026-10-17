@@ -689,7 +689,7 @@ export const CHARACTERS_EX: CharDef[] = [
     // 스프라이트는 전용 시트(sheets/arien). ★6 첫 궁극기(X): 모든 적을 꿰뚫으며 쫓아가는 화살 하나 (야카 화살)
     id: 'arien', name: '아리엔', title: '바람의 잎사귀를 짓는 자', rarity: 6, type: 'ranged', crest: 'swift',
     lore: '「…바람이 불어오는 곳에, 나는 언제나 있어.」 잎사귀로 화살을 짓는 숲의 궁수. 그녀가 놓은 화살은 바람을 타고 끝까지 표적을 쫓는다.',
-    atk: 56, hp: 232, speed: 2.15, fx: '#a0ff80',
+    atk: 38, hp: 232, speed: 2.15, fx: '#a0ff80',
     look: { skin: '#f4ecf0', hair: '#e8ecf0', hairStyle: 'hood', body: '#1e2a1e', trim: '#a0ff80', legs: '#14141a', boots: '#e0e8e0', cape: '#2a3a24', eye: '#80ff80', weapon: 'bow', wcol: '#d0e8c0', wcol2: '#3a5a30', build: 'slim', glow: '#a0ff80' },
     combo: [
       // 평타: 유도 화살 → 유도 화살 → 유도 화살 3발

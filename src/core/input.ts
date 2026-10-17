@@ -8,6 +8,7 @@ export type Action =
   | 'dash'
   | 'skill1'
   | 'skill2'
+  | 'ult'
   | 'swap'
   | 'interact'
   | 'item'
@@ -15,7 +16,7 @@ export type Action =
   | 'pause';
 
 export const ACTIONS: Action[] = [
-  'left', 'right', 'up', 'down', 'jump', 'attack', 'dash', 'skill1', 'skill2', 'swap', 'interact', 'item', 'build', 'pause',
+  'left', 'right', 'up', 'down', 'jump', 'attack', 'dash', 'skill1', 'skill2', 'ult', 'swap', 'interact', 'item', 'build', 'pause',
 ];
 
 export const ACTION_LABELS: Record<Action, string> = {
@@ -28,6 +29,7 @@ export const ACTION_LABELS: Record<Action, string> = {
   dash: '대시',
   skill1: '스킬 1',
   skill2: '스킬 2',
+  ult: '궁극기 (★6·★7)',
   swap: '교대',
   interact: '상호작용',
   item: '소모 아이템',
@@ -51,6 +53,7 @@ export const DEFAULT_BINDINGS: Bindings = {
   dash: { keys: ['ShiftLeft', 'ShiftRight'], pad: [1, 7] },
   skill1: { keys: ['KeyE'], pad: [4] },
   skill2: { keys: ['KeyQ'], pad: [5] }, // 스킬 1 = E, 스킬 2 = Q
+  ult: { keys: ['KeyX'], pad: [10] }, // 궁극기 = X
   swap: { keys: ['KeyG'], pad: [3] },
   interact: { keys: ['KeyF'], pad: [11] },
   item: { keys: ['KeyK'], pad: [6] },
@@ -69,6 +72,7 @@ export const ARROW_BINDINGS: Bindings = {
   dash: { keys: ['KeyZ', 'ShiftLeft'], pad: [1, 7] },
   skill1: { keys: ['KeyA'], pad: [4] },
   skill2: { keys: ['KeyS'], pad: [5] },
+  ult: { keys: ['KeyV'], pad: [10] },
   swap: { keys: ['KeyD'], pad: [3] },
   interact: { keys: ['KeyF'], pad: [11] },
   item: { keys: ['KeyQ'], pad: [6] },

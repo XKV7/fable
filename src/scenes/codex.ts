@@ -206,13 +206,15 @@ export class CodexScene implements Scene {
       [`기본 공격 (${c.combo.length}타 콤보)`, `${c.combo.length}타 콤보 · 공중 공격 · 대시 공격`],
       [`[스킬1] ${c.skills[0].name} (${c.skills[0].cd}초)`, c.skills[0].desc],
       [`[스킬2] ${c.skills[1].name} (${c.skills[1].cd}초)`, c.skills[1].desc],
+      ...(c.ult ? [[`[궁극기 ${app.input.label('ult')}] ${c.ult.name} (${c.ult.cd}초)`, c.ult.desc] as [string, string]] : []),
       [c.swap.name, c.swap.desc],
       [`[패시브] ${c.passive.name}`, c.passive.desc],
     ];
+    const gap = rows.length > 5 ? 15 : 18;
     for (const [n, d] of rows) {
-      text(g, n, 206, y, { size: 6, color: '#ffe080' });
+      text(g, n, 206, y, { size: 6, color: n.startsWith('[궁극기') ? '#ff9ae0' : '#ffe080' });
       text(g, d, 206, y + 8, { size: 6, color: '#c8c0d8', maxW: 150 });
-      y += 18;
+      y += gap;
     }
     text(g, '각성', 362, 164, { size: 7, color: '#e0d0ff', bold: true });
     c.awaken.forEach((a, i) => {

@@ -21,7 +21,7 @@ import type { SaveData } from './save';
 import type { ActEvent, CondKey, Look, EffectDo, Element, FieldDef, ProjDef, Stats, StatusId, SummonDef } from './types';
 import { Tile, TS, World, type Body } from './world';
 import { makeCanvas } from '../gfx/pixel';
-import { hdState, worldAbove } from '../gfx/hd';
+import { hdFx, hdState, worldAbove } from '../gfx/hd';
 
 export interface HitOpts {
   m: number;
@@ -546,6 +546,7 @@ export class Room {
         this.hooks.onBossDefeated?.(this.boss);
       }
     }
+    this.updateYaka();
     for (const p of this.projs) {
       if (p.team === 'enemy' && this.timestop > 0) continue;
       p.update(this);
@@ -708,11 +709,13 @@ export class Room {
         return 'skill';
       case 'swap':
         return 'swap';
+      case 'ult':
+        return 'skill';
     }
   }
 
   private modOf(k: ActKind): { dmg: number; count: number; cd: number; size: number } {
-    const t = k === 'skill1' ? 'skill1' : k === 'skill2' ? 'skill2' : k === 'swap' ? 'swap' : 'combo';
+    const t = k === 'skill1' ? 'skill1' : k === 'skill2' ? 'skill2' : k === 'swap' ? 'swap' : k === 'ult' ? 'ult' : 'combo';
     return this.build.modFor(t);
   }
 
@@ -866,6 +869,13 @@ export class Room {
       case 'chain':
         this.chain(p.cx, p.cy, ev.n + mod.count, ev.m * dm, this.kindOf(k));
         break;
+      case 'yaka': {
+        // 추적 화살 발사 (손 앞에서 바라보는 방향으로)
+        this.yaka = { x: p.cx + f * 12, y: p.cy - 6, ang: f > 0 ? 0 : Math.PI, t: 0, ev, m: ev.m * dm, kind: this.kindOf(k), tgt: null, cd: new Map(), trail: [], hits: 0 };
+        audio.play('arrow', 0.6);
+        this.flash(ev.col, 0.25);
+        break;
+      }
       case 'marks': {
         // 가까운 적 n명 자리에 마법진 → delay 뒤 그 자리 폭발 (적이 없으면 전방 한 곳)
         const kind = this.kindOf(k);
@@ -886,6 +896,89 @@ export class Room {
         if (spots.length) this.later(ev.delay, () => audio.play('explode'));
         break;
       }
+    }
+  }
+
+  // ─────────── 추적 화살 (궁극기) ───────────
+  yaka: { x: number; y: number; ang: number; t: number; ev: Extract<ActEvent, { k: 'yaka' }>; m: number; kind: DmgKind; tgt: Enemy | null; cd: Map<Enemy, number>; trail: { x: number; y: number }[]; hits: number } | null = null;
+
+  /** 모든 적을 꿰뚫으며 다음 적으로 방향을 틀어 날아다닌다. 벽 무시. 적이 없으면 플레이어에게 돌아와 사라진다 */
+  private updateYaka(): void {
+    const y = this.yaka;
+    if (!y) return;
+    const ev = y.ev;
+    y.t++;
+    for (const [e, c] of y.cd) if (c <= 1) y.cd.delete(e); else y.cd.set(e, c - 1);
+    const alive = this.allEnemies().filter((e) => !e.dead && e.state !== 'spawn' && e.def.ai !== 'dummy');
+    if (!y.tgt || y.tgt.dead || y.cd.has(y.tgt)) {
+      const free = alive.filter((e) => !y.cd.has(e));
+      const pool = free.length ? free : alive;
+      y.tgt = pool.sort((a, b) => Math.hypot(a.cx - y.x, a.cy - y.y) - Math.hypot(b.cx - y.x, b.cy - y.y))[0] ?? null;
+    }
+    const p = this.player;
+    const home = !y.tgt || y.t >= ev.life;
+    const tx = home ? p.cx : y.tgt!.cx;
+    const ty = home ? p.cy - 6 : y.tgt!.cy;
+    const want = Math.atan2(ty - y.y, tx - y.x);
+    let da = want - y.ang;
+    while (da > Math.PI) da -= Math.PI * 2;
+    while (da < -Math.PI) da += Math.PI * 2;
+    const turn = 0.2 + Math.min(0.25, y.t * 0.002);
+    y.ang += Math.max(-turn, Math.min(turn, da));
+    const spd = ev.spd * (home ? 1.2 : 1);
+    y.x += Math.cos(y.ang) * spd;
+    y.y += Math.sin(y.ang) * spd;
+    y.trail.push({ x: y.x, y: y.y });
+    if (y.trail.length > 16) y.trail.shift();
+    if (y.t % 2 === 0) this.fx.parts.push({ x: y.x, y: y.y, vx: (Math.random() - 0.5) * 0.6, vy: (Math.random() - 0.5) * 0.6, life: 0, max: 18, col: ev.col, size: 1, grav: 0, kind: 'px', drag: 0.96 });
+    // 닿은 적 모두 꿰뚫음 (같은 적은 hitCd마다)
+    for (const e of alive) {
+      if (y.cd.has(e)) continue;
+      if (y.x < e.b.x - 6 || y.x > e.b.x + e.b.w + 6 || y.y < e.b.y - 6 || y.y > e.b.y + e.b.h + 6) continue;
+      y.cd.set(e, ev.hitCd);
+      y.hits++;
+      this.damageEnemy(e, { m: y.m, kind: y.kind, el: ev.el, st: ev.st, kb: 0.5, up: 0, hs: 2, dir: Math.cos(y.ang) >= 0 ? 1 : -1 });
+      this.fx.burst(e.cx, e.cy, ev.col, 8, 2);
+      if (y.hits % 3 === 0) audio.play('hit_ranged', 1.2);
+      if (e === y.tgt) y.tgt = null;
+    }
+    if (home && Math.hypot(p.cx - y.x, p.cy - 6 - y.y) < 14) {
+      this.fx.burst(y.x, y.y, ev.col, 16, 2.5);
+      this.fx.ring(y.x, y.y, ev.col, 24);
+      this.yaka = null;
+    } else if (y.t > ev.life + 240) this.yaka = null; // 안전장치
+  }
+
+  private renderYaka(g: CanvasRenderingContext2D, cx: number, cy: number): void {
+    const y = this.yaka;
+    if (!y) return;
+    g.save();
+    g.globalCompositeOperation = 'lighter';
+    for (let i = 1; i < y.trail.length; i++) {
+      const a = y.trail[i - 1];
+      const b = y.trail[i];
+      g.strokeStyle = rgba(y.ev.col, (i / y.trail.length) * 0.8);
+      g.lineWidth = 1 + (i / y.trail.length) * 2;
+      g.beginPath();
+      g.moveTo(Math.round(a.x - cx), Math.round(a.y - cy));
+      g.lineTo(Math.round(b.x - cx), Math.round(b.y - cy));
+      g.stroke();
+    }
+    g.restore();
+    g.lineWidth = 1;
+    // 왼쪽으로 날 때는 뒤집어 위아래가 거꾸로 되지 않게 (투사체 그림과 같은 규칙)
+    const left = Math.cos(y.ang) < 0;
+    const rot = y.ev.picRot ?? 0;
+    const ang = left ? y.ang - Math.PI + rot : y.ang - rot;
+    if (!y.ev.pic || !hdFx(y.ev.pic, Math.round(y.x - cx), Math.round(y.y - cy), y.ev.picW ?? 30, { ang, flip: left })) {
+      g.save();
+      g.translate(Math.round(y.x - cx), Math.round(y.y - cy));
+      g.rotate(y.ang);
+      g.fillStyle = '#ffffff';
+      g.fillRect(-10, -1, 16, 2);
+      g.fillStyle = y.ev.col;
+      g.fillRect(4, -2, 4, 4);
+      g.restore();
     }
   }
 
@@ -1700,6 +1793,7 @@ export class Room {
     // 고해상도 영웅은 월드 다음에 확대 화면에 그려지므로, 그 위에 와야 할 것들은 위 층에 그린다
     g = worldAbove(g);
     for (const p of this.projs) p.render(g, cx, cy, t);
+    this.renderYaka(g, cx, cy);
     this.fx.renderFront(g, cx, cy);
     // 예고 표시
     for (const m of this.markers) {

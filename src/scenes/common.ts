@@ -13,6 +13,7 @@ export function readPlayerInput(i: Input): PlayerInput {
     dashP: i.pressed('dash'),
     s1P: i.pressed('skill1'),
     s2P: i.pressed('skill2'),
+    ultP: i.pressed('ult'),
     swapP: i.pressed('swap'),
     interactP: i.pressed('interact'),
     itemP: i.pressed('item'),

@@ -106,6 +106,20 @@ export class Hud {
       text(g, input.label(i === 0 ? 'skill1' : 'skill2'), x + 1, y + 10, { size: 5, color: '#ffffff', bold: true });
       if (p.skillCd[i] > 0) text(g, p.skillCd[i].toFixed(p.skillCd[i] < 3 ? 1 : 0), x + 8, y + 4, { size: 6, align: 'center', color: '#ffffff', bold: true });
     }
+    // 궁극기 (★6·★7 중 궁극기가 있는 영웅만) — 소모품 칸 왼쪽
+    if (def.ult) {
+      const x = PW - 34;
+      const y = 21;
+      const ready = p.ultCd <= 0;
+      g.fillStyle = ready ? shade(def.fx, -0.35) : shade(def.fx, -0.65);
+      g.fillRect(x, y, 16, 16);
+      drawIcon(g, 'star', x + 3, y + 3, 10, ready ? '#ffffff' : def.fx);
+      cdOverlay(g, x, y, 16, p.ultCd / Math.max(0.01, p.ultMax));
+      g.strokeStyle = ready ? (Math.floor(Date.now() / 250) % 2 ? '#ffffff' : def.fx) : '#3a3048';
+      g.strokeRect(x + 0.5, y + 0.5, 15, 15);
+      text(g, input.label('ult'), x + 1, y + 10, { size: 5, color: '#ffffff', bold: true });
+      if (!ready) text(g, p.ultCd.toFixed(0), x + 8, y + 4, { size: 6, align: 'center', color: '#ffffff', bold: true });
+    }
     // 대시 충전
     const dc = 1 + room.build.flag('dashCharges');
     for (let i = 0; i < dc; i++) {

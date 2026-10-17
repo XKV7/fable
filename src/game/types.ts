@@ -205,6 +205,8 @@ export type ActEvent =
   | { t: number; k: 'plunge'; vy: number; m: number; r: number; el?: Element; st?: StatusId }
   | { t: number; k: 'nova'; r: number; m: number; el?: Element; st?: StatusId; up?: number; pull?: boolean; col?: string }
   | { t: number; k: 'chain'; n: number; m: number }
+  /** 추적 화살: 벽을 무시하고 모든 적을 꿰뚫으며 다음 적으로 방향을 틀어 날아다닌다 (life 프레임). 같은 적은 hitCd 프레임마다 한 번 */
+  | { t: number; k: 'yaka'; m: number; life: number; spd: number; hitCd: number; pic?: string; picW?: number; picRot?: number; col: string; el?: Element; st?: StatusId }
   /** 가까운 적 n명의 자리에 마법진(pic)을 새기고 delay 프레임 뒤 그 자리에서 폭발(반경 r, 공격력 m) */
   | { t: number; k: 'marks'; n: number; range: number; r: number; m: number; delay: number; pic: string; boom?: string; el?: Element; st?: StatusId; col?: string };
 
@@ -219,10 +221,12 @@ export interface ActionDef {
   ev: ActEvent[];
   landEnd?: boolean;
   airOk?: boolean;
+  /** 추적 화살(yaka)이 날아다니는 동안 동작을 끝내지 않는다 (캐릭터는 그 자리에서 못 움직임) */
+  holdYaka?: boolean;
 }
 
 export interface ActionMods {
-  target: 'skill1' | 'skill2' | 'swap' | 'combo' | 'all';
+  target: 'skill1' | 'skill2' | 'swap' | 'combo' | 'ult' | 'all';
   dmg?: number; // 피해 배율 가산 (0.3 = +30%)
   count?: number; // 투사체/메테오/소환 수 추가
   cd?: number; // 쿨타임 감소(초)
@@ -281,6 +285,8 @@ export interface CharDef {
   swap: { name: string; desc: string; act: ActionDef };
   passive: { name: string; desc: string; effects: Effect[] };
   awaken: [AwakenDef, AwakenDef, AwakenDef, AwakenDef, AwakenDef];
+  /** 궁극기 (★6·★7, X 키) */
+  ult?: SkillDef;
 }
 
 export interface WeaponDef {

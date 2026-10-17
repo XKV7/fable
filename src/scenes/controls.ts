@@ -29,7 +29,7 @@ export class ControlsScene implements Scene {
     text(g, '키보드', 120, 38, { size: 7, color: '#8a8098' });
     ACTIONS.forEach((a, i) => {
       const b = app.input.bindings[a];
-      const y = 52 + i * 14;
+      const y = 50 + i * 13;
       text(g, ACTION_LABELS[a], 26, y, { size: 7, color: '#f0e8d8' });
       text(g, b.keys.map(keyName).join(' / '), 120, y, { size: 7, color: '#ffe080', maxW: 100 });
     });

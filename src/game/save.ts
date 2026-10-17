@@ -64,7 +64,7 @@ export interface SaveData {
 
 export const SAVE_KEY = 'pact_save_v1';
 /** 기본 키 배치가 바뀌면 올린다 — 이전 버전의 저장된 키 설정은 새 기본값으로 교체 */
-export const BIND_VER = 4;
+export const BIND_VER = 5;
 
 export function defaultSettings(): Settings {
   return { music: 0.6, sfx: 0.8, shake: 1, dmgNumbers: true, bindings: cloneBindings(DEFAULT_BINDINGS), bindVer: BIND_VER };
@@ -112,13 +112,18 @@ function validOverride(o: unknown): SaveData['pickupOverride'] {
 
 /** 키 설정 이전: v2(WASD 배치)는 그대로 두고 대시만 Q → Shift (대시를 직접 바꾼 경우는 유지), 그보다 오래된 것은 새 기본값 */
 function migrateBindings(ver: number | undefined, b: Bindings | undefined): Bindings {
-  if (!b || (ver !== BIND_VER && ver !== 2 && ver !== 3)) return cloneBindings(DEFAULT_BINDINGS);
+  if (!b || (ver !== BIND_VER && ver !== 2 && ver !== 3 && ver !== 4)) return cloneBindings(DEFAULT_BINDINGS);
   const out = cloneBindings(b);
   if (ver === 2 && out.dash.keys.length === 1 && out.dash.keys[0] === 'KeyQ') out.dash.keys = [...DEFAULT_BINDINGS.dash.keys];
   // v4: 스킬 2 기본 키 R → Q. 예전 기본값(R)을 그대로 쓰던 사람만 옮긴다 (Q를 다른 데 쓰고 있으면 거기서 빼고)
   if ((ver ?? 0) < 4 && out.skill2.keys.length === 1 && out.skill2.keys[0] === 'KeyR') {
     for (const a of Object.keys(out) as (keyof Bindings)[]) out[a].keys = out[a].keys.filter((k) => k !== 'KeyQ');
     out.skill2.keys = ['KeyQ'];
+  }
+  // v5: 궁극기(X) 추가. 예전 저장은 cloneBindings가 기본값 X를 넣는데, X를 이미 다른 동작에 쓰고 있으면 V → 없으면 비워 둠
+  if ((ver ?? 0) < 5) {
+    const used = (k: string): boolean => (Object.keys(out) as (keyof Bindings)[]).some((a) => a !== 'ult' && out[a].keys.includes(k));
+    out.ult.keys = !used('KeyX') ? ['KeyX'] : !used('KeyV') ? ['KeyV'] : [];
   }
   return out;
 }

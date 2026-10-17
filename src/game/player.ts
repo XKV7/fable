@@ -22,6 +22,7 @@ export interface PlayerInput {
   dashP: boolean;
   s1P: boolean;
   s2P: boolean;
+  ultP?: boolean;
   swapP: boolean;
   interactP: boolean;
   itemP: boolean;
@@ -29,7 +30,7 @@ export interface PlayerInput {
 
 export const NO_INPUT: PlayerInput = { left: false, right: false, up: false, down: false, jumpP: false, jumpH: false, atkP: false, dashP: false, s1P: false, s2P: false, swapP: false, interactP: false, itemP: false };
 
-export type ActKind = 'combo' | 'air' | 'dashAtk' | 'skill1' | 'skill2' | 'swap';
+export type ActKind = 'combo' | 'air' | 'dashAtk' | 'skill1' | 'skill2' | 'swap' | 'ult';
 
 const GRAV = 0.3;
 const MAX_FALL = 6.5;
@@ -61,6 +62,9 @@ export class Player {
   dashAtkWin = 0;
   skillCd: [number, number] = [0, 0];
   skillMax: [number, number] = [1, 1];
+  /** 궁극기 쿨타임 (초) */
+  ultCd = 0;
+  ultMax = 1;
   swapCd = 0;
   swapMax = 7;
   inv = 0;
@@ -153,6 +157,7 @@ export class Player {
     if (this.landT > 0) this.landT--;
     const dt = 1 / 60;
     const cdr = Math.min(0.6, stats.cdr ?? 0);
+    if (this.ultCd > 0) this.ultCd = Math.max(0, this.ultCd - dt);
     for (let i = 0; i < 2; i++) if (this.skillCd[i] > 0) this.skillCd[i] = Math.max(0, this.skillCd[i] - dt * (1 + cdr * 0));
     if (this.swapCd > 0) this.swapCd = Math.max(0, this.swapCd - dt);
     const maxCharges = 1 + r.build.flag('dashCharges');
@@ -202,6 +207,7 @@ export class Player {
     // 스킬
     if (inp.s1P) this.tryAction('skill1');
     if (inp.s2P) this.tryAction('skill2');
+    if (inp.ultP) this.tryAction('ult');
     // 대시 (캔슬 가능)
     if (inp.dashP && this.canDash()) this.startDash(inp);
 
@@ -375,6 +381,21 @@ export class Player {
       this.room.onSkill();
       return true;
     }
+    if (kind === 'ult') {
+      const u = d.ult;
+      if (!u || this.ultCd > 0) return false;
+      if (this.state === 'act' && this.act && this.actKind !== 'combo' && this.actKind !== 'air' && this.actKind !== 'dashAtk' && this.actF < (this.act.cancel ?? this.act.dur)) return false;
+      const mod = this.room.build.modFor('ult');
+      const cd = Math.max(1, (u.cd - mod.cd) * (1 - Math.min(0.6, this.room.stats.cdr ?? 0)));
+      this.ultCd = cd;
+      this.ultMax = cd;
+      if (this.state === 'dash') this.state = 'normal';
+      this.endAct();
+      this.startAction('ult', u.act);
+      audio.play('skill', 0.8);
+      this.room.onSkill();
+      return true;
+    }
     if (this.state === 'act' && this.act) {
       // 콤보 연계: 캔슬 프레임 이후
       if (this.actF < (this.act.cancel ?? this.act.dur)) return false;
@@ -468,6 +489,12 @@ export class Player {
     }
     if (act.landEnd && this.b.onGround && this.actF > 6 && !this.plunge) {
       this.endAct();
+      return;
+    }
+    // 추적 화살이 날아다니는 동안은 동작을 붙잡아 둔다 (그 자리에 멈춤)
+    if (act.holdYaka && this.room.yaka) {
+      this.b.vx = 0;
+      if (this.actF >= act.dur) this.actF = act.dur - 1;
       return;
     }
     if (this.actF >= act.dur) {

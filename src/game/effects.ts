@@ -180,7 +180,7 @@ export class Build {
     }
   }
 
-  modFor(target: 'skill1' | 'skill2' | 'swap' | 'combo'): { dmg: number; count: number; cd: number; size: number } {
+  modFor(target: 'skill1' | 'skill2' | 'swap' | 'combo' | 'ult'): { dmg: number; count: number; cd: number; size: number } {
     const o = { dmg: 0, count: 0, cd: 0, size: 0 };
     for (const m of this.mods) {
       if (m.target !== target && m.target !== 'all') continue;

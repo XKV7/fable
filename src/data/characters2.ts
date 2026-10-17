@@ -684,6 +684,106 @@ export const CHARACTERS_EX: CharDef[] = [
       { desc: '모든 기술 피해 +35%, 스킬 쿨타임 -10%', mods: [{ target: 'all', dmg: 0.35 }], effects: [{ stats: { cdr: 0.1 } }] },
     ],
   },
+  {
+    // 컨셉아트: 「바람의 잎사귀를 짓는 자」 — 후드 망토, 바람의 활·바람의 화살촉·활집. 궁수(원거리, 유도 화살).
+    // 스프라이트는 전용 시트(sheets/arien). ★6 첫 궁극기(X): 모든 적을 꿰뚫으며 쫓아가는 화살 하나 (야카 화살)
+    id: 'arien', name: '아리엔', title: '바람의 잎사귀를 짓는 자', rarity: 6, type: 'ranged', crest: 'swift',
+    lore: '「…바람이 불어오는 곳에, 나는 언제나 있어.」 잎사귀로 화살을 짓는 숲의 궁수. 그녀가 놓은 화살은 바람을 타고 끝까지 표적을 쫓는다.',
+    atk: 56, hp: 232, speed: 2.15, fx: '#a0ff80',
+    look: { skin: '#f4ecf0', hair: '#e8ecf0', hairStyle: 'hood', body: '#1e2a1e', trim: '#a0ff80', legs: '#14141a', boots: '#e0e8e0', cape: '#2a3a24', eye: '#80ff80', weapon: 'bow', wcol: '#d0e8c0', wcol2: '#3a5a30', build: 'slim', glow: '#a0ff80' },
+    combo: [
+      // 평타: 유도 화살 → 유도 화살 → 유도 화살 3발
+      shot({ dur: 13, t: 4, m: 0.8, p: { spr: 'arrow', spd: 7, life: 70, w: 12, h: 4, col: '#c0ffa0', home: 0.14, pic: { name: 'arien:arrow', w: 22 } }, w: 'shootWind', s: 'shoot', sfx: 'arrow' }),
+      shot({ dur: 13, t: 4, m: 0.8, p: { spr: 'arrow', spd: 7, life: 70, w: 12, h: 4, col: '#c0ffa0', home: 0.14, pic: { name: 'arien:arrow', w: 22 } }, w: 'shootWind', s: 'shoot', sfx: 'arrow' }),
+      shot({ dur: 22, t: 8, m: 0.6, n: 3, spread: 14, p: { spr: 'arrow', spd: 7, life: 80, w: 12, h: 4, col: '#a0ff80', home: 0.16, pierce: 1, pic: { name: 'arien:arrow', w: 22 } }, w: 'shootWind', s: 'shoot', sfx: 'arrow' }),
+    ],
+    air: shot({ dur: 15, t: 4, m: 0.8, p: { spr: 'arrow', spd: 7, life: 70, w: 12, h: 4, col: '#c0ffa0', home: 0.14, pic: { name: 'arien:arrow', w: 22 } }, w: 'shootWind', s: 'shoot', sfx: 'arrow', air: true }),
+    dashAtk: shot({ dur: 18, t: 6, m: 1.3, p: { spr: 'arrow', spd: 9, life: 60, w: 14, h: 4, col: '#a0ff80', home: 0.1, pierce: 3, pic: { name: 'arien:arrow', w: 24 } }, w: 'shootWind', s: 'shoot', sfx: 'arrow' }),
+    skills: [
+      {
+        name: '잎새 연사',
+        desc: '제자리에 멈춰 서서 정면으로 유도 화살 12발을 쉬지 않고 쏜다 (각 55%). 시전 중 경직 무시.',
+        cd: 8,
+        act: {
+          dur: 66,
+          pose: [[0, 'shootWind'], ...Array.from({ length: 12 }, (_, i): [number, PoseName] => [5 + i * 5, i % 2 ? 'shootWind' : 'shoot']), [64, 'shoot']],
+          move: [[0, 0]],
+          armor: true,
+          ev: [
+            { t: 0, k: 'pic', name: 'arien:sigil', dx: 10, dy: -8, s0: 16, s1: 40, life: 60, spin: 0.08 },
+            ...Array.from({ length: 12 }, (_, i): ActEvent[] => [
+              { t: 6 + i * 5, k: 'proj', p: { spr: 'arrow', spd: 7.5, life: 80, w: 12, h: 4, col: '#c0ffa0', home: 0.2, pic: { name: 'arien:arrow', w: 22 } }, m: 0.55, ang: ((i % 3) - 1) * 6 },
+              ...(i % 2 === 0 ? [{ t: 6 + i * 5, k: 'sfx', s: 'arrow' } as ActEvent] : []),
+            ]).flat(),
+          ],
+        },
+      },
+      {
+        name: '바람 산탄',
+        desc: '유도 화살 5발을 부채꼴로 한꺼번에 쏜다. 퍼졌다가 적을 쫓아 모인다 (각 120%, 1명 관통).',
+        cd: 7,
+        act: {
+          dur: 26,
+          pose: [[0, 'shootWind'], [8, 'shoot']],
+          ev: [
+            { t: 6, k: 'pic', name: 'arien:volley2', dx: 22, dy: -6, s0: 30, s1: 44, life: 10 },
+            { t: 8, k: 'proj', n: 5, spread: 16, p: { spr: 'arrow', spd: 7, life: 90, w: 12, h: 4, col: '#a0ff80', home: 0.12, pierce: 1, pic: { name: 'arien:arrow', w: 24 } }, m: 1.2 },
+            { t: 8, k: 'sfx', s: 'arrow' },
+          ],
+        },
+      },
+    ],
+    ult: {
+      name: '바람의 인도',
+      desc: '1초 집중 후, 모든 적을 꿰뚫으며 쫓아가는 화살 하나를 5초간 날린다 (적중마다 160%). 화살이 나는 동안 이동 불가.',
+      cd: 40,
+      act: {
+        dur: 66,
+        holdYaka: true,
+        armor: true,
+        pose: [[0, 'castUp'], [54, 'shootWind'], [60, 'shoot']],
+        move: [[0, 0]],
+        ev: [
+          { t: 0, k: 'sfx', s: 'cast' },
+          { t: 0, k: 'pic', name: 'arien:sigil', dx: 0, dy: -14, s0: 20, s1: 70, life: 60, spin: 0.1 },
+          { t: 20, k: 'pic', name: 'arien:star', dx: 0, dy: -14, s0: 10, s1: 60, life: 40, spin: 0.06 },
+          { t: 40, k: 'sfx', s: 'gem' },
+          { t: 60, k: 'pic', name: 'arien:volley', dx: 18, dy: -6, s0: 30, s1: 50, life: 10 },
+          { t: 60, k: 'yaka', m: 1.6, life: 300, spd: 6.5, hitCd: 30, pic: 'arien:bigarrow', picW: 30, picRot: -0.9, col: '#a0ff80' },
+          { t: 60, k: 'shake', v: 3 },
+        ],
+      },
+    },
+    swap: {
+      name: '교대: 바람길',
+      desc: '뒤로 물러나며 유도 화살 5발을 부채꼴로 쏜다 (각 100%).',
+      act: {
+        dur: 24,
+        pose: [[0, 'shootWind'], [6, 'shoot']],
+        inv: [0, 14],
+        move: [[0, -4], [8, 0]],
+        ev: [
+          { t: 6, k: 'proj', n: 5, spread: 14, p: { spr: 'arrow', spd: 7, life: 80, w: 12, h: 4, col: '#a0ff80', home: 0.14, pic: { name: 'arien:arrow', w: 22 } }, m: 1.0 },
+          { t: 6, k: 'sfx', s: 'arrow' },
+        ],
+      },
+    },
+    passive: {
+      name: '바람의 숨결',
+      desc: '공격 속도 +20%, 치명타 확률 +10%. 4초마다 가까운 적에게 유도 화살 2발이 날아간다 (각 100%).',
+      effects: [
+        { stats: { aspd: 0.2, crit: 0.1 } },
+        { on: 'interval', every: 4, do: [{ k: 'proj', p: { spr: 'arrow', spd: 6.5, life: 90, w: 12, h: 4, col: '#c0ffa0', home: 0.18, pic: { name: 'arien:arrow', w: 22 } }, m: 1.0, n: 2 }] },
+      ],
+    },
+    awaken: [
+      { desc: '잎새 연사 피해 +40%', mods: [{ target: 'skill1', dmg: 0.4 }] },
+      { desc: '바람 산탄 +2발', mods: [{ target: 'skill2', count: 2 }] },
+      { desc: '치명타 피해 +30%', effects: [{ stats: { critDmg: 0.3 } }] },
+      { desc: '바람의 인도 피해 +40%, 쿨타임 -8초', mods: [{ target: 'ult', dmg: 0.4, cd: 8 }] },
+      { desc: '모든 기술 피해 +35%, 스킬 쿨타임 -10%', mods: [{ target: 'all', dmg: 0.35 }], effects: [{ stats: { cdr: 0.1 } }] },
+    ],
+  },
   // ───────────────────────── ★5 ─────────────────────────
   {
     id: 'marionne', name: '마리오네', title: '망각의 인형술사', rarity: 5, type: 'magic', crest: 'soul',

@@ -253,11 +253,11 @@ export class SettingsScene implements Scene {
       panel(g, 60, 30, 360, 226);
       const b = app.save.settings.bindings;
       this.keys.items.forEach((it, i) => {
-        const y = 36 + i * 12;
+        const y = 35 + i * 11;
         const sel = i === this.keys.sel;
         g.fillStyle = sel ? 'rgba(138,106,208,0.35)' : 'transparent';
-        g.fillRect(66, y - 1, 348, 12);
-        hot.add(`keys:${i}`, 66, y - 1, 348, 12);
+        g.fillRect(66, y - 1, 348, 11);
+        hot.add(`keys:${i}`, 66, y - 1, 348, 11);
         text(g, it.label, 72, y, { size: 7, color: sel ? '#ffffff' : '#c8c0d8' });
         if (i < ACTIONS.length) {
           const a = ACTIONS[i];

@@ -203,6 +203,22 @@ describe('키 설정 이전', () => {
   });
 });
 
+describe('키 설정 v5: 궁극기(X) 추가', () => {
+  it('v4 저장에 궁극기 X를 넣고, X를 쓰는 중이면 V, 둘 다 쓰면 비워 둔다', async () => {
+    const { sanitize } = await import('../src/game/save');
+    const { DEFAULT_BINDINGS, ARROW_BINDINGS, cloneBindings } = await import('../src/core/input');
+    const v4 = cloneBindings(DEFAULT_BINDINGS) as Record<string, { keys: string[]; pad: number[] }>;
+    delete v4.ult;
+    expect(sanitize({ settings: { bindVer: 4, bindings: v4 } }).settings.bindings.ult.keys).toEqual(['KeyX']);
+    const arrows = cloneBindings(ARROW_BINDINGS) as Record<string, { keys: string[]; pad: number[] }>;
+    delete arrows.ult; // 방향키 배치는 공격이 X
+    expect(sanitize({ settings: { bindVer: 4, bindings: arrows } }).settings.bindings.ult.keys).toEqual(['KeyV']);
+    arrows.item.keys = ['KeyV'];
+    expect(sanitize({ settings: { bindVer: 4, bindings: arrows } }).settings.bindings.ult.keys).toEqual([]);
+    expect(sanitize({}).settings.bindings.ult.keys).toEqual(['KeyX']);
+  });
+});
+
 describe('같은 등급 안 고정 비율 (에녹 = ★7 중 1%)', () => {
   it('★7 후보 4명 중 에녹은 약 1%, 나머지는 약 33%씩', async () => {
     const { pickShared } = await import('../src/game/gacha');

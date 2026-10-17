@@ -1,3 +1,4 @@
+import { iconArt } from '../gfx/iconArt';
 import { shade, snapColor } from '../gfx/pixel';
 
 /**
@@ -74,8 +75,40 @@ const BMP: Record<string, string[]> = {
 /** 아이콘 키 → 비트맵 (별칭) */
 const ALIAS: Record<string, string> = { pouch: 'pouch', glovee: 'glove' };
 
+/** 아이콘 비트맵이 있는 키들 (테스트용) */
+export const ICON_KEYS = Object.keys(BMP);
+
+/**
+ * 고해상도 아이콘 그림의 픽셀 밀도: 화면 배율을 나눠떨어지게 하는 2 또는 3 (배율 1이면 1).
+ * → UI 1칸 = 그림 2(3)픽셀, 화면 픽셀로는 늘 정수 배라 번지거나 들쭉날쭉하지 않다.
+ */
+function density(g: CanvasRenderingContext2D): number {
+  const t = g.getTransform();
+  const sc = Math.round(Math.hypot(t.a, t.b));
+  if (sc <= 3) return Math.max(1, sc);
+  return sc % 2 === 0 ? 2 : sc % 3 === 0 ? 3 : 2;
+}
+
 export function drawIcon(g: CanvasRenderingContext2D, key: string, x: number, y: number, size: number, col: string): void {
-  const bmp = BMP[key] ?? BMP[ALIAS[key] ?? ''] ?? BMP.gem;
+  const k = BMP[key] ? key : ALIAS[key] && BMP[ALIAS[key]] ? ALIAS[key] : 'gem';
+  // 8칸 이상: 박스 크기 × 밀도로 새로 그린 고해상도 그림을 박스에 꽉 채운다 (정수 배, 번짐 없음)
+  if (size >= 8) {
+    const d = density(g);
+    const img = iconArt(k, col, Math.round(size * d));
+    if (img) {
+      const sm = g.imageSmoothingEnabled;
+      g.imageSmoothingEnabled = false;
+      const n = img.width / d;
+      g.drawImage(img, Math.round(x * d) / d + (size - n) / 2, Math.round(y * d) / d + (size - n) / 2, n, n);
+      g.imageSmoothingEnabled = sm;
+      return;
+    }
+  }
+  drawBitmap(g, BMP[k], x, y, size, col);
+}
+
+/** 옛 10×10 비트맵 (아주 작은 크기·그림 없는 키) */
+function drawBitmap(g: CanvasRenderingContext2D, bmp: string[], x: number, y: number, size: number, col: string): void {
   // 스프라이트와 같은 규칙: 정수 배율(10px 이상) + 공용 팔레트
   const s = size >= 10 ? Math.floor(size / 10) : size / 10;
   const o = size >= 10 ? Math.floor((size - s * 10) / 2) : 0;

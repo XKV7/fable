@@ -282,9 +282,10 @@ const LOADERS: Record<string, () => Promise<HeroSheet>> = {
   arien: () => import('./sheets/arien').then((m) => m.ARIEN),
   aurel: () => import('./sheets/aurel').then((m) => m.AUREL),
   vega: () => import('./sheets/vega').then((m) => m.VEGA),
+  flora: () => import('./sheets/flora').then((m) => m.FLORA),
 };
 /** 카일루스(96칸)보다 큰 검기가 그려진 칸이 있는 영웅은 가로 160칸 (화면 80) */
-const WIDE: Record<string, boolean> = { solen: true, lucas: true, astral: true, enoch: true, ashen: true, luciel: true, arien: true, aurel: true, vega: true };
+const WIDE: Record<string, boolean> = { solen: true, lucas: true, astral: true, enoch: true, ashen: true, luciel: true, arien: true, aurel: true, vega: true, flora: true };
 
 interface Sheet { img: HTMLImageElement; fxImg: HTMLImageElement | null; ok: boolean; fxOk: boolean; d: HeroSheet | null; w: number }
 const SHEETS: Record<string, Sheet> = {};
@@ -474,11 +475,12 @@ function fxOf(name: HDFxName): { img: HTMLImageElement; f: FxFrame } | null {
  * 아직 불러오지 않았거나 고해상도를 쓰지 않는 화면이면 false → 호출한 쪽이 기존 방식으로 그린다.
  * squash: 세로로 눌러 바닥에 눕힌 모습 (회전 후 적용 — 바닥에서 도는 마법진)
  */
-export function hdFx(name: HDFxName, x: number, y: number, w: number, o: { ang?: number; flip?: boolean; alpha?: number; h?: number; squash?: number } = {}): boolean {
+export function hdFx(name: HDFxName, x: number, y: number, w: number, o: { ang?: number; flip?: boolean; alpha?: number; h?: number; squash?: number; bottom?: boolean } = {}): boolean {
   const r = fxOf(name);
   if (!r || hdState.off) return false;
   const { img, f } = r;
   if (w <= 0 && o.h) w = (o.h * f.w) / f.h; // 높이만 주면 비율대로 너비
+  if (o.bottom) y -= (o.h ?? (w * f.h) / f.w) / 2; // (x, y)가 그림 아래 가운데 (땅에서 피어나는 그림)
   hdQueue.push({
     img, x, y, flip: !!o.flip, alpha: o.alpha ?? 1,
     fx: { sx: f.x, sy: f.y, sw: f.w, sh: f.h, w, h: o.h ?? (w * f.h) / f.w, ang: o.ang ?? 0, add: f.add, squash: o.squash ?? 1 },

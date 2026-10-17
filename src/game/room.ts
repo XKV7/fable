@@ -889,10 +889,14 @@ export class Room {
           .filter((e) => !e.dead && e.state !== 'spawn' && Math.hypot(e.cx - p.cx, e.cy - p.cy) <= ev.range)
           .sort((a, b) => Math.hypot(a.cx - p.cx, a.cy - p.cy) - Math.hypot(b.cx - p.cx, b.cy - p.cy))
           .slice(0, ev.n + mod.count);
-        const spots = tg.length ? tg.map((e) => ({ x: e.cx, y: e.cy })) : [{ x: p.cx + f * 70, y: p.cy }];
+        const spots = tg.length ? tg.map((e) => ({ x: e.cx, y: e.cy, fy: e.b.y + e.b.h })) : [{ x: p.cx + f * 70, y: p.cy, fy: p.b.y + p.b.h }];
         const r = ev.r * sz;
         for (const sp of spots) {
-          this.fx.pic(ev.pic, sp.x, sp.y, r * 0.5, r * 2, ev.delay, 0.06, false);
+          if (ev.feet !== undefined) {
+            // 발밑에서 피어나는 그림 (꽃 기둥 등): 아래를 발에 맞춰 커지고, 터질 때까지 남는다
+            const pw = (ev.picW ?? r * 2) * sz;
+            this.fx.pic(ev.pic, sp.x, sp.fy + ev.feet * sz, pw * 0.3, pw, ev.delay + 10, 0, false, true);
+          } else this.fx.pic(ev.pic, sp.x, sp.y, r * 0.5, r * 2, ev.delay, 0.06, false);
           this.later(ev.delay, () => {
             this.nova(sp.x, sp.y, r, ev.m * dm, kind, ev.el, ev.st, -2, ev.col);
             if (ev.boom) this.fx.pic(ev.boom, sp.x, sp.y, r, r * 3, 16, 0.04, false);

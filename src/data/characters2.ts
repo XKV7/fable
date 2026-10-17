@@ -916,6 +916,90 @@ export const CHARACTERS_EX: CharDef[] = [
     ],
   },
   {
+    // 컨셉아트: 「핑크 리빙 플라워」 — 하얀 마법사 모자·망토, 마법의 지팡이·마력의 꽃잎. 마법사.
+    // 스프라이트는 전용 시트(sheets/flora). 역할: 주변 여러 적의 발밑에 꽃을 피워 터뜨림 · 연꽃 마법진의 정원(지속 피해 + 회복)
+    id: 'flora', name: '플로라', title: '핑크 리빙 플라워', rarity: 6, type: 'magic', crest: 'venom',
+    lore: '「…꽃이 피는 순간, 모든 것이 다시 시작돼요.」 마력으로 꽃을 피우는 정원의 마법사. 그녀가 지나간 자리에는, 싸움터에도 꽃이 핀다.',
+    atk: 68, hp: 225, speed: 2.05, fx: '#ff80d0',
+    look: { skin: '#f8eef2', hair: '#f8e0ec', hairStyle: 'hood', body: '#f4e8ee', trim: '#ff80d0', legs: '#f4eef2', boots: '#f0e0e8', cape: '#f8eef4', eye: '#ff70c0', weapon: 'staff', wcol: '#ffc0e8', wcol2: '#6a2050', build: 'slim', glow: '#ff80d0' },
+    combo: [
+      shot({ dur: 14, t: 5, m: 0.85, p: { spr: 'orb', spd: 6.5, life: 55, w: 10, h: 10, col: '#ff80d0', el: 'holy', pic: { name: 'flora:orb', w: 16, spin: 0.2 } }, w: 'windHigh', s: 'slashDown', sfx: 'cast' }),
+      shot({ dur: 14, t: 5, m: 0.6, n: 2, spread: 12, p: { spr: 'orb', spd: 6.5, life: 55, w: 10, h: 10, col: '#ff80d0', el: 'holy', pic: { name: 'flora:orb', w: 16, spin: 0.2 } }, w: 'windLow', s: 'slashUp', sfx: 'cast' }),
+      shot({ dur: 20, t: 7, m: 1.2, p: { spr: 'orb', spd: 5.5, life: 60, w: 14, h: 14, col: '#ffb0e0', el: 'holy', pierce: 2, boom: { r: 20, m: 0.5, el: 'holy', col: '#ff80d0' }, boomPic: { name: 'flora:burst', s0: 10, s1: 36, life: 10 }, pic: { name: 'flora:orb', w: 22, spin: 0.2 } }, w: 'windHigh', s: 'spin', sfx: 'cast' }),
+    ],
+    air: shot({ dur: 16, t: 5, m: 0.8, p: { spr: 'orb', spd: 6.5, life: 50, w: 10, h: 10, col: '#ff80d0', el: 'holy', pic: { name: 'flora:orb', w: 16, spin: 0.2 } }, w: 'windHigh', s: 'slashDown', sfx: 'cast', air: true }),
+    dashAtk: shot({ dur: 18, t: 6, m: 1.3, p: { spr: 'orb', spd: 8, life: 50, w: 12, h: 12, col: '#ffb0e0', el: 'holy', pierce: 3, pic: { name: 'flora:orb', w: 20, spin: 0.2 } }, w: 'thrustWind', s: 'thrust', sfx: 'cast' }),
+    skills: [
+      {
+        name: '피어나는 꽃',
+        desc: '주변 적 최대 6명의 발밑에 마력의 꽃을 피워, 꽃이 피어나는 순간 터뜨린다 (각 240%, 중독).',
+        cd: 8,
+        act: {
+          dur: 30,
+          pose: [[0, 'cast'], [8, 'castUp']],
+          ev: [
+            { t: 2, k: 'sfx', s: 'cast' },
+            { t: 2, k: 'pic', name: 'flora:sigil', dx: 0, dy: -10, s0: 16, s1: 46, life: 18, spin: 0.08 },
+            { t: 6, k: 'marks', n: 6, range: 230, r: 26, m: 2.4, delay: 16, pic: 'flora:bloom', feet: 4, picW: 34, boom: 'flora:burst', el: 'holy', st: 'poison', col: '#ff80d0' },
+            { t: 22, k: 'shake', v: 3 },
+          ],
+        },
+      },
+      {
+        name: '만개의 정원',
+        desc: '발밑에 연꽃 마법진을 피워 주변을 터뜨리고 (220%), 4초 동안 정원이 남아 안의 적에게 지속 피해를 준다 (0.3초마다 45%). 펼칠 때 체력 8% 회복.',
+        cd: 13,
+        act: {
+          dur: 30,
+          pose: [[0, 'castUp'], [12, 'cast']],
+          inv: [0, 14],
+          ev: [
+            { t: 2, k: 'sfx', s: 'gem' },
+            { t: 2, k: 'pic', name: 'flora:lotus', dx: 0, dy: -12, s0: 20, s1: 90, life: 20, spin: 0.03 },
+            { t: 12, k: 'nova', r: 60, m: 2.2, el: 'holy', up: -2, col: '#ff80d0' },
+            { t: 12, k: 'pic', name: 'flora:burst', dx: 0, dy: -12, s0: 40, s1: 120, life: 16, spin: 0.04 },
+            { t: 12, k: 'field', f: { vis: 'holy', w: 120, h: 30, life: 240, tick: 18, m: 0.45, el: 'holy', pic: { name: 'flora:lotus', mode: 'floor', size: 120, spin: 0.02 } }, ground: true },
+            { t: 12, k: 'heal', v: 0.08 },
+            { t: 12, k: 'shake', v: 4 },
+            { t: 12, k: 'sfx', s: 'explode' },
+          ],
+        },
+      },
+    ],
+    swap: {
+      name: '교대: 봄의 개화',
+      desc: '꽃잎 마법진을 펼치며 등장해 주변을 터뜨린다 (공격력 360%).',
+      act: {
+        dur: 30,
+        pose: [[0, 'castUp'], [14, 'cast']],
+        inv: [0, 18],
+        ev: [
+          { t: 2, k: 'sfx', s: 'cast' },
+          { t: 2, k: 'pic', name: 'flora:big', dx: 0, dy: -8, s0: 40, s1: 120, life: 22, spin: 0.04 },
+          { t: 14, k: 'pic', name: 'flora:burst', dx: 0, dy: -10, s0: 50, s1: 150, life: 20, spin: 0.03 },
+          { t: 14, k: 'nova', r: 74, m: 3.6, el: 'holy', up: -3, col: '#ff80d0' },
+          { t: 14, k: 'shake', v: 6 },
+          { t: 14, k: 'sfx', s: 'explode' },
+        ],
+      },
+    },
+    passive: {
+      name: '살아 있는 꽃',
+      desc: '스킬 피해 +20%, 중독된 적에게 주는 피해 +20%. 처치 시 체력 1% 회복.',
+      effects: [
+        { stats: { skillDmg: 0.2, vsPoison: 0.2 } },
+        { on: 'kill', do: [{ k: 'heal', v: 0.01 }] },
+      ],
+    },
+    awaken: [
+      { desc: '피어나는 꽃 피해 +40%', mods: [{ target: 'skill1', dmg: 0.4 }] },
+      { desc: '만개의 정원 쿨타임 -2초', mods: [{ target: 'skill2', cd: 2 }] },
+      { desc: '공격력 +10%', effects: [{ stats: { atk: 0.1 } }] },
+      { desc: '봄의 개화 피해 +60%', mods: [{ target: 'swap', dmg: 0.6 }] },
+      { desc: '모든 기술 피해 +35%, 스킬 쿨타임 -10%', mods: [{ target: 'all', dmg: 0.35 }], effects: [{ stats: { cdr: 0.1 } }] },
+    ],
+  },
+  {
     // 컨셉아트: 「바람의 잎사귀를 짓는 자」 — 후드 망토, 바람의 활·바람의 화살촉·활집. 궁수(원거리, 유도 화살).
     // 스프라이트는 전용 시트(sheets/arien). ★6 첫 궁극기(X): 모든 적을 꿰뚫으며 쫓아가는 화살 하나 (야카 화살)
     id: 'arien', name: '아리엔', title: '바람의 잎사귀를 짓는 자', rarity: 6, type: 'ranged', crest: 'swift',

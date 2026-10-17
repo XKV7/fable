@@ -210,7 +210,8 @@ export type ActEvent =
   /** 추적 화살: 벽을 무시하고 모든 적을 꿰뚫으며 다음 적으로 방향을 틀어 날아다닌다 (life 프레임). 같은 적은 hitCd 프레임마다 한 번 */
   | { t: number; k: 'yaka'; m: number; life: number; spd: number; hitCd: number; pic?: string; picW?: number; picRot?: number; col: string; el?: Element; st?: StatusId }
   /** 가까운 적 n명의 자리에 마법진(pic)을 새기고 delay 프레임 뒤 그 자리에서 폭발(반경 r, 공격력 m) */
-  | { t: number; k: 'marks'; n: number; range: number; r: number; m: number; delay: number; pic: string; boom?: string; el?: Element; st?: StatusId; col?: string };
+  /** feet: 그림을 적 발밑에서 피어나게 (그림 아래를 발에서 feet만큼 아래에 맞춤, 회전 없음), picW: 그 그림 너비 */
+  | { t: number; k: 'marks'; n: number; range: number; r: number; m: number; delay: number; pic: string; boom?: string; el?: Element; st?: StatusId; col?: string; feet?: number; picW?: number };
 
 export interface ActionDef {
   dur: number;

@@ -577,6 +577,37 @@ export const CHARACTERS_EX: CharDef[] = [
         },
       },
     ],
+    ult: {
+      name: '잿불 성흔우',
+      desc: '하늘 가득 성흔 구체 16개를 띄우고, 구체마다 붉은 창 3자루씩(모두 48자루)을 가까운 적들에게 사출한다 (각 110% + 폭발 60%, 화상). 시전 중 경직 무시.',
+      cd: 30,
+      act: {
+        dur: 76,
+        armor: true,
+        inv: [0, 20],
+        pose: [[0, 'castUp'], [64, 'cast']],
+        ev: [
+          { t: 0, k: 'sfx', s: 'cast' },
+          { t: 0, k: 'shake', v: 2 },
+          // 성흔 구체 16개 (머리 위 하늘에 두 줄로 넓게)
+          ...Array.from({ length: 16 }, (_, j): ActEvent => ({ t: 1 + (j >> 1), k: 'pic', name: 'ashen:emblem', dx: -150 + j * 20, dy: -74 - (j % 2) * 16, s0: 10, s1: 30, life: 70 - (j >> 1), spin: 0.06 })),
+          ...Array.from({ length: 48 }, (_, i): ActEvent => {
+            const j = (i * 5) % 16; // 구체를 흩어서 돌아가며 사출
+            return {
+              t: 12 + i,
+              k: 'proj',
+              aim: true,
+              dx: -150 + j * 20,
+              dy: -74 - (j % 2) * 16,
+              m: 1.1,
+              p: { spr: 'spear', spd: 8, life: 80, w: 12, h: 12, col: '#ff3050', el: 'fire', st: 'burn', pierce: 2, boom: { r: 22, m: 0.6, el: 'fire', col: '#ff3050' }, boomPic: { name: 'ashen:burst', s0: 10, s1: 44, life: 12 }, pic: { name: 'ashen:spears', w: 26, rot: Math.PI / 2 } },
+            };
+          }),
+          ...[12, 24, 36, 48].map((t): ActEvent => ({ t, k: 'sfx', s: 'throw' })),
+          { t: 60, k: 'shake', v: 3 },
+        ],
+      },
+    },
     swap: {
       name: '교대: 잿더미의 계승',
       desc: '등장과 함께 성흔을 터뜨려 주변을 불태운다 (공격력 380%, 화상).',
@@ -713,7 +744,7 @@ export const CHARACTERS_EX: CharDef[] = [
     // 스프라이트는 전용 시트(sheets/arien). ★6 첫 궁극기(X): 모든 적을 꿰뚫으며 쫓아가는 화살 하나 (야카 화살)
     id: 'arien', name: '아리엔', title: '바람의 잎사귀를 짓는 자', rarity: 6, type: 'ranged', crest: 'swift',
     lore: '「…바람이 불어오는 곳에, 나는 언제나 있어.」 잎사귀로 화살을 짓는 숲의 궁수. 그녀가 놓은 화살은 바람을 타고 끝까지 표적을 쫓는다.',
-    atk: 38, hp: 232, speed: 2.15, fx: '#a0ff80',
+    atk: 38, hp: 58, speed: 2.15, fx: '#a0ff80',
     look: { skin: '#f4ecf0', hair: '#e8ecf0', hairStyle: 'hood', body: '#1e2a1e', trim: '#a0ff80', legs: '#14141a', boots: '#e0e8e0', cape: '#2a3a24', eye: '#80ff80', weapon: 'bow', wcol: '#d0e8c0', wcol2: '#3a5a30', build: 'slim', glow: '#a0ff80' },
     combo: [
       // 평타: 유도 화살 → 유도 화살 → 유도 화살 3발

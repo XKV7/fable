@@ -31,7 +31,10 @@ def cut(box, flip=False):
     a = IM[y0:y1, x0:x1]
     # bgColor: [r,g,b] — 단색 배경 시트는 고정 배경색 사용 (칸 테두리에 몸이 걸려 테두리 추정 배경이 틀어지는 것 방지)
     d = np.abs(a - (np.array(cfg['bgColor'], float) if 'bgColor' in cfg else bg_of(a))).sum(2)
-    near = d <= TOL
+    tl = TOL
+    if 'tolLow' in cfg:  # tolLow: [아래쪽 비율, 허용차] — 칸 아래쪽(다리·신발)은 허용차를 낮춰 배경과 비슷한 검은 다리가 지워지지 않게
+        fr_, t2 = cfg['tolLow']; tl = np.full((d.shape[0], 1), float(TOL)); tl[int(d.shape[0] * (1 - fr_)):] = t2
+    near = d <= tl
     seeds = np.zeros(d.shape, bool); seeds[0] = seeds[-1] = True; seeds[:, 0] = seeds[:, -1] = True
     lab, _ = ndimage.label(near)
     bg = np.isin(lab, np.unique(lab[seeds & near])) & near
@@ -83,15 +86,25 @@ def shrink(img, sc, sharpen=110):
 _PROP = {}
 def drop_prop(img, spec):
     import cv2
-    if 'tpl' not in _PROP:
-        fb = cfg['frames'][spec['from']]; bx0, by0, bx1, by1 = spec['box']
-        x0, y0 = fb[0] + bx0, fb[1] + by0
-        m = np.asarray(cut(fb[:4]))[by0:by1, bx0:bx1, 3] > 0
+    key = json.dumps(spec, sort_keys=True)
+    if key not in _PROP:
+        if 'src' in spec:  # src: 원본 그림 좌표 상자 (칸 상자에 잘린 소품도 온전히 본뜰 때)
+            x0, y0 = spec['src'][:2]; m = np.asarray(cut(spec['src']))[:, :, 3] > 0
+            if 'core' in spec:  # core: 밝기 이상인 부분만 소품 모양으로 (어두운 번짐·옆 머리카락이 본에 섞이지 않게)
+                bx0, by0, bx1, by1 = spec['src']
+                m &= IM[by0:by1, bx0:bx1] @ np.array([0.3, 0.55, 0.15]) > spec['core']
+        else:
+            fb = cfg['frames'][spec['from']]; bx0, by0, bx1, by1 = spec['box']
+            x0, y0 = fb[0] + bx0, fb[1] + by0
+            m = np.asarray(cut(fb[:4]))[by0:by1, bx0:bx1, 3] > 0
         m = largest(m)[0]; ys, xs = np.where(m)
         m = m[ys.min():ys.max() + 1, xs.min():xs.max() + 1]; x0 += xs.min(); y0 += ys.min()
-        _PROP['tpl'] = (IM[y0:y0 + m.shape[0], x0:x0 + m.shape[1]].mean(2).astype(np.float32), m)
-    tpl, tm = _PROP['tpl']
+        _PROP[key] = (IM[y0:y0 + m.shape[0], x0:x0 + m.shape[1]].mean(2).astype(np.float32), m)
+    tpl, tm = _PROP[key]
     a = np.asarray(img).copy(); g = a[:, :, :3].astype(np.float32).mean(2)
+    # pad: 칸 가장자리에 잘려 일부만 걸친 소품도 찾도록 배경색으로 둘레를 넓혀 맞춘다
+    P = int(spec.get('pad', 0))
+    if P: g = np.pad(g, P, constant_values=float(np.mean(cfg.get('bgColor', [0, 0, 0]))))
     best = (-1, None, None)
     for sc in np.arange(0.8, 1.45, 0.05):
         t = cv2.resize(tpl, None, fx=sc, fy=sc, interpolation=cv2.INTER_AREA)
@@ -99,12 +112,17 @@ def drop_prop(img, spec):
         r = cv2.matchTemplate(g, t, cv2.TM_CCOEFF_NORMED); _, mv, _, ml = cv2.minMaxLoc(r)
         if mv > best[0]: best = (mv, ml, sc)
     mv, (lx, ly), sc = best if best[1] else (0, (0, 0), 1)
+    if os.environ.get('PROP_DEBUG'): print('prop', spec.get('src', spec.get('from')), round(float(mv), 2), round(float(sc), 2), (lx - P, ly - P))
     if mv < spec.get('thr', 0.6): return img
     mk = cv2.resize(tm.astype(np.uint8), None, fx=sc, fy=sc, interpolation=cv2.INTER_NEAREST) > 0
     gr = spec.get('grow', 2)
     mk = ndimage.binary_dilation(np.pad(mk, gr), iterations=gr)
     full = np.zeros((g.shape[0] + 2 * gr, g.shape[1] + 2 * gr), bool); h, w = mk.shape
-    full[ly:ly + h, lx:lx + w] = mk; full = full[gr:-gr, gr:-gr]
+    full[ly:ly + h, lx:lx + w] = mk; full = full[gr + P:full.shape[0] - gr - P, gr + P:full.shape[1] - gr - P]
+    if 'halo' in spec:  # halo: [반경, 밝기] — 지운 소품 둘레 반경 안의 어두운 번짐(밝기 미만)도 지운다
+        r_, lv = spec['halo']
+        near = ndimage.binary_dilation(full, iterations=r_)
+        full |= near & (a[:, :, :3].astype(float) @ np.array([0.3, 0.55, 0.15]) < lv)
     a[full, 3] = 0
     return Image.fromarray(a, 'RGBA')
 
@@ -120,11 +138,17 @@ for name, b in cfg['frames'].items():
     # eraseAt: {칸 이름: [[x0,y0,x1,y1], ...]} — 원본 그림 좌표의 사각형을 그 칸에서만 지운다 (몸에 닿은 반짝이 하나 등)
     for ex0, ey0, ex1, ey1 in cfg.get('eraseAt', {}).get(name, []):
         arr = np.asarray(raw[name]).copy(); bx, by = b[0], b[1]
-        arr[max(0, ey0 - by):max(0, ey1 - by), max(0, ex0 - bx):max(0, ex1 - bx), 3] = 0; raw[name] = Image.fromarray(arr, 'RGBA')
-    # dropProp: {from: 칸, box: [칸 안 상자], frames: [접두어], thr, grow} — 칸마다 따라다니는 떠 있는 소품(구체 등)을
+        rm = np.zeros(arr.shape[:2], bool); rm[max(0, ey0 - by):max(0, ey1 - by), max(0, ex0 - bx):max(0, ex1 - bx)] = True
+        if 'eraseHalo' in cfg:  # eraseHalo: [반경, 밝기] — 지운 사각형 둘레의 어두운 번짐도 지워 잘린 자리가 곧은 선으로 남지 않게
+            r_, lv = cfg['eraseHalo']
+            rm |= ndimage.binary_dilation(rm, iterations=r_) & (arr[:, :, :3].astype(float) @ np.array([0.3, 0.55, 0.15]) < lv)
+        arr[rm, 3] = 0; raw[name] = Image.fromarray(arr, 'RGBA')
+    # dropProp: {from: 칸, box: [칸 안 상자], frames: [접두어], thr, grow} (또는 그 목록) — 칸마다 따라다니는 떠 있는 소품(구체 등)을
     # 기준 칸의 모양으로 찾아(템플릿 정합, 여러 크기) 지운다. 몸에 번져 붙어도 떨어지고, 칸마다 있다 없다 하는 깜빡임이 없어진다
-    if 'dropProp' in cfg and name.rstrip('0123456789') in cfg['dropProp']['frames']:
-        raw[name] = drop_prop(raw[name], cfg['dropProp'])
+    dp = cfg.get('dropProp', [])
+    for spec in (dp if isinstance(dp, list) else [dp]):
+        if name.rstrip('0123456789') in spec['frames'] or name in spec['frames']:
+            raw[name] = drop_prop(raw[name], spec)
     # 원본 해상도에서 떠 있는 구체·반짝이 떼기 (공격·시전 칸은 큰 검기·마법진은 남김)
     if name.startswith('die'):  # 누운 몸은 가늘게 끊기기 쉬워 큰 조각은 모두 남김
         raw[name] = gen.detach(raw[name], 3, 0.25)

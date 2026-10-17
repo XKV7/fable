@@ -17,7 +17,7 @@ import { rgba } from '../gfx/pixel';
 import { STORIES, storyDef } from '../data/stories';
 import { StoryTextScene } from './story';
 
-type Focus = 0 | 1 | 2 | 3 | 4 | 5; // 슬롯1, 슬롯2, 무기, 저주, 출정, 스토리
+type Focus = 0 | 1 | 2 | 3 | 4 | 5 | 6; // 슬롯1, 슬롯2, 무기, 저주, 출정, 스토리, 보스 러시
 
 /** 편성: 영웅 2명 + 무기 1개 + 저주 단계 선택 후 출정 */
 /** 보스 러시: 스토리 1~4를 모두 완수하면 열림 */
@@ -30,8 +30,10 @@ export class LoadoutScene implements Scene {
   focus: Focus = 4;
   /** 무기 칸에서 위로 갈 때 돌아갈 영웅 칸 */
   lastSlot: 0 | 1 = 0;
-  /** 스토리 칸에서 「보스 러시」를 고른 상태 (스토리 1~4를 모두 완수하면 열림) */
+  /** 「보스 러시」 버튼(스토리 칸 위)으로 켠 상태 (스토리 1~4를 모두 완수하면 열림) */
   rush = false;
+  /** 스토리 칸에 보이는 스토리 (잠긴 스토리도 둘러볼 수 있음, 열린 것만 save.story에 반영) */
+  view = app.save.story;
   picking: 'char' | 'weapon' | null = null;
   /** 선택 창 스크롤 (맨 위 줄 번호) — 한 화면 4줄 */
   pickScroll = 0;
@@ -158,8 +160,9 @@ export class LoadoutScene implements Scene {
         if (!this.curseLocked()) app.save.curse = app.save.curse >= app.save.curseMax ? 0 : app.save.curse + 1;
       } else if (this.focus === 5) {
         if (this.rush) this.rush = false;
-        else if (app.save.story >= app.save.storyMax && rushUnlocked()) this.rush = true;
-        else if (!this.storyLocked()) app.save.story = app.save.story >= app.save.storyMax ? 1 : app.save.story + 1;
+        else this.setView(this.view >= STORIES.length ? 1 : this.view + 1);
+      } else if (this.focus === 6) {
+        if (rushUnlocked()) this.rush = !this.rush;
       } else this.depart();
     }
   }
@@ -172,17 +175,16 @@ export class LoadoutScene implements Scene {
     return true;
   }
 
-  /** 다음 스토리가 아직 잠겨 있으면 안내하고 true */
-  private storyLocked(): boolean {
-    if (app.save.storyMax > 1) return false;
-    audio.play('error');
-    app.toast('후속 스토리는 「망자의 계약」을 완수하면 열린다', '#ff9090');
-    return true;
+  /** 스토리 칸 넘기기: 잠긴 스토리도 보여 주되, 열린 스토리만 출정 스토리로 기억 */
+  private setView(v: number): void {
+    this.view = Math.max(1, Math.min(STORIES.length, v));
+    if (this.view <= app.save.storyMax) app.save.story = this.view;
+    audio.play('select');
   }
 
   /**
    * 화면 배치대로 2차원 이동:
-   *   [0 선봉] [1 교대]
+   *   [0 선봉] [1 교대]  [6 보스 러시] (열렸을 때)
    *   [2 무기          ] [5 스토리]
    *   [3 저주          ] [4 출정!]
    * 저주·스토리 칸에서 A/D는 값 변경, 끝에서 한 번 더 누르면 옆 칸으로.
@@ -195,13 +197,12 @@ export class LoadoutScene implements Scene {
       if (f === 1) n = 0;
       else if (f === 0) n = 1;
       else if (f === 4) n = 3;
+      else if (f === 6) n = 1;
       else if (f === 5 && this.rush) {
         this.rush = false;
         audio.play('select');
-      } else if (f === 5 && app.save.story > 1) {
-        app.save.story--;
-        audio.play('select');
-      } else if (f === 5) n = 2;
+      } else if (f === 5 && this.view > 1) this.setView(this.view - 1);
+      else if (f === 5) n = 2;
       else if (f === 3 && app.save.curse > 0) {
         app.save.curse--;
         audio.play('select');
@@ -209,16 +210,13 @@ export class LoadoutScene implements Scene {
     }
     if (inp.menu('mright')) {
       if (f === 0) n = 1;
-      else if (f === 1) n = 0;
+      else if (f === 1) n = rushUnlocked() ? 6 : 0;
       else if (f === 2) n = 5;
-      else if (f === 5 && this.rush) audio.play('error');
-      else if (f === 5 && app.save.story < app.save.storyMax) {
-        app.save.story++;
+      else if (f === 5 && this.rush) {
+        this.rush = false;
         audio.play('select');
-      } else if (f === 5 && rushUnlocked()) {
-        this.rush = true;
-        audio.play('select');
-      } else if (f === 5) this.storyLocked();
+      } else if (f === 5 && this.view < STORIES.length) this.setView(this.view + 1);
+      else if (f === 5) audio.play('error');
       else if (f === 3 && app.save.curse < app.save.curseMax) {
         app.save.curse++;
         audio.play('select');
@@ -228,12 +226,14 @@ export class LoadoutScene implements Scene {
       if (f === 2) n = this.lastSlot;
       else if (f === 3) n = 2;
       else if (f === 4) n = 5;
-      else if (f === 5) n = 1;
+      else if (f === 5) n = rushUnlocked() ? 6 : 1;
+      else if (f === 6) n = 1;
     }
     if (inp.menu('mdown')) {
       if (f === 0 || f === 1) n = 2;
       else if (f === 2) n = 3;
       else if (f === 3 || f === 5) n = 4;
+      else if (f === 6) n = 5;
     }
     if (n !== f) {
       this.focus = n;
@@ -259,6 +259,16 @@ export class LoadoutScene implements Scene {
       if (markAch(app.save, 'first_run')) app.achToast(['first_run']);
       app.go(new RunScene(run));
       return;
+    }
+    if (this.view > app.save.storyMax) {
+      if (!app.debug) {
+        audio.play('error');
+        app.toast(`스토리 ${this.view}은 스토리 ${this.view - 1}을 완수하면 열린다`, '#ff9090');
+        return;
+      }
+      // [디버그] 잠긴 스토리로 바로 출정
+      run.story = this.view;
+      run.newChapter(1, run.storyDef.route[0][0]);
     }
     if (markAch(app.save, 'first_run')) app.achToast(['first_run']);
     const sd = run.storyDef;
@@ -342,24 +352,37 @@ export class LoadoutScene implements Scene {
     const cu = CURSES[save.curse];
     text(g, `◀ ${cu.name} ▶`, 20, 218, { size: 8, color: save.curse ? '#ff80a0' : '#c8c0d8', bold: true });
     text(g, save.curseMax ? cu.desc : '최종 보스를 쓰러뜨리면 저주 단계가 해금된다', 110, 219, { size: 6, color: '#a8a0c0', maxW: 190 });
-    // 스토리
-    const sd = storyDef(save.story);
+    // 보스 러시 버튼 (스토리 칸 위, 스토리 1~4를 모두 완수하면)
+    if (rushUnlocked()) {
+      const rsel = this.focus === 6;
+      panel(g, 316, 140, 156, 22, { border: rsel ? '#ffffff' : this.rush ? '#ff8080' : '#6a3a4a' });
+      if (this.rush) {
+        g.fillStyle = 'rgba(255,80,96,0.18)';
+        g.fillRect(318, 142, 152, 18);
+      }
+      text(g, this.rush ? '◆ 보스 러시 — 켜짐' : '보스 러시', 394, 144, { size: 8, align: 'center', color: this.rush ? '#ff9090' : '#e0a0a8', bold: true });
+      text(g, `최고 기록 ${save.bossRushBest ?? 0}체`, 394, 154, { size: 5, align: 'center', color: '#c8a0a8' });
+      hot.add('lf:6', 316, 140, 156, 22);
+    }
+    // 스토리 (잠긴 스토리도 보여 줌)
+    const sd = storyDef(this.view);
+    const locked = this.view > save.storyMax;
     const ssel = this.focus === 5;
-    panel(g, 316, 166, 156, 42, { border: ssel ? '#ffffff' : '#c0a060' });
+    panel(g, 316, 166, 156, 42, { border: ssel ? '#ffffff' : locked && !this.rush ? '#4a4058' : '#c0a060' });
     hot.add('lf:5', 316, 166, 156, 42);
     if (this.rush) {
       const n = STORIES.filter((x) => save.storyClear[x.id]).reduce((a, x) => a + x.route.flat().length, 0);
-      text(g, '특별 모드', 322, 170, { size: 6, color: '#ff9090' });
-      text(g, '◀ 보스 러시', 394, 180, { size: 9, align: 'center', color: '#ff8080', bold: true });
+      text(g, '보스 러시 (스토리 칸을 누르면 끔)', 322, 170, { size: 6, color: '#ff9090' });
+      text(g, '보스 러시', 394, 180, { size: 9, align: 'center', color: '#ff8080', bold: true });
       text(g, `완수한 스토리의 보스 ${n}체와 연속으로 · 최고 기록 ${save.bossRushBest ?? 0}체`, 394, 194, { size: 5, align: 'center', color: '#ffc0c0', maxW: 150 });
     } else {
-      text(g, `스토리 ${sd.id} / ${STORIES.length}`, 322, 170, { size: 6, color: '#a8a0c0' });
-      text(g, `◀ ${sd.name} ▶`, 394, 180, { size: 9, align: 'center', color: '#ffe0a0', bold: true, maxW: 150 });
-      text(g, save.storyMax > 1 ? (save.storyClear[sd.id] ? `${sd.sub} · 완수` : sd.sub) : '「망자의 계약」을 완수하면 후속 스토리가 열린다', 394, 194, { size: 5, align: 'center', color: save.storyClear[sd.id] ? '#a0ffd0' : '#a8a0c0', maxW: 150 });
-      if (sd.id === save.storyMax && rushUnlocked()) text(g, '▶ 보스 러시', 466, 170, { size: 5, align: 'right', color: '#ff9090' });
+      text(g, `스토리 ${sd.id} / ${STORIES.length}${locked ? ' · 잠김' : ''}`, 322, 170, { size: 6, color: locked ? '#ff9090' : '#a8a0c0' });
+      text(g, `${this.view > 1 ? '◀' : ' '} ${sd.name} ${this.view < STORIES.length ? '▶' : ' '}`, 394, 180, { size: 9, align: 'center', color: locked ? '#8a8098' : '#ffe0a0', bold: true, maxW: 150 });
+      const sub = locked ? `스토리 ${sd.id - 1}을 완수하면 열린다${app.debug ? ' (디버그: 출정 가능)' : ''}` : save.storyMax > 1 || sd.id > 1 ? (save.storyClear[sd.id] ? `${sd.sub} · 완수` : sd.sub) : '「망자의 계약」을 완수하면 후속 스토리가 열린다';
+      text(g, sub, 394, 194, { size: 5, align: 'center', color: locked ? '#ff9090' : save.storyClear[sd.id] ? '#a0ffd0' : '#a8a0c0', maxW: 150 });
     }
     // 출정
-    button(g, 316, 210, 156, 28, '출정!', this.focus === 4, { size: 11, col: '#ffcc40', sub: this.rush ? '보스와 연속 전투' : sd.id === 1 ? '끝없는 왕좌를 향해' : sd.sub });
+    button(g, 316, 210, 156, 28, '출정!', this.focus === 4, { size: 11, col: '#ffcc40', sub: this.rush ? '보스와 연속 전투' : locked ? (app.debug ? '[디버그] 잠긴 스토리로' : '잠긴 스토리') : sd.id === 1 ? '끝없는 왕좌를 향해' : sd.sub });
     hot.add('lf:4', 316, 210, 156, 28);
     // 피커
     if (this.picking) {

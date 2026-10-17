@@ -280,9 +280,10 @@ const LOADERS: Record<string, () => Promise<HeroSheet>> = {
   ashen: () => import('./sheets/ashen').then((m) => m.ASHEN),
   luciel: () => import('./sheets/luciel').then((m) => m.LUCIEL),
   arien: () => import('./sheets/arien').then((m) => m.ARIEN),
+  aurel: () => import('./sheets/aurel').then((m) => m.AUREL),
 };
 /** 카일루스(96칸)보다 큰 검기가 그려진 칸이 있는 영웅은 가로 160칸 (화면 80) */
-const WIDE: Record<string, boolean> = { solen: true, lucas: true, astral: true, enoch: true, ashen: true, luciel: true, arien: true };
+const WIDE: Record<string, boolean> = { solen: true, lucas: true, astral: true, enoch: true, ashen: true, luciel: true, arien: true, aurel: true };
 
 interface Sheet { img: HTMLImageElement; fxImg: HTMLImageElement | null; ok: boolean; fxOk: boolean; d: HeroSheet | null; w: number }
 const SHEETS: Record<string, Sheet> = {};

@@ -3,6 +3,8 @@ import { melee, multi, P, shot } from './actionKit';
 
 /** 카일루스 「천구 나침반」 강화 효과 id — 발밑 나침반 그림도 이 효과가 있는 동안 그린다 (Player.render) */
 export const CAELUS_COMPASS = 'caelus_compass';
+/** 아우렐 「태양의 문장」 강화 (머리 위 문장 표시) */
+export const AUREL_SUN = 'aurel_sun';
 
 /** 확장 영웅 16명 (★7 2 / ★6 2 / ★5 2 / ★4 4 / ★3 6). 형식은 characters.ts와 동일 */
 export const CHARACTERS_EX: CharDef[] = [
@@ -56,7 +58,7 @@ export const CHARACTERS_EX: CharDef[] = [
       },
       {
         name: '천구 나침반',
-        desc: '발밑에 별의 나침반을 펼쳐 8초간 공격 속도 +60%, 공격력 +50%.',
+        desc: '발밑에 별의 나침반을 펼쳐 8초간 공격 속도 +60%, 공격력 2배(+100%).',
         cd: 14,
         act: {
           dur: 24,
@@ -64,7 +66,7 @@ export const CHARACTERS_EX: CharDef[] = [
           ev: [
             { t: 6, k: 'sfx', s: 'gem' },
             { t: 6, k: 'pic', name: 'card', dx: 10, dy: -14, s0: 22, s1: 34, life: 22 },
-            { t: 8, k: 'buff', id: CAELUS_COMPASS, stats: { aspd: 0.6, atk: 0.5 }, dur: 8 },
+            { t: 8, k: 'buff', id: CAELUS_COMPASS, stats: { aspd: 0.6, atk: 1.0 }, dur: 8 },
           ],
         },
       },
@@ -736,6 +738,98 @@ export const CHARACTERS_EX: CharDef[] = [
       { desc: '타락한 검무 쿨타임 -2초', mods: [{ target: 'skill2', cd: 2 }] },
       { desc: '공격력 +10%', effects: [{ stats: { atk: 0.1 } }] },
       { desc: '신성의 문장 피해 +60%', mods: [{ target: 'swap', dmg: 0.6 }] },
+      { desc: '모든 기술 피해 +35%, 스킬 쿨타임 -10%', mods: [{ target: 'all', dmg: 0.35 }], effects: [{ stats: { cdr: 0.1 } }] },
+    ],
+  },
+  {
+    // 컨셉아트: 「태양을 따르는 검」 — 흰 후드 망토, 태양의 창·태양의 문장. 파워.
+    // 스프라이트는 전용 시트(sheets/aurel). 역할: 가까운 적에게 뛰어들어 크게 날려 버리는 강타 · 머리 위 태양의 문장으로 공격력 1.5배
+    id: 'aurel', name: '아우렐', title: '태양을 따르는 검', rarity: 6, type: 'power', crest: 'flame',
+    lore: '「…빛이 있는 곳에, 언제나 내가 있지.」 저무는 태양을 끝까지 쫓는 기사. 머리 위에 태양의 문장이 떠오르면, 그의 창끝은 한낮처럼 타오른다.',
+    atk: 78, hp: 265, speed: 2.0, fx: '#ffa040',
+    look: { skin: '#f4ecf0', hair: '#e8e8f0', hairStyle: 'hood', body: '#f0ece8', trim: '#ffa040', legs: '#1a1418', boots: '#2a2024', cape: '#e8e0d8', eye: '#ffb040', weapon: 'spear', wcol: '#ffe0a0', wcol2: '#5a3010', build: 'normal', glow: '#ffa040' },
+    combo: [
+      melee({ dur: 14, t: 4, m: 0.9, box: [0, -18, 44, 26], w: 'windHigh', s: 'slashDown', fx: { arc: 'down', r: 32, col: '#ffa040' }, hs: 3, lunge: 2.5, el: 'fire' }),
+      melee({ dur: 14, t: 4, m: 0.9, box: [0, -16, 46, 22], w: 'thrustWind', s: 'thrust', fx: { arc: 'thrust', r: 40, col: '#ffd080' }, hs: 3, lunge: 3, el: 'fire' }),
+      {
+        // 마무리: 태양의 호를 그리며 크게 베어 날린다
+        dur: 28,
+        pose: [[0, 'slamWind'], [6, 'slam']],
+        move: [[4, 3], [12, 0]],
+        ev: [
+          { t: 4, k: 'sfx', s: 'swing_heavy' },
+          { t: 7, k: 'pic', name: 'aurel:star', dx: 26, dy: -12, s0: 30, s1: 48, life: 10 },
+          { t: 7, k: 'hit', box: [-6, -26, 58, 38], m: 1.7, kb: 6, hs: 7, el: 'fire', st: 'burn', fx: { arc: 'circle', r: 34, col: '#ffa040' }, fin: true, shake: 3 },
+        ],
+      },
+    ],
+    air: melee({ dur: 16, t: 4, m: 0.9, box: [0, -6, 38, 26], w: 'windHigh', s: 'slashDown', fx: { arc: 'down', r: 30, col: '#ffa040' }, air: true, grav: 0.3, hs: 3, el: 'fire' }),
+    dashAtk: melee({ dur: 20, t: 5, m: 1.4, box: [-10, -14, 58, 18], w: 'thrustWind', s: 'thrust', fx: { arc: 'h', r: 46, col: '#ffa040' }, lunge: 8, hs: 5, el: 'fire', inv: [0, 10] }),
+    skills: [
+      {
+        name: '태양 강타',
+        desc: '가까운 적(약 8칸 이내) 앞으로 순식간에 뛰어들어 태양의 창으로 내리쳐 멀리 날려 버린다 (320%, 강한 넉백). 적이 없으면 앞으로 짧게 돌진해 벤다.',
+        cd: 7,
+        act: {
+          dur: 34,
+          pose: [[0, 'slamWind'], [8, 'slam']],
+          inv: [0, 16],
+          armor: true,
+          ev: [
+            { t: 0, k: 'sfx', s: 'dash' },
+            { t: 2, k: 'tp', dx: 56, toEnemy: true, range: 130, front: true },
+            { t: 4, k: 'pic', name: 'aurel:emblem', dx: 18, dy: -14, s0: 16, s1: 40, life: 10, spin: 0.1 },
+            { t: 8, k: 'sfx', s: 'swing_heavy' },
+            { t: 9, k: 'hit', box: [-4, -30, 56, 44], m: 3.2, kb: 14, up: -4, hs: 9, el: 'fire', st: 'burn', fx: { arc: 'down', r: 44, col: '#ffd080' }, shake: 6 },
+            { t: 9, k: 'pic', name: 'aurel:sun', dx: 30, dy: -10, s0: 30, s1: 80, life: 16, spin: 0.05 },
+            { t: 9, k: 'sfx', s: 'explode' },
+          ],
+        },
+      },
+      {
+        name: '태양의 문장',
+        desc: '머리 위에 태양의 문장을 띄워 10초간 공격력 1.5배(+50%). 문장이 떠 있는 동안 표시된다.',
+        cd: 18,
+        act: {
+          dur: 24,
+          pose: [[0, 'cast'], [6, 'castUp']],
+          ev: [
+            { t: 4, k: 'sfx', s: 'gem' },
+            { t: 4, k: 'pic', name: 'aurel:sun', dx: 0, dy: -14, s0: 20, s1: 70, life: 18, spin: 0.06 },
+            { t: 8, k: 'buff', id: AUREL_SUN, stats: { atk: 0.5 }, dur: 10 },
+          ],
+        },
+      },
+    ],
+    swap: {
+      name: '교대: 일출',
+      desc: '태양의 문장과 함께 내려와 주변을 불태운다 (공격력 360%, 화상).',
+      act: {
+        dur: 30,
+        pose: [[0, 'castUp'], [12, 'slam']],
+        inv: [0, 18],
+        ev: [
+          { t: 2, k: 'pic', name: 'aurel:emblem', dx: 0, dy: -12, s0: 30, s1: 90, life: 22, spin: 0.04 },
+          { t: 12, k: 'pic', name: 'aurel:sun', dx: 0, dy: -10, s0: 50, s1: 150, life: 20, spin: 0.03 },
+          { t: 12, k: 'nova', r: 74, m: 3.6, el: 'fire', st: 'burn', up: -3, col: '#ffa040' },
+          { t: 12, k: 'shake', v: 6 },
+          { t: 12, k: 'sfx', s: 'explode' },
+        ],
+      },
+    },
+    passive: {
+      name: '정오의 열기',
+      desc: '공격력 +10%, 화상에 걸린 적에게 주는 피해 +20%. 콤보 마지막 타격 시 충격파 (공격력 100%).',
+      effects: [
+        { stats: { atk: 0.1, vsBurn: 0.2 } },
+        { on: 'finisher', do: [{ k: 'wave', m: 1.0 }] },
+      ],
+    },
+    awaken: [
+      { desc: '태양 강타 피해 +40%', mods: [{ target: 'skill1', dmg: 0.4 }] },
+      { desc: '태양의 문장 쿨타임 -3초', mods: [{ target: 'skill2', cd: 3 }] },
+      { desc: '공격력 +10%', effects: [{ stats: { atk: 0.1 } }] },
+      { desc: '일출 피해 +60%', mods: [{ target: 'swap', dmg: 0.6 }] },
       { desc: '모든 기술 피해 +35%, 스킬 쿨타임 -10%', mods: [{ target: 'all', dmg: 0.35 }], effects: [{ stats: { cdr: 0.1 } }] },
     ],
   },

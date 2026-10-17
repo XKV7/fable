@@ -3,7 +3,7 @@ import { WEAPON_MAP } from '../data/weapons';
 import { audio } from '../core/audio';
 import { charFrame, white, tinted } from '../gfx/sprites';
 import { charFrameHD, hasLyingFrame, hdFx, hdQueue } from '../gfx/hd';
-import { CAELUS_COMPASS } from '../data/characters2';
+import { AUREL_SUN, CAELUS_COMPASS } from '../data/characters2';
 import { charAtk, charHp } from './combat';
 import type { Room } from './room';
 import type { ActEvent, ActionDef, CharDef, PoseName } from './types';
@@ -601,6 +601,14 @@ export class Player {
     if (left > 0 && this.state !== 'dead') {
       const pop = Math.min(1, (8 - left) * 4 + 0.4);
       hdFx('circle', x + 24, y + 44, 66 * pop, { ang: time * 0.05, squash: 0.3, alpha: Math.min(1, left * 2) * 0.95 });
+    }
+    // 아우렐 「태양의 문장」: 강화 중엔 머리 위에 태양의 문장이 떠서 천천히 돈다
+    const sb = this.room.build.buffs.get(AUREL_SUN);
+    const sLeft = sb ? sb.until - this.room.build.time : 0;
+    if (sLeft > 0 && this.state !== 'dead') {
+      const pop = Math.min(1, (10 - sLeft) * 4 + 0.4);
+      const blink = sLeft < 2 && (time >> 3) % 2 === 0 ? 0.4 : 1;
+      hdFx('aurel:crest', x + 24, y - 2 + Math.sin(time * 0.08) * 1.5, 26 * pop, { ang: time * 0.03, alpha: Math.min(1, sLeft * 2) * blink });
     }
     g.save();
     if (this.inv > 0 && this.state !== 'dead' && (time >> 2) % 2 === 0) g.globalAlpha = 0.45;

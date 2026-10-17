@@ -819,11 +819,11 @@ export class Room {
         }
         let tx: number;
         if (ev.toEnemy) {
-          const e = this.nearestEnemy(p.cx, p.cy, 220);
+          const e = this.nearestEnemy(p.cx, p.cy, ev.range ?? 220);
           if (e) {
             const side = p.cx < e.cx ? 1 : -1;
-            tx = e.cx + side * (e.b.w / 2 + 10);
-            p.facing = -side;
+            tx = ev.front ? e.cx - side * (e.b.w / 2 + 8) : e.cx + side * (e.b.w / 2 + 10);
+            p.facing = ev.front ? side : -side;
           } else tx = p.cx + f * ev.dx;
         } else tx = p.cx + f * ev.dx;
         this.fx.ghost(p.frame(), p.cx - 24, p.b.y + p.b.h - 44, p.facing < 0, col, 18);

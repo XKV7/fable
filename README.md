@@ -7,7 +7,7 @@
 전투 중 두 영웅을 바꿔 끼며 싸우는 손맛, 매 런 달라지는 영웅·무기·유물 조합, 그리고 런에서 번 재화로 돌리는 가챠가 핵심입니다.
 
 - Vite + TypeScript(strict) + Canvas 2D, **외부 런타임 라이브러리·이미지·사운드 파일 0개**
-- 모든 그래픽은 코드로 그린 픽셀 아트(오프스크린 캔버스 캐시), 모든 사운드와 음악은 WebAudio 절차 합성
+- 모든 그래픽은 코드로 그린 픽셀 아트(오프스크린 캔버스 캐시). 영웅·적·보스·생물·무기·아이콘·방 소품·상점은 2배 픽셀 밀도 HD 그림, 모든 사운드와 음악은 WebAudio 절차 합성
 - 내부 해상도 480×270, 정수 배율 확대, 고정 타임스텝 60Hz
 - 키보드 + 게임패드, 키 재설정, 자동 저장(localStorage) + JSON 내보내기/가져오기
 
@@ -242,6 +242,7 @@ src/
   core/      loop(고정 60Hz) · input(키보드·패드·재설정) · audio(WebAudio 합성·절차 음악) · rng · math
   gfx/       renderer(480×270 월드 + 정수배율 UI) · pixel(픽셀 도구) · humanoid(포즈→스프라이트 생성기)
              sprites(적·보스·시설 스프라이트 캐시) · background(3레이어 시차)
+             hd(2배 밀도 HD 층) · enemyHD/creaturesHD(적·보스·생물 96px 프레임) · iconArt · propsHD(소품) · weaponArt · orb
   data/      ★ 밸런싱은 여기서만: characters · weapons · relics · crests · enemies · bosses · rooms · gacha · meta(강화/업적/이벤트/챕터/저주)
   game/      types(데이터 스키마) · combat(데미지 공식, 순수) · gacha(확률, 순수) · crests(세트 판정, 순수)
              effects(효과 훅 엔진) · world(타일·충돌) · player · enemy · boss · entities(투사체·장판·소환·픽업)

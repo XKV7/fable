@@ -451,14 +451,14 @@ class Art {
 const noise = (amt: number, seed = 1) => (x: number, y: number, v: number): number => v + (hash(x, y, seed) - 0.5) * amt;
 /** 돌: 2px 덩어리 잡음 + 가는 금 */
 const stone = (seed = 3) => (x: number, y: number, v: number): number => {
-  let t = v + (hash(x >> 1, y >> 1, seed) - 0.5) * 0.32;
-  if (hash(x >> 2, y >> 2, seed + 9) > 0.86 && ((x + y) & 1) === 0) t -= 0.35;
+  let t = v + (hash(x >> 1, y >> 1, seed) - 0.5) * 0.2;
+  if (hash(x >> 2, y >> 2, seed + 9) > 0.9 && ((x + y) & 1) === 0) t -= 0.3;
   return t;
 };
 /** 털: 비스듬한 짧은 결 */
 const fur = (seed = 5) => (x: number, y: number, v: number): number => {
   const h = hash(x + (y >> 1) * 3, y >> 1, seed);
-  return v + (h > 0.8 ? -0.28 : h < 0.12 ? 0.22 : 0);
+  return v + (h > 0.86 ? -0.24 : h < 0.08 ? 0.18 : 0);
 };
 /** 비늘·깃털: 엇갈린 반달 무늬 */
 const scales = (sz = 4, amt = 0.28) => (x: number, y: number, v: number): number => {
@@ -656,7 +656,7 @@ const FAM: Record<string, Fam> = {
     const far = ramp(dk(c.c, 0.55), dk(c.c, 0.3), c.c);
     const leg = (i: number, near: boolean): void => {
       const k = (f + i + (near ? 0 : 1)) % 2;
-      const hx = (near ? 21 : 22.5) + i * 2.4;
+      const hx = (near ? 25.6 : 26.4) + i * 1;
       const kx = (near ? 12 : 14) + i * 5;
       const fx = (near ? 10 : 12) + i * 6;
       const ky = cy - (near ? 5 : 6) + k;
@@ -665,15 +665,15 @@ const FAM: Record<string, Fam> = {
     };
     for (let i = 0; i < 4; i++) leg(i, false);
     // 배
-    A.paint(A.m().ellipse(18.6, cy - 0.6, 7.4, 5.6), M.body, { r: 9, spec: lt(c.b, 0.55), tex: noise(0.08, 2) });
+    A.paint(A.m().ellipse(18.6, cy - 0.6, 7.4, 5.6), M.body, { r: 9, gain: 0.85, bias: 0.25, spec: lt(c.b, 0.55), tex: noise(0.08, 2) });
     // 무늬
     for (const [x, y, r] of [[16.5, cy - 3.2, 1], [19.6, cy - 3.8, 1.1], [14, cy - 1.6, 0.8]] as [number, number, number][]) {
       A.paint(A.m().ellipse(x, y, r * 1.3, r * 0.8), M.acc, { r: 2, line: false });
     }
     A.ln(13, cy + 1, 22, cy + 2.4, dk(c.c, 0.2));
-    // 머리가슴
-    A.paint(A.m().ellipse(28.6, cy + 0.8, 4.6, 3.4), M.dark, { r: 6, spec: lt(c.a, 0.4) });
     for (let i = 0; i < 4; i++) leg(i, true);
+    // 머리가슴
+    A.paint(A.m().ellipse(28.6, cy + 0.8, 4.6, 3.4), M.body, { r: 6, spec: lt(c.b, 0.4) });
     // 엄니
     A.paint(A.m().path([[31.6, cy + 2.6], [32.6, cy + 4.4], [31.8, cy + 5.2]], 0.6, 0.3), M.light, { r: 2 });
     const ec = anim === 'wind' ? RED : c.e;
@@ -1002,15 +1002,15 @@ const FAM: Record<string, Fam> = {
     // 흰자
     const shut = anim === 'hurt';
     const sx = 24.8;
-    const sw = R - 3.4;
-    const sh = shut ? 1 : R - 4.4;
+    const sw = R - 2.6;
+    const sh = shut ? 1 : R - 3.2;
     A.paint(A.m().ellipse(sx, cy, sw, sh), ramp('#9a8a9a', '#e0d4e0', '#ffffff'), { r: 8, gain: 0.8 });
     if (!shut) {
       for (const [a, l] of [[0.5, 2], [2.4, 1.6], [3.6, 2.2], [5.2, 1.6]] as [number, number][]) {
         A.ln(sx + Math.cos(a) * sw, cy + Math.sin(a) * sh, sx + Math.cos(a) * (sw - l), cy + Math.sin(a) * (sh - l * 0.8), '#c05a70');
       }
       const ix = 25.8 + (anim === 'wind' ? 0 : 0.6);
-      const ir = Math.min(2.8, sh - 0.4);
+      const ir = Math.min(3.2, sh - 0.6);
       A.paint(A.m().disc(ix, cy, ir), ramp(dk(c.b, 0.5), mix(c.a, c.b, 0.6), lt(c.b, 0.3)), { r: 4, line: false });
       const pc = anim === 'wind' ? RED : c.e;
       A.paint(A.m().ellipse(ix + 0.2, cy, 0.8 + k * 0.4, Math.min(1.8, ir - 0.4)), ramp(dk(pc, 0.3), pc, lt(pc, 0.3)), { r: 2, line: false });
@@ -1018,15 +1018,19 @@ const FAM: Record<string, Fam> = {
       A.dot(ix - 0.3, cy - 1.2, '#ffffff');
       if (anim === 'wind') A.halo(ix, cy, 4, RED, 0.45);
     }
-    // 위 눈꺼풀 그늘
-    A.ln(sx - sw + 0.4, cy - sh * 0.7, sx + sw - 0.4, cy - sh * 0.7, dk(c.c, 0.1));
   },
 
   worm(A, c, M, anim, f) {
     const up = anim === 'wind' ? -6 : anim === 'atk' ? 2 : 0;
+    const segY = (i: number): number => 40 - Math.max(0, i - 3) * 3 + (i >= 4 ? up : 0) + Math.sin(f + i) * 0.6;
+    // 마디 사이를 잇는 몸 (머리를 든 자세에서 끊기지 않게)
+    const spine: Pt[] = [];
+    for (let i = 0; i < 6; i++) spine.push([12 + i * 4, segY(i)]);
+    spine.push([36, 30 + up]);
+    A.paint(A.m().path(spine, 2, 2.6), M.dark, { r: 4 });
     for (let i = 0; i < 6; i++) {
       const x = 12 + i * 4;
-      const y = 40 - Math.max(0, i - 3) * 3 + (i >= 4 ? up : 0) + Math.sin(f + i) * 0.6;
+      const y = segY(i);
       const r = 2.5 + i * 0.12;
       A.paint(A.m().ellipse(x, y, r + 0.5, r), i % 2 ? M.body : M.light, { r: 6, spec: lt(c.b, 0.4) });
       A.ln(x + r * 0.6, y - r + 0.6, x + r * 0.6, y + r - 0.6, dk(c.c, 0.2));
@@ -1055,28 +1059,36 @@ const FAM: Record<string, Fam> = {
     const y = 26 + bob(f, 2) + (anim === 'atk' ? 4 : 0);
     const featherR = ramp(dk(c.c, 0.35), c.c, mix(c.c, c.a, 0.6));
     const wing = (dx: number, dy: number, r: Ramp, cov: Ramp | null): void => {
-      const pts: Pt[] = [[22.6 + dx, y - 1.4 + dy], [16 + dx, y - 6.6 + flap + dy], [10.5 + dx, y - 6 + flap + dy], [7 + dx, y - 3 + flap + dy], [10 + dx, y - 1.6 + flap * 0.8 + dy], [12.6 + dx, y - 0.4 + flap * 0.55 + dy], [15.4 + dx, y + 0.6 + flap * 0.3 + dy], [19.6 + dx, y + 1.4 + dy]];
-      const m = A.m().poly(pts);
-      // 날개 끝 깃 사이 홈
-      m.cut((q) => {
-        for (let i = 3; i < 7; i++) {
-          const [ax, ay] = pts[i];
-          const [bx, by] = pts[i + 1];
-          q.disc((ax + bx) / 2 + 0.2, (ay + by) / 2 + 1.1, 0.7);
-        }
-      });
-      A.paint(m, r, { r: 3, tex: noise(0.1, 2) });
-      // 깃 결
-      for (let i = 0; i < 5; i++) {
-        const t = i / 5;
-        const ax = 21 - t * 11 + dx;
-        const ay = y - 1 - (6 - t * 1.4) * (flap < 0 ? 0.85 : 0.3) * t + dy;
-        A.ln(ax, ay, ax - 1.6, ay + 2.4 + flap * 0.15, dk(toHex(...r[0]), 0.1));
+      // 앞전: 어깨 → 손목 → 날개 끝. 깃은 앞전에서 꼬리 쪽(뒤)으로 한 장씩
+      const S: Pt = [22.4 + dx, y - 1.2 + dy];
+      const Wr: Pt = [15 + dx, y - 6.8 + flap + dy];
+      const T: Pt = [8 + dx, y - 3.4 + flap * 1.05 + dy];
+      const lead = (t: number): Pt => (t < 0.5 ? [S[0] + (Wr[0] - S[0]) * t * 2, S[1] + (Wr[1] - S[1]) * t * 2] : [Wr[0] + (T[0] - Wr[0]) * (t - 0.5) * 2, Wr[1] + (T[1] - Wr[1]) * (t - 0.5) * 2]);
+      const dl = Math.hypot(T[0] - Wr[0], T[1] - Wr[1]) || 1;
+      const D: Pt = [(T[0] - Wr[0]) / dl, (T[1] - Wr[1]) / dl];
+      const B: Pt = [-0.8, 0.6];
+      const n = 10;
+      const fs: [Pt, Pt][] = [];
+      for (let i = 0; i <= n; i++) {
+        const t = i / n;
+        const [bx, by] = lead(t);
+        const k = Math.max(0, t - 0.35) * 1.4;
+        let fx = B[0] * (1 - k) + D[0] * k;
+        let fy = B[1] * (1 - k) + D[1] * k;
+        const fl = Math.hypot(fx, fy) || 1;
+        fx /= fl;
+        fy /= fl;
+        const len = 3.2 + t * 2.8 - (t > 0.95 ? 0.8 : 0);
+        fs.push([[bx, by], [bx + fx * len, by + fy * len]]);
       }
-      if (cov) {
-        const cm = A.m().poly([[22.6 + dx, y - 1.4 + dy], [16 + dx, y - 6.4 + flap + dy], [12.4 + dx, y - 5 + flap * 0.95 + dy], [16 + dx, y - 1.8 + flap * 0.4 + dy], [21 + dx, y + 0.2 + dy]]);
-        A.paint(cm, cov, { r: 3, tex: scales(3, 0.22) });
+      // 깃 아래 바탕 (깃 사이 틈을 메운다)
+      A.paint(A.m().poly([...fs.map((q) => q[0]), ...fs.map((q) => q[1]).reverse()]), r, { r: 3 });
+      for (let i = n; i >= 0; i--) {
+        const [[bx, by], [ex, ey]] = fs[i];
+        A.paint(A.m().cap(bx, by, ex, ey, 1.25, 0.7), r, { r: 2.5 });
       }
+      // 앞전 뼈대 + 덮깃
+      A.paint(A.m().path([S, Wr, lead(0.75)], 1.5, 0.8), cov ?? r, { r: 3, tex: cov ? scales(3, 0.2) : undefined });
     };
     wing(3, -1, ramp(dk(c.c, 0.6), dk(c.c, 0.35), c.c), null);
     // 꼬리깃
@@ -1419,9 +1431,10 @@ const FAM: Record<string, Fam> = {
       const cx = 24 + s * 14.5;
       const cy = 26.6 + raise;
       A.paint(A.m().path([[bx, 34.6], [24 + s * 11, 31 + raise * 0.6], [cx - s * 1.4, cy + 1.4]], 1.3, 1.1), M.body, { r: 3, tex: noise(0.1, 2) });
-      // 집게: 큰 손바닥 + 움직이는 손가락
-      A.paint(A.m().ellipse(cx, cy, 3.3, 2.7, s * 0.25).poly([[cx - s * 0.6, cy - 1.2], [cx + s * 2.4, cy - 4.4 + op * 0.3], [cx + s * 3.6, cy - 4], [cx + s * 2.6, cy - 1.6]]), M.light, { r: 5, spec: '#ffffff' });
-      A.paint(A.m().poly([[cx + s * 1.2, cy - 2.4 - op], [cx + s * 2.6, cy - 6.2 - op * 0.6], [cx + s * 3.6, cy - 5.8 - op * 0.6], [cx + s * 2.6, cy - 2.8 - op]]), M.body, { r: 2 });
+      // 집게: 큰 손바닥 + 위로 벌어진 두 손가락
+      A.paint(A.m().ellipse(cx, cy + 0.6, 3.4, 2.9, s * 0.2), M.light, { r: 6, spec: '#ffffff' });
+      A.paint(A.m().path([[cx + s * 1.6, cy - 1.2], [cx + s * 2.6, cy - 4], [cx + s * 1.8, cy - 6.4 - op * 0.4]], 1.3, 0.35), M.light, { r: 3, spec: '#ffffff' });
+      A.paint(A.m().path([[cx - s * 1.2, cy - 1.4], [cx - s * 1.4 - s * op, cy - 3.6 - op * 0.3], [cx - s * 0.4 - s * op * 0.6, cy - 5.6 - op * 0.3]], 1, 0.3), M.body, { r: 2 });
       A.dotOn(cx + s * 0.4, cy + 1, dk(c.c, 0.1));
       for (let i = 0; i < 3; i++) A.dotOn(cx - s * 1.4 + s * i * 1.2, cy - 0.4, lt(c.b, 0.4));
     }
@@ -1543,10 +1556,10 @@ const FAM: Record<string, Fam> = {
       const w = gw(v);
       return w > 0 && Math.abs(u - 24) <= w;
     });
-    A.paint(glass, ramp(mix(c.a, c.c, 0.4), mix(c.a, c.b, 0.5), lt(c.b, 0.5)), { r: 6, gain: 0.7, spec: '#ffffff' });
+    A.paint(glass, ramp(mix('#4a6070', c.c, 0.3), mix('#b0c8d4', c.b, 0.25), '#f4fcff'), { r: 6, gain: 0.7, spec: '#ffffff' });
     // 모래
     const sand = (f % 4) + 2;
-    const sr = ramp(dk(c.e, 0.35), c.e, lt(c.e, 0.5));
+    const sr = ramp(c.c, c.a, c.e);
     const low = A.m().test(14, 28, 34, 40, (u, v) => {
       const w = gw(v);
       if (w <= 0) return false;

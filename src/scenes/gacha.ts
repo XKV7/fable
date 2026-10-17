@@ -2,7 +2,7 @@ import { app, type Scene } from '../app';
 import { drawWeaponArt } from '../gfx/weaponArt';
 import { audio } from '../core/audio';
 import { CHAR_MAP, CHARACTERS, TYPE_COL, TYPE_LABEL } from '../data/characters';
-import { BANNER_INFO, GACHA, RATE_TABLE, type BannerKind } from '../data/gacha';
+import { BANNER_INFO, FIXED_SHARE, GACHA, RATE_TABLE, type BannerKind } from '../data/gacha';
 import { WEAPON_MAP, WEAPONS, weaponDesc } from '../data/weapons';
 import { text } from '../gfx/renderer';
 import { charArt, tinted } from '../gfx/sprites';
@@ -46,6 +46,8 @@ export class GachaScene implements Scene {
   stoneAnim = 0;
   /** 디버그 픽업 선택 창 */
   picker: { row: number; col: number; five: string; four: string[] } | null = null;
+  /** 상세 보기 (배너에 나오는 전체 영웅·무기와 개별 확률) — 스크롤 줄 */
+  detail: { scroll: number } | null = null;
 
   constructor(public back: Scene) {}
 
@@ -151,6 +153,15 @@ export class GachaScene implements Scene {
       case 'menu': {
         if (this.picker) {
           this.updatePicker();
+          break;
+        }
+        if (this.detail) {
+          this.updateDetail();
+          break;
+        }
+        if (inp.raw('KeyI') || (hot.hover() === 'gdetail' && hot.mouse.click)) {
+          this.detail = { scroll: 0 };
+          audio.play('select');
           break;
         }
         if (app.debug && this.kind === 'pickup' && (inp.raw('KeyP') || (hot.hover() === 'pkopen' && hot.mouse.click))) {
@@ -425,6 +436,122 @@ export class GachaScene implements Scene {
     keyHint(g, [['방향키', '이동'], [app.input.label('attack'), '선택'], ['Esc', '취소']]);
   }
 
+  /** 배너에 나오는 항목과 1회 뽑기당 개별 확률 (높은 등급부터) */
+  private detailItems(): { id: string; name: string; rarity: Rarity; p: number; pickup: boolean }[] {
+    const k = this.kind;
+    const list: { id: string; name: string; rarity: Rarity }[] = k === 'weapon' ? WEAPONS : CHARACTERS;
+    const pk = k === 'pickup' ? currentPickup(app.save) : null;
+    const out: { id: string; name: string; rarity: Rarity; p: number; pickup: boolean }[] = [];
+    for (const [r, rate] of RATE_TABLE) {
+      const group = list.filter((x) => x.rarity === r);
+      if (!group.length) continue;
+      const fixed = group.filter((x) => FIXED_SHARE[x.id] !== undefined);
+      const rest = group.filter((x) => FIXED_SHARE[x.id] === undefined);
+      const restShare = fixed.length && rest.length ? 1 - fixed.reduce((a, x) => a + FIXED_SHARE[x.id], 0) : 1;
+      const pkIds = pk ? (r === 5 ? [pk.five] : r === 4 ? pk.four : []) : [];
+      const pkRate = r === 5 ? GACHA.pickupRate5 : GACHA.pickupRate4;
+      for (const x of group) {
+        let share: number;
+        const isPk = pkIds.includes(x.id);
+        if (pkIds.length && r === 5 && group.length > pkIds.length) share = isPk ? pkRate / pkIds.length : (1 - pkRate) / (group.length - pkIds.length); // ★5 픽업: 반은 픽업, 반은 나머지
+        else if (pkIds.length && r === 4) share = (isPk ? pkRate / pkIds.length : 0) + (1 - pkRate) / group.length; // ★4 픽업: 반은 픽업 2명, 반은 ★4 전체
+        else if (fixed.length && rest.length) share = FIXED_SHARE[x.id] ?? restShare / rest.length; // 고정 비율 (에녹 등)
+        else share = 1 / group.length;
+        out.push({ id: x.id, name: x.name, rarity: r, p: rate * share, pickup: pkIds.includes(x.id) });
+      }
+    }
+    return out;
+  }
+
+  private static readonly DCOLS = 5;
+  private static readonly DROWS = 5;
+
+  private updateDetail(): void {
+    const inp = app.input;
+    const d = this.detail!;
+    const rows = this.detailRows().length;
+    if (inp.menu('back') || inp.raw('KeyI') || (hot.hover() === 'gdclose' && hot.mouse.click)) {
+      this.detail = null;
+      audio.play('cancel');
+      return;
+    }
+    if (inp.menu('mup')) d.scroll = Math.max(0, d.scroll - 1);
+    if (inp.menu('mdown')) d.scroll = Math.min(Math.max(0, rows - GachaScene.DROWS), d.scroll + 1);
+    if (hot.hover() === 'gdup' && hot.mouse.click) d.scroll = Math.max(0, d.scroll - 1);
+    if (hot.hover() === 'gddown' && hot.mouse.click) d.scroll = Math.min(Math.max(0, rows - GachaScene.DROWS), d.scroll + 1);
+  }
+
+  /** 상세 목록을 줄 단위로: 등급 머리줄 + 5칸씩 */
+  private detailRows(): ({ head: Rarity; n: number } | { items: ReturnType<GachaScene['detailItems']> })[] {
+    const items = this.detailItems();
+    const rows: ({ head: Rarity; n: number } | { items: typeof items })[] = [];
+    for (const r of [7, 6, 5, 4, 3] as Rarity[]) {
+      const g = items.filter((x) => x.rarity === r);
+      if (!g.length) continue;
+      rows.push({ head: r, n: g.length });
+      for (let i = 0; i < g.length; i += GachaScene.DCOLS) rows.push({ items: g.slice(i, i + GachaScene.DCOLS) });
+    }
+    return rows;
+  }
+
+  private renderDetail(g: CanvasRenderingContext2D): void {
+    const d = this.detail!;
+    const k = this.kind;
+    g.fillStyle = 'rgba(4,2,10,0.94)';
+    g.fillRect(0, 0, 480, 270);
+    panel(g, 20, 12, 440, 240, { border: '#c080ff' });
+    text(g, `${BANNER_INFO[k].name} — 등장 목록`, 30, 18, { size: 10, color: '#ffffff', bold: true });
+    text(g, '1회 뽑기당 개별 확률', 450, 21, { size: 6, align: 'right', color: '#a8a0c0' });
+    const rows = this.detailRows();
+    // 머리줄은 낮게(12), 칸 줄은 높게(38)
+    let y = 36;
+    const vis = rows.slice(d.scroll);
+    let shown = 0;
+    for (const row of vis) {
+      const h = 'head' in row ? 12 : 38;
+      if (y + h > 238) break;
+      shown++;
+      if ('head' in row) {
+        stars(g, 30, y + 2, row.head, 5);
+        const rate = RATE_TABLE.find(([r]) => r === row.head)?.[1] ?? 0;
+        text(g, `${pct(rate, rate < 0.001 ? 2 : rate < 0.01 ? 1 : 2)} · ${row.n}${k === 'weapon' ? '종' : '명'}`, 30 + row.head * 7 + 6, y + 1, { size: 6, color: RARITY_COL[row.head] });
+      } else {
+        row.items.forEach((it, i) => {
+          const x = 30 + i * 84;
+          const own = k === 'weapon' ? !!app.save.weapons[it.id] : !!app.save.chars[it.id];
+          g.fillStyle = rgba(RARITY_COL[it.rarity], it.pickup ? 0.3 : 0.12);
+          g.fillRect(x, y, 80, 35);
+          g.strokeStyle = it.pickup ? '#ffcc40' : rgba(RARITY_COL[it.rarity], 0.6);
+          g.strokeRect(x + 0.5, y + 0.5, 79, 34);
+          g.save();
+          g.beginPath();
+          g.rect(x + 1, y + 1, 30, 33);
+          g.clip();
+          if (k === 'weapon') {
+            const w = WEAPONS.find((q) => q.id === it.id)!;
+            if (!drawWeaponArt(g, w.id, x + 3, y + 4, 26)) drawIcon(g, w.icon, x + 3, y + 4, 26, w.col);
+          } else g.drawImage(charArt(it.id, 'idle0'), x + 16 - 24, y + 36 - 44, 48, 48);
+          g.restore();
+          text(g, it.name.replace(/「.*」/, '').trim(), x + 33, y + 4, { size: 6, color: '#ffffff', bold: true, maxW: 46 });
+          const pp = it.p;
+          text(g, `${+(pp * 100).toPrecision(3)}%`, x + 33, y + 15, { size: 6, color: RARITY_COL[it.rarity] });
+          text(g, it.pickup ? '픽업' : own ? '보유' : '', x + 33, y + 25, { size: 5, color: it.pickup ? '#ffcc40' : '#80ffa0' });
+        });
+      }
+      y += h + 2;
+    }
+    if (d.scroll > 0) {
+      text(g, '▲', 240, 28, { size: 7, align: 'center', color: '#c0b0e0' });
+      hot.add('gdup', 200, 26, 80, 10);
+    }
+    if (d.scroll + shown < rows.length) {
+      text(g, '▼', 240, 240, { size: 7, align: 'center', color: '#c0b0e0' });
+      hot.add('gddown', 200, 238, 80, 10);
+    }
+    hot.add('gdclose', 0, 0, 20, 20);
+    keyHint(g, [['↑↓', '스크롤'], ['I / Esc', '닫기']]);
+  }
+
   ui(g: CanvasRenderingContext2D): void {
     if (this.phase === 'menu') this.renderMenu(g);
     else if (this.phase === 'throw') {
@@ -454,6 +581,7 @@ export class GachaScene implements Scene {
       } else keyHint(g, [[app.input.label('attack'), '뒤집기'], ['Esc', '건너뛰기']]);
     } else if (this.phase === 'reveal') this.renderReveal(g);
     if (this.picker) this.renderPicker(g);
+    if (this.detail) this.renderDetail(g);
     // 파티클
     g.save();
     g.globalCompositeOperation = 'lighter';
@@ -522,8 +650,10 @@ export class GachaScene implements Scene {
       }
     } else if (k === 'char') {
       // 대표 영웅: ★6 이상이 3명 이상이면 최상위 등급만 (자리가 좁아 ★5까지 다 넣으면 확률표와 겹침)
+      // 칸이 넘치지 않게 최대 8명 (그 이상은 「상세 보기」에서), 6명이 넘으면 그림을 작게
       const top = CHARACTERS.filter((c) => c.rarity >= 6);
-      const show = (top.length >= 3 ? top : CHARACTERS.filter((c) => c.rarity >= 5)).sort((a, b) => b.rarity - a.rarity).slice(0, 6);
+      const show = (top.length >= 3 ? top : CHARACTERS.filter((c) => c.rarity >= 5)).sort((a, b) => b.rarity - a.rarity).slice(0, 8);
+      const art = show.length > 6 ? 72 : 96;
       // 정지 모습(대기 자세)으로, 배너 칸 안에 같은 간격으로 (이름도 한 줄에, 칸 너비에 맞춰)
       const slot = 228 / show.length;
       g.save();
@@ -534,13 +664,14 @@ export class GachaScene implements Scene {
         const cx = Math.round(110 + slot * (i + 0.5));
         g.fillStyle = rgba(RARITY_COL[c.rarity], save.chars[c.id] ? 0.16 : 0.06);
         g.fillRect(cx - slot / 2 + 3, 72, slot - 6, 84);
-        g.drawImage(charArt(c.id, 'idle0'), cx - 48, 150 - 88, 96, 96);
+        g.drawImage(charArt(c.id, 'idle0'), cx - art / 2, 150 - (art * 88) / 96, art, art);
       });
       g.restore();
       show.forEach((c, i) => {
         const cx = Math.round(110 + slot * (i + 0.5));
-        text(g, c.name, cx, 159, { size: 7, align: 'center', color: c.rarity >= 6 ? RARITY_COL[c.rarity] : '#ffe080', maxW: slot - 4 });
-        stars(g, cx - (c.rarity * 4) / 2, 168, c.rarity, 4);
+        text(g, c.name, cx, 159, { size: show.length > 6 ? 6 : 7, align: 'center', color: c.rarity >= 6 ? RARITY_COL[c.rarity] : '#ffe080', maxW: slot - 2 });
+        const st = show.length > 6 ? 3 : 4;
+        stars(g, cx - (c.rarity * st) / 2, 168, c.rarity, st);
       });
       text(g, `영웅 ${CHARACTERS.length}명 · 보유 ${Object.keys(save.chars).length}명`, 116, 180, { size: 7, color: '#c8c0d8' });
     } else {
@@ -552,6 +683,16 @@ export class GachaScene implements Scene {
         if (!drawWeaponArt(g, w.id, x + 18, y + 4, 28)) drawIcon(g, w.icon, x + 18, y + 4, 28, w.col);
         text(g, w.name.replace(/「.*」/, '').trim(), x + 32, y + 36, { size: 6, align: 'center', color: '#ffe080', maxW: 62 });
       });
+    }
+    // 상세 보기 버튼 (배너 오른쪽 아래)
+    {
+      const hov = hot.hover() === 'gdetail';
+      g.fillStyle = hov ? 'rgba(192,128,255,0.35)' : 'rgba(192,128,255,0.15)';
+      g.fillRect(282, 34, 56, 12);
+      g.strokeStyle = '#c080ff';
+      g.strokeRect(282.5, 34.5, 55, 11);
+      text(g, '상세 보기 (I)', 310, 36, { size: 6, align: 'center', color: '#e0c8ff' });
+      hot.add('gdetail', 282, 34, 56, 12);
     }
     // 확률표
     panel(g, 348, 30, 126, 166);

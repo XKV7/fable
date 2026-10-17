@@ -650,29 +650,39 @@ export class GachaScene implements Scene {
       }
     } else if (k === 'char') {
       // 대표 영웅: ★6 이상이 3명 이상이면 최상위 등급만 (자리가 좁아 ★5까지 다 넣으면 확률표와 겹침)
-      // 칸이 넘치지 않게 최대 8명 (그 이상은 「상세 보기」에서), 6명이 넘으면 그림을 작게
+      // 칸이 넘치지 않게: 6명까지 큰 그림, 8명까지 작은 그림 한 줄, 그 이상은 8×2 두 줄(최대 16명). 나머지는 「상세 보기」에서
       const top = CHARACTERS.filter((c) => c.rarity >= 6);
-      const show = (top.length >= 3 ? top : CHARACTERS.filter((c) => c.rarity >= 5)).sort((a, b) => b.rarity - a.rarity).slice(0, 8);
-      const art = show.length > 6 ? 72 : 96;
-      // 정지 모습(대기 자세)으로, 배너 칸 안에 같은 간격으로 (이름도 한 줄에, 칸 너비에 맞춰)
-      const slot = 228 / show.length;
+      const all = (top.length >= 3 ? top : CHARACTERS.filter((c) => c.rarity >= 5)).sort((a, b) => b.rarity - a.rarity);
+      const show = all.slice(0, 16);
+      const two = show.length > 8;
+      const perRow = two ? Math.ceil(show.length / 2) : show.length;
+      const art = two ? 48 : show.length > 6 ? 72 : 96;
+      const slot = 228 / perRow;
+      // 줄마다 (발끝 y, 칸 위, 칸 높이, 이름 y, 별 y)
+      const rowsY = two ? [{ foot: 104, top: 60, h: 46, name: 106, star: 113 }, { foot: 160, top: 118, h: 46, name: 162, star: 169 }] : [{ foot: 150, top: 72, h: 84, name: 159, star: 168 }];
+      const pos = (i: number): { cx: number; r: (typeof rowsY)[number] } => {
+        const row = two ? Math.floor(i / perRow) : 0;
+        const col = two ? i % perRow : i;
+        return { cx: Math.round(110 + slot * (col + 0.5)), r: rowsY[row] };
+      };
       g.save();
       g.beginPath();
       g.rect(108, 50, 232, 122);
       g.clip();
       show.forEach((c, i) => {
-        const cx = Math.round(110 + slot * (i + 0.5));
+        const { cx, r } = pos(i);
         g.fillStyle = rgba(RARITY_COL[c.rarity], save.chars[c.id] ? 0.16 : 0.06);
-        g.fillRect(cx - slot / 2 + 3, 72, slot - 6, 84);
-        g.drawImage(charArt(c.id, 'idle0'), cx - art / 2, 150 - (art * 88) / 96, art, art);
+        g.fillRect(cx - slot / 2 + 2, r.top, slot - 4, r.h);
+        g.drawImage(charArt(c.id, 'idle0'), cx - art / 2, r.foot - (art * 88) / 96, art, art);
       });
       g.restore();
       show.forEach((c, i) => {
-        const cx = Math.round(110 + slot * (i + 0.5));
-        text(g, c.name, cx, 159, { size: show.length > 6 ? 6 : 7, align: 'center', color: c.rarity >= 6 ? RARITY_COL[c.rarity] : '#ffe080', maxW: slot - 2 });
-        const st = show.length > 6 ? 3 : 4;
-        stars(g, cx - (c.rarity * st) / 2, 168, c.rarity, st);
+        const { cx, r } = pos(i);
+        text(g, c.name, cx, r.name, { size: two || show.length > 6 ? 5 + (two ? 0 : 1) : 7, align: 'center', color: c.rarity >= 6 ? RARITY_COL[c.rarity] : '#ffe080', maxW: slot - 2 });
+        const st = two ? 2 : show.length > 6 ? 3 : 4;
+        if (!two) stars(g, cx - (c.rarity * st) / 2, r.star, c.rarity, st);
       });
+      if (all.length > show.length) text(g, `외 ${all.length - show.length}명 — 상세 보기`, 336, 180, { size: 6, align: 'right', color: '#c0a8ff' });
       text(g, `영웅 ${CHARACTERS.length}명 · 보유 ${Object.keys(save.chars).length}명`, 116, 180, { size: 7, color: '#c8c0d8' });
     } else {
       WEAPONS.filter((w) => w.rarity === 5).forEach((w, i) => {

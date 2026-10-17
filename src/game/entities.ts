@@ -46,7 +46,22 @@ export class Projectile {
   update(room: Room): void {
     this.t++;
     const d = this.def;
-    if (d.home) {
+    if (d.home && d.ground && this.team === 'player') {
+      // 땅을 따라가는 유도 (빛기둥 검격 등): 아직 안 맞힌 가장 가까운 적 쪽으로 가로 속도만 틀어 쫓는다
+      let best = 260;
+      let tx: number | null = null;
+      for (const e of room.allEnemies()) {
+        if (e.dead || e.state === 'spawn' || this.hit.has(e)) continue;
+        const dd = Math.abs(e.cx - this.x) + Math.abs(e.cy - this.y) * 0.5;
+        if (dd < best) {
+          best = dd;
+          tx = e.cx;
+        }
+      }
+      if (tx !== null && Math.abs(tx - this.x) > 4) this.vx += Math.sign(tx - this.x) * d.spd * d.home;
+      this.vx = Math.max(-d.spd, Math.min(d.spd, this.vx));
+      this.vy = 0;
+    } else if (d.home) {
       // 관통 투사체가 이미 맞힌 적 주위를 맴돌지 않도록, 아직 안 맞힌 가장 가까운 적을 쫓는다 (없으면 직진)
       let tgt: unknown = this.team === 'player' ? null : room.player;
       if (this.team === 'player') {

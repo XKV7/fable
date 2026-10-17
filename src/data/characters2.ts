@@ -541,14 +541,33 @@ export const CHARACTERS_EX: CharDef[] = [
       },
       {
         name: '성흔 폭쇄',
-        desc: '주변의 적 최대 5명의 발밑에 붉은 성흔 마법진을 새기고, 잠시 뒤 한꺼번에 터뜨린다 (각 260%, 화상).',
+        desc: '붉은 성흔 구체 5개를 띄워 각각 적에게 날린다 (유도, 각 140% + 폭발 100%). 동시에 주변 적 최대 5명의 발밑에 마법진을 새겨 잠시 뒤 한꺼번에 터뜨린다 (각 260%, 화상).',
         cd: 10,
         act: {
-          dur: 30,
-          pose: [[0, 'cast'], [10, 'castUp']],
+          dur: 34,
+          pose: [[0, 'cast'], [10, 'castUp'], [18, 'cast']],
           ev: [
             { t: 4, k: 'sfx', s: 'gem' },
+            // 성흔 구체 5개가 몸 둘레에 떠오른다
+            ...Array.from({ length: 5 }, (_, i): ActEvent => {
+              const a = -Math.PI / 2 + (i - 2) * 0.6;
+              return { t: 2 + i * 2, k: 'pic', name: 'ashen:orb', dx: Math.round(Math.cos(a) * 26), dy: Math.round(Math.sin(a) * 22) - 8, s0: 6, s1: 18, life: 20 - i * 2, spin: 0.1 };
+            }),
             { t: 6, k: 'marks', n: 5, range: 260, r: 34, m: 2.6, delay: 40, pic: 'ashen:sigil', boom: 'ashen:burst', el: 'fire', st: 'burn', col: '#ff3050' },
+            // 구체가 차례로 날아가 적을 쫓는다
+            ...Array.from({ length: 5 }, (_, i): ActEvent => {
+              const a = -Math.PI / 2 + (i - 2) * 0.6;
+              return {
+                t: 18 + i * 3,
+                k: 'proj',
+                aim: true,
+                dx: Math.round(Math.cos(a) * 26),
+                dy: Math.round(Math.sin(a) * 22) - 8,
+                m: 1.4,
+                p: { spr: 'orb', spd: 5.5, life: 80, w: 12, h: 12, col: '#ff3050', el: 'fire', st: 'burn', home: 0.16, boom: { r: 26, m: 1.0, el: 'fire', st: 'burn', col: '#ff3050' }, boomPic: { name: 'ashen:burst', s0: 10, s1: 40, life: 12 }, pic: { name: 'ashen:orb', w: 18, spin: 0.25 } },
+              };
+            }),
+            { t: 18, k: 'sfx', s: 'cast' },
           ],
         },
       },
@@ -591,7 +610,7 @@ export const CHARACTERS_EX: CharDef[] = [
     // 스프라이트는 전용 시트(sheets/luciel). 역할: 정면 종베기 + 긴 빛기둥 검격 · 정면 난도질 + 검기 방출
     id: 'luciel', name: '루시엘', title: '타락한 성역의 검', rarity: 6, type: 'power', crest: 'fury',
     lore: '「…신성은 여전히 남아 있다. 단지, 내 손에 있을 뿐.」 무너진 성역을 지키던 마지막 성기사. 빛을 잃은 성흔의 검은 이제 그의 뜻대로만 빛난다.',
-    atk: 58, hp: 250, speed: 2.05, fx: '#ffd060',
+    atk: 80, hp: 250, speed: 2.05, fx: '#ffd060',
     look: { skin: '#f4ecf0', hair: '#e8e8f0', hairStyle: 'hood', body: '#14141c', trim: '#ffd060', legs: '#101018', boots: '#2a2a34', cape: '#18181e', eye: '#ffc040', weapon: 'greatsword', wcol: '#ffe8a0', wcol2: '#3a3020', build: 'normal', glow: '#ffd060' },
     combo: [
       melee({ dur: 13, t: 4, m: 0.85, box: [0, -18, 40, 26], w: 'windHigh', s: 'slashDown', fx: { arc: 'down', r: 30, col: '#ffd060' }, hs: 3, lunge: 2.5, el: 'holy' }),
@@ -616,7 +635,7 @@ export const CHARACTERS_EX: CharDef[] = [
     skills: [
       {
         name: '성역 가르기',
-        desc: '정면을 크게 내려 벤 뒤(180%), 땅을 따라 빛의 기둥이 길게 솟구치며 앞으로 뻗어 나간다 (기둥마다 100%).',
+        desc: '정면을 크게 내려 벤 뒤(180%), 빛의 기둥 검격이 땅을 따라 길게 뻗으며 가까운 적을 쫓아간다 (유도, 관통 220%).',
         cd: 7,
         act: {
           dur: 34,
@@ -625,17 +644,15 @@ export const CHARACTERS_EX: CharDef[] = [
           ev: [
             { t: 4, k: 'sfx', s: 'swing_heavy' },
             { t: 7, k: 'hit', box: [-4, -44, 46, 62], m: 1.8, kb: 4, up: -2, hs: 6, el: 'holy', fx: { arc: 'down', r: 44, col: '#ffe8a0' }, shake: 4 },
-            ...Array.from({ length: 8 }, (_, i): ActEvent[] => [
-              { t: 9 + i * 2, k: 'pic', name: 'luciel:pillar', dx: 38 + i * 26, dy: -16, s0: 40, s1: 54, life: 14 },
-              { t: 9 + i * 2, k: 'hit', box: [24 + i * 26, -46, 28, 60], m: 1.0, kb: 1, up: -2, hs: 1, el: 'holy' },
-            ]).flat(),
+            // 땅을 따라 적을 쫓는 빛기둥 검격 (지나간 적은 모두 관통)
+            { t: 9, k: 'proj', dx: 30, dy: 0, p: { spr: 'wave', spd: 5, life: 80, w: 26, h: 52, col: '#ffe8a0', el: 'holy', pierce: 99, ground: true, home: 0.12, kb: 1, up: -2, pic: { name: 'luciel:pillar', w: 44 } }, m: 2.2 },
             { t: 9, k: 'sfx', s: 'explode' },
           ],
         },
       },
       {
         name: '타락한 검무',
-        desc: '정면을 쉬지 않고 난도질한 뒤(8회, 각 50%), 금빛 검기 5개를 한꺼번에 날린다 (각 120%, 관통).',
+        desc: '정면을 쉬지 않고 난도질한 뒤(8회, 각 130% = 평타의 150%), 금빛 검기 5개를 한꺼번에 날린다 (각 120%, 관통).',
         cd: 9,
         act: {
           dur: 48,
@@ -643,7 +660,7 @@ export const CHARACTERS_EX: CharDef[] = [
           armor: true,
           inv: [0, 40],
           ev: [
-            ...Array.from({ length: 8 }, (_, i): ActEvent => ({ t: 4 + i * 4, k: 'hit', box: [0, -24, 52, 36], m: 0.5, kb: 0, hs: 1, el: 'holy', fx: { arc: (['down', 'up', 'x', 'h'] as const)[i % 4], r: 30, col: i % 2 ? '#ffd060' : '#fff0c0' } })),
+            ...Array.from({ length: 8 }, (_, i): ActEvent => ({ t: 4 + i * 4, k: 'hit', box: [0, -24, 52, 36], m: 1.3, kb: 0, hs: 1, el: 'holy', fx: { arc: (['down', 'up', 'x', 'h'] as const)[i % 4], r: 30, col: i % 2 ? '#ffd060' : '#fff0c0' } })),
             ...[4, 12, 20, 28].map((t): ActEvent => ({ t, k: 'sfx', s: 'swing' })),
             { t: 38, k: 'sfx', s: 'swing_heavy' },
             { t: 38, k: 'pic', name: 'luciel:arc3', dx: 18, dy: -12, s0: 44, s1: 64, life: 10 },

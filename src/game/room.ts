@@ -747,8 +747,13 @@ export class Room {
         const sp = ((ev.spread ?? 8) * Math.PI) / 180;
         for (let i = 0; i < n; i++) {
           const a = base + (i - (n - 1) / 2) * sp;
-          const sx = p.cx + f * (ev.dx ?? 8);
-          const sy = p.cy + (ev.dy ?? -4);
+          let sx = p.cx + f * (ev.dx ?? 8);
+          let sy = p.cy + (ev.dy ?? -4);
+          // 벽·천장 속에서 생기면 바로 사라지므로 몸 쪽에서 나가게
+          if (!ev.p.landY && this.world.solidPx(sx, sy)) {
+            sx = p.cx;
+            sy = p.cy - 6;
+          }
           let ang = f > 0 ? a : Math.PI - a;
           if (ev.aim) {
             // 가까운 적(최대 3명)을 향해 — 이벤트 시각마다 번갈아 겨눠 여러 적에게 나눠 꽂힌다 (적이 없으면 원래 각도)

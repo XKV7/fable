@@ -789,8 +789,9 @@ function chest(open: boolean, big: boolean): HTMLCanvasElement {
       t: (x, y) => {
         const dx = (x + 0.5 - W / 2) / (W / 2 - 2);
         const dy = (y + 0.5 - by) / lidH;
-        if (dy > 0.05 || dx * dx * 0.35 + dy * dy > 1) return null;
-        return 0.7 + dy * 0.4 - dx * 0.3;
+        if (dy > 0.05 || Math.abs(dx) ** 5 + dy * dy > 1) return null;
+        // 둥근 뚜껑: 위쪽 면은 밝고 앞쪽 아래로 갈수록 어둡다
+        return 0.9 + dy * 0.2 - (dy + 1) * 0.9 - dx * 0.25;
       },
     };
     A.paint(lid, wood, { tex: grain(63) });
@@ -808,7 +809,7 @@ function chest(open: boolean, big: boolean): HTMLCanvasElement {
   return A.finish();
 }
 
-/** 석조 아치 문 (56×104 — 월드 28×52, 문 세 개가 두 칸 간격으로 붙어 있어도 사이가 뜨게) */
+/** 석조 아치 문 (56×88 — 월드 28×44, 문 세 개가 두 칸 간격으로 붙어 있어도 사이가 뜨게) */
 function door(open: boolean, f: number): HTMLCanvasElement {
   const W = 56;
   const cx = 28;
@@ -816,19 +817,20 @@ function door(open: boolean, f: number): HTMLCanvasElement {
   const ir = 19; // 안쪽 반지름
   const ix0 = cx - ir;
   const ix1 = cx + ir;
-  const A = new Art(W, 104);
+  const HH = 88;
+  const A = new Art(W, HH);
   const outer: Sh = {
-    x0: 0, y0: 0, x1: W, y1: 104,
+    x0: 0, y0: 0, x1: W, y1: HH,
     t: (x, y) => {
       const X = x + 0.5;
       const Y = y + 0.5;
-      if (Y >= R) return 0.3 - (Y / 104) * 0.5 - (X > ix1 ? 0.3 : 0);
+      if (Y >= R) return 0.3 - (Y / HH) * 0.5 - (X > ix1 ? 0.3 : 0);
       const d = Math.hypot(X - cx, Y - R);
       return d <= R ? 0.5 - (X - cx) / W - (d > R - 3 ? 0.2 : 0) : null;
     },
   };
   const inner: Sh = {
-    x0: ix0, y0: R - ir, x1: ix1, y1: 104,
+    x0: ix0, y0: R - ir, x1: ix1, y1: HH,
     t: (x, y) => {
       const X = x + 0.5;
       const Y = y + 0.5;
@@ -855,7 +857,7 @@ function door(open: boolean, f: number): HTMLCanvasElement {
   // 쐐기돌
   A.paint(poly([[cx - 5, 0], [cx + 5, 0], [cx + 3, 10], [cx - 3, 10]], (u) => 0.7 - u * 0.8), M.stone);
   A.paint(oval(cx, 4, 2, 2), open ? M.magenta : M.gold, { sep: false });
-  const my = 64; // 안쪽 가운데 높이
+  const my = 54; // 안쪽 가운데 높이
   if (open) {
     // 안쪽: 보랏빛 소용돌이
     A.paint({ ...inner, t: (x, y) => (inner.t(x, y) === null ? null : 0.6 - Math.hypot((x + 0.5 - cx) / ir, (y + 0.5 - my) / 40) * 1.6) }, mat('#3a1a6a', '#b090ff', '#08040f'), { sep: false, edge: false });
@@ -864,7 +866,7 @@ function door(open: boolean, f: number): HTMLCanvasElement {
       const a = t * Math.PI * 5 + f * 0.52;
       const r = 2 + t * 16;
       const x = cx + Math.cos(a) * r;
-      const y = my + Math.sin(a) * r * 1.9;
+      const y = my + Math.sin(a) * r * 1.6;
       if (inner.t(Math.round(x), Math.round(y)) === null) continue;
       const c = i % 5 === 0 ? '#ffffff' : i % 2 ? '#c8a8ff' : '#8a5aff';
       A.glow(x, y, c, 0.5 + (1 - t) * 0.5);
@@ -872,24 +874,24 @@ function door(open: boolean, f: number): HTMLCanvasElement {
     }
     A.fill(oval(cx, my, 3, 5), '#f0e0ff', 0.7);
     // 열린 문짝 (왼쪽에 납작하게)
-    A.paint(poly([[ix0, R + 2], [ix0 + 6, R + 7], [ix0 + 6, 100], [ix0, 104]], (u) => 0.3 - u * 0.6), M.wood, { tex: grain(72, true) });
+    A.paint(poly([[ix0, R + 2], [ix0 + 6, R + 7], [ix0 + 6, HH - 4], [ix0, HH]], (u) => 0.3 - u * 0.6), M.wood, { tex: grain(72, true) });
     A.paint(poly([[ix0, 42], [ix0 + 6, 46], [ix0 + 6, 49], [ix0, 45]], 0.2), M.iron, { sep: false });
-    A.paint(poly([[ix0, 82], [ix0 + 6, 84], [ix0 + 6, 87], [ix0, 85]], 0.2), M.iron, { sep: false });
+    A.paint(poly([[ix0, 70], [ix0 + 6, 72], [ix0 + 6, 75], [ix0, 73]], 0.2), M.iron, { sep: false });
   } else {
     // 판자 문
     A.paint(inner, M.wood, { tex: (x, y, c) => ((x - ix0) % 10 === 0 ? mix(c, INK, 0.6) : grain(73, true)(x, y, c)) });
-    for (const y of [42, 82]) {
+    for (const y of [40, 70]) {
       A.paint(where(box(ix0, y, ix1 - ix0, 5, 0.5, -0.3), (x, yy) => inner.t(x, yy) !== null), M.iron, { sep: false });
       for (let x = ix0 + 4; x < ix1; x += 8) A.dot(x, y + 2, '#d8e0f0');
     }
-    A.paint(ring(cx + 10, 64, 2.5, 4), M.gold, { sep: false });
-    A.paint(oval(cx + 10, 60, 1.6, 1.6), M.gold, { sep: false });
+    A.paint(ring(cx + 10, 56, 2.5, 4), M.gold, { sep: false });
+    A.paint(oval(cx + 10, 52, 1.6, 1.6), M.gold, { sep: false });
     A.fill(oval(cx, 24, 4, 4), '#1a0e08');
     A.fill(box(cx - 2, 20, 1, 8), '#4a4a54');
     A.fill(box(cx + 1, 20, 1, 8), '#4a4a54');
   }
   // 문턱
-  A.paint(box(4, 100, W - 8, 4, 0.5, -0.3), M.darkStone, { sep: false });
+  A.paint(box(4, HH - 4, W - 8, 4, 0.5, -0.3), M.darkStone, { sep: false });
   return A.finish();
 }
 
@@ -978,7 +980,7 @@ function portal(f: number): HTMLCanvasElement {
   // 받침
   A.paint(box(8, 94, 64, 10, 0.4, -0.4), M.darkStone, { tex: blocks(14, 5, 8, 94) });
   // 안쪽 소용돌이
-  A.paint({ ...oval(40, 50, 26, 40), t: (x, y) => (oval(40, 50, 26, 40).t(x, y) === null ? null : 0.7 - Math.hypot((x + 0.5 - 40) / 26, (y + 0.5 - 50) / 40) * 1.7) }, mat('#4a2a8a', '#c8b0ff', '#0c0618'), { sep: false, edge: false });
+  A.paint({ ...oval(40, 50, 26, 40), t: (x, y) => (oval(40, 50, 26, 40).t(x, y) === null ? null : 1 - Math.hypot((x + 0.5 - 40) / 26, (y + 0.5 - 50) / 40) * 1.8) }, mat('#6a3ab0', '#e0c8ff', '#140a28'), { sep: false, edge: false });
   for (let i = 0; i < 90; i++) {
     const t = i / 90;
     const a = t * Math.PI * 6 - f * 0.52;

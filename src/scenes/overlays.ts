@@ -6,13 +6,15 @@ import { CREST_MAP } from '../data/crests';
 import { EVENTS, ITEM_MAP, ITEMS, type EventDef } from '../data/meta';
 import { RELIC_MAP } from '../data/relics';
 import { WEAPON_MAP, weaponDesc } from '../data/weapons';
-import { text, textBlock, wrap } from '../gfx/renderer';
+import { measure, text, textBlock, wrap } from '../gfx/renderer';
+import { COUNTER_SLOT, merchantHD, shopBackdropHD, shopCounterHD } from '../gfx/propsHD';
+import { rgba } from '../gfx/pixel';
 import type { Room } from '../game/room';
 import type { RunState } from '../game/run';
 import { drawIcon, ITEM_ICON } from '../ui/icons';
 import { charCard, crestTags, relicCard, weaponCard } from '../ui/cards';
 import { portrait } from '../ui/hud';
-import { RELIC_RARITY_COL } from '../ui/theme';
+import { RELIC_RARITY_COL, RELIC_RARITY_NAME } from '../ui/theme';
 import { button, hot, keyHint, Menu, panel, stars } from '../ui/widgets';
 import { pct } from '../core/math';
 import type { StatKey } from '../game/types';
@@ -103,16 +105,29 @@ interface Stock {
   sold: boolean;
 }
 
+/** 상점 화면 왼쪽 무대 (UI 좌표) */
+const SHOP_X = 16;
+const SHOP_Y = 16;
+const SHOP_GREET = '"살아있는 손님은 오랜만이군. 둘러보게."';
+
+/**
+ * 떠돌이 해골 상인의 노점. 왼쪽은 픽셀 아트 가게(차양·선반·상인·유리 진열 카운터),
+ * 진열칸마다 물건과 가격표, 오른쪽은 고른 물건의 설명과 구매 버튼.
+ * 조작: ←→ / ↑↓(진열칸 줄) 선택, 공격·상호작용 키로 구매, Esc 나가기, 마우스로 칸 위에 올리고 누르기.
+ */
 export class ShopOverlay implements Overlay {
-  menu: Menu;
+  sel = 0;
+  t = 0;
+  say = SHOP_GREET;
+  sayT = 0;
+  /** 방금 산 칸 (반짝임) */
+  flash = -1;
+  flashT = 0;
   constructor(
     public run: RunState,
     public room: Room,
     public stock: Stock[],
-  ) {
-    this.menu = new Menu([], 'shop');
-    this.refresh();
-  }
+  ) {}
   static makeStock(run: RunState): Stock[] {
     const ch = run.chapter;
     const relics = run.rollRelics(3);
@@ -122,69 +137,267 @@ export class ShopOverlay implements Overlay {
     s.push({ kind: 'heal', id: 'heal', price: Math.round(45 + ch * 15), sold: false });
     return s;
   }
-  refresh(): void {
-    this.menu.items = [
-      ...this.stock.map((s) => ({ label: this.label(s), disabled: s.sold || this.run.gold < s.price, sub: s.sold ? '판매 완료' : `${s.price} 금화` })),
-      { label: '나가기' },
-    ];
-  }
   label(s: Stock): string {
     if (s.kind === 'relic') return RELIC_MAP[s.id].name;
     if (s.kind === 'item') return ITEM_MAP[s.id].name;
     return '치료 (체력 40%)';
   }
+  private talk(s: string): void {
+    this.say = s;
+    this.sayT = 150;
+  }
+  /** 진열칸 이동: ←→ 한 칸씩, ↑↓ 한 줄씩 (맨 아래 다음은 나가기) */
+  private nav(): void {
+    const inp = app.input;
+    const n = this.stock.length;
+    const N = n + 1;
+    const prev = this.sel;
+    if (inp.menu('mleft')) this.sel = (this.sel - 1 + N) % N;
+    if (inp.menu('mright')) this.sel = (this.sel + 1) % N;
+    if (inp.menu('mup')) this.sel = this.sel === n ? Math.max(0, n - 1) : this.sel >= 3 ? this.sel - 3 : n;
+    if (inp.menu('mdown')) this.sel = this.sel === n ? 0 : this.sel + 3 < n ? this.sel + 3 : n;
+    if (this.sel !== prev) audio.play('select');
+  }
+  private buy(i: number): void {
+    const s = this.stock[i];
+    if (s.sold) {
+      audio.play('error');
+      this.talk('"그건 이미 팔렸네."');
+      return;
+    }
+    if (this.run.gold < s.price) {
+      audio.play('error');
+      this.talk('"금화가 모자라는군, 손님."');
+      return;
+    }
+    if (s.kind === 'item' && this.run.items.length >= 3) {
+      app.toast('소모품은 3개까지 들 수 있다', '#ff8080');
+      audio.play('error');
+      this.talk('"짐이 너무 많군. 하나 쓰고 오게."');
+      return;
+    }
+    this.run.gold -= s.price;
+    s.sold = true;
+    audio.play('buy');
+    this.flash = i;
+    this.flashT = 30;
+    if (s.kind === 'relic') {
+      this.run.relics.push(s.id);
+      this.room.rebuild();
+      app.toast(`유물 획득: ${RELIC_MAP[s.id].name}`, RELIC_RARITY_COL[RELIC_MAP[s.id].rarity]);
+    } else if (s.kind === 'item') this.run.items.push(s.id);
+    else this.room.heal(this.room.maxHp() * 0.4);
+    this.talk(['"좋은 물건이지. 클클클…"', '"거래 성사로군."', '"현명한 선택이야, 산 자여."'][Math.floor(Math.random() * 3)]);
+  }
   update(): 'close' | null {
-    const r = this.menu.update(app.input);
-    if (r === 'back') return 'close';
-    if (r === 'ok') {
-      const i = this.menu.sel;
-      if (i >= this.stock.length) return 'close';
-      const s = this.stock[i];
-      if (s.sold || this.run.gold < s.price) return null;
-      if (s.kind === 'item' && this.run.items.length >= 3) {
-        app.toast('소모품은 3개까지 들 수 있다', '#ff8080');
-        audio.play('error');
+    this.t++;
+    if (this.sayT > 0 && --this.sayT === 0) this.say = SHOP_GREET;
+    if (this.flashT > 0) this.flashT--;
+    const n = this.stock.length;
+    this.nav();
+    const h = hot.hover();
+    if (h && h.startsWith('shop:')) {
+      const i = Number(h.slice(5));
+      if (hot.mouse.moved && i !== this.sel) this.sel = i;
+      if (hot.mouse.click) {
+        this.sel = i;
+        if (i >= n) {
+          audio.play('back');
+          return 'close';
+        }
+        this.buy(i);
         return null;
       }
-      this.run.gold -= s.price;
-      s.sold = true;
-      audio.play('buy');
-      if (s.kind === 'relic') {
-        this.run.relics.push(s.id);
-        this.room.rebuild();
-        app.toast(`유물 획득: ${RELIC_MAP[s.id].name}`, RELIC_RARITY_COL[RELIC_MAP[s.id].rarity]);
-      } else if (s.kind === 'item') this.run.items.push(s.id);
-      else this.room.heal(this.room.maxHp() * 0.4);
-      this.refresh();
+    }
+    if (app.input.menu('back')) {
+      audio.play('back');
+      return 'close';
+    }
+    if (app.input.menu('ok')) {
+      if (this.sel >= n) {
+        audio.play('confirm');
+        return 'close';
+      }
+      this.buy(this.sel);
     }
     return null;
   }
+  private slotRect(i: number): { x: number; y: number; w: number; h: number } {
+    const S = COUNTER_SLOT;
+    return { x: SHOP_X + S.x0 + (i % 3) * (S.w + S.gx), y: SHOP_Y + 132 + S.y0 + Math.floor(i / 3) * (S.h + S.gy), w: S.w, h: S.h };
+  }
+  private icon(s: Stock): { key: string; col: string } {
+    if (s.kind === 'relic') return { key: RELIC_MAP[s.id].icon, col: RELIC_MAP[s.id].col };
+    if (s.kind === 'item') return { key: ITEM_ICON[s.id], col: ITEM_MAP[s.id].col };
+    return { key: 'heart', col: '#ff4a6a' };
+  }
+  private renderScene(g: CanvasRenderingContext2D): void {
+    const X = SHOP_X;
+    const Y = SHOP_Y;
+    g.save();
+    g.imageSmoothingEnabled = false;
+    g.drawImage(shopBackdropHD(), X, Y, 236, 224);
+    // 등불 빛
+    g.globalCompositeOperation = 'lighter';
+    for (const lx of [20, 216]) {
+      const fl = 0.22 + 0.04 * Math.sin(this.t * 0.21 + lx);
+      const gr = g.createRadialGradient(X + lx, Y + 35, 0, X + lx, Y + 35, 48);
+      gr.addColorStop(0, `rgba(255,190,90,${fl})`);
+      gr.addColorStop(1, 'rgba(255,190,90,0)');
+      g.fillStyle = gr;
+      g.fillRect(X + lx - 48, Y + 20, 96, 96);
+    }
+    g.globalCompositeOperation = 'source-over';
+    // 상인 + 카운터
+    g.drawImage(merchantHD(Math.floor(this.t / 8)), X + 74, Y + 52, 88, 80);
+    g.drawImage(shopCounterHD(), X, Y + 132, 236, 92);
+    g.restore();
+    // 간판
+    g.fillStyle = '#3a2214';
+    g.fillRect(X + 64, Y + 3, 108, 16);
+    g.fillStyle = '#7a5030';
+    g.fillRect(X + 65, Y + 4, 106, 14);
+    g.fillStyle = '#a07040';
+    g.fillRect(X + 65, Y + 4, 106, 1);
+    g.fillStyle = '#e0a830';
+    for (const x of [X + 67, X + 168]) g.fillRect(x, Y + 10, 1, 1);
+    text(g, '떠돌이 해골 상인', X + 118, Y + 6, { size: 8, align: 'center', color: '#ffe8a0', bold: true });
+    // 말풍선
+    const bw = Math.min(200, measure(g, this.say, 7) + 14);
+    const bx = X + 118 - bw / 2;
+    const by = Y + 30;
+    g.fillStyle = '#0a0810';
+    g.fillRect(bx - 1, by - 1, bw + 2, 16);
+    g.fillStyle = '#f4ecd8';
+    g.fillRect(bx, by, bw, 14);
+    g.fillStyle = '#0a0810';
+    g.fillRect(X + 117, by + 15, 4, 1);
+    g.fillRect(X + 118, by + 16, 2, 2);
+    g.fillStyle = '#f4ecd8';
+    g.fillRect(X + 118, by + 14, 2, 2);
+    text(g, this.say, X + 118, by + 3, { size: 7, align: 'center', color: '#2a1a14', shadow: null });
+    // 진열칸 물건
+    const n = this.stock.length;
+    this.stock.forEach((s, i) => {
+      const r = this.slotRect(i);
+      const sel = this.sel === i;
+      const { key, col } = this.icon(s);
+      const lift = sel && !s.sold ? Math.round(Math.sin(this.t * 0.15)) - 1 : 0;
+      if (sel) {
+        g.fillStyle = 'rgba(255,224,128,0.12)';
+        g.fillRect(r.x, r.y, r.w, r.h);
+      }
+      g.save();
+      if (s.sold) g.globalAlpha = 0.3;
+      if (s.kind === 'relic') {
+        g.fillStyle = rgba(RELIC_RARITY_COL[RELIC_MAP[s.id].rarity], 0.18);
+        g.fillRect(r.x + 4, r.y + 3, 26, 26);
+      }
+      drawIcon(g, key, r.x + 5, r.y + 4 + lift, 24, col);
+      g.restore();
+      // 가격표 (종이 꼬리표)
+      const afford = this.run.gold >= s.price;
+      g.fillStyle = s.sold ? '#5a5048' : '#e8dcc0';
+      g.fillRect(r.x + 33, r.y + 6, 32, 11);
+      g.fillStyle = s.sold ? '#3a3430' : '#a08a60';
+      g.fillRect(r.x + 33, r.y + 16, 32, 1);
+      g.fillRect(r.x + 32, r.y + 10, 1, 3);
+      drawIcon(g, 'coin', r.x + 35, r.y + 8, 7, '#ffd040');
+      text(g, String(s.price), r.x + 63, r.y + 8, { size: 7, align: 'right', color: s.sold ? '#8a8078' : afford ? '#3a2410' : '#c02020', bold: true, shadow: null });
+      const sub = s.kind === 'relic' ? RELIC_RARITY_NAME[RELIC_MAP[s.id].rarity] : s.kind === 'item' ? '소모품' : '치료';
+      text(g, sub, r.x + 49, r.y + 20, { size: 6, align: 'center', color: s.kind === 'relic' ? RELIC_RARITY_COL[RELIC_MAP[s.id].rarity] : s.kind === 'item' ? '#a8e0b0' : '#ff9ab0' });
+      if (s.sold) {
+        g.save();
+        g.translate(r.x + r.w / 2, r.y + r.h / 2);
+        g.rotate(-0.2);
+        g.fillStyle = 'rgba(40,6,10,0.85)';
+        g.fillRect(-20, -7, 40, 14);
+        g.strokeStyle = '#ff4a4a';
+        g.strokeRect(-19.5, -6.5, 39, 13);
+        text(g, '품절', 0, -4, { size: 8, align: 'center', color: '#ff6a6a', bold: true });
+        g.restore();
+      }
+      if (this.flash === i && this.flashT > 0) {
+        g.save();
+        g.globalCompositeOperation = 'lighter';
+        g.fillStyle = `rgba(255,230,140,${(this.flashT / 30) * 0.6})`;
+        g.fillRect(r.x, r.y, r.w, r.h);
+        g.restore();
+      }
+      if (sel) {
+        // 금빛 모서리 표시 (깜빡임)
+        g.fillStyle = (this.t >> 3) % 2 ? '#ffe080' : '#ffb02a';
+        for (const [cx, cy, dx, dy] of [[r.x - 2, r.y - 2, 1, 1], [r.x + r.w + 1, r.y - 2, -1, 1], [r.x - 2, r.y + r.h + 1, 1, -1], [r.x + r.w + 1, r.y + r.h + 1, -1, -1]]) {
+          g.fillRect(Math.min(cx, cx + dx * 5), cy, 6, 1);
+          g.fillRect(cx, Math.min(cy, cy + dy * 5), 1, 6);
+        }
+      }
+      hot.add(`shop:${i}`, r.x, r.y, r.w, r.h);
+    });
+    if (n === 0) text(g, '팔 물건이 다 떨어졌다', X + 118, Y + 170, { size: 7, align: 'center', color: '#a8a0c0' });
+  }
   render(g: CanvasRenderingContext2D): void {
-    dim(g, 0.55);
-    panel(g, 20, 20, 440, 230);
-    text(g, '떠돌이 해골 상인', 34, 28, { size: 11, color: '#80ff80', bold: true });
-    text(g, '"살아있는 손님은 오랜만이군. 둘러보게."', 34, 44, { size: 7, color: '#a8c0a8' });
-    drawIcon(g, 'coin', 360, 28, 10, '#ffd040');
-    text(g, `${this.run.gold} 금화`, 374, 29, { size: 8, color: '#ffe080' });
-    this.menu.render(g, 30, 60, 170, 22, 4, 7);
-    const i = this.menu.sel;
-    const s = this.stock[i];
-    if (s) {
-      if (s.kind === 'relic') relicCard(g, s.id, 290, 58, 150, 180, true);
-      else if (s.kind === 'item') {
+    dim(g, 0.6);
+    panel(g, 10, 10, 460, 240, { border: '#7a5a3a', glow: '#e0a830' });
+    this.renderScene(g);
+    // 오른쪽: 소지금 + 설명
+    const RX = 262;
+    const RW = 200;
+    drawIcon(g, 'coin', RX + 2, 17, 10, '#ffd040');
+    text(g, `${this.run.gold} 금화`, RX + 15, 18, { size: 8, color: '#ffe080', bold: true });
+    text(g, `소모품 ${this.run.items.length}/3`, RX + RW - 2, 19, { size: 6, align: 'right', color: '#a8a0c0' });
+    const n = this.stock.length;
+    const s = this.stock[this.sel];
+    const cy = 32;
+    const ch = 146;
+    if (s && s.kind === 'relic') relicCard(g, s.id, RX, cy, RW, ch, true);
+    else {
+      g.fillStyle = 'rgba(40,28,64,0.97)';
+      g.fillRect(RX, cy, RW, ch);
+      g.strokeStyle = s ? (s.kind === 'item' ? ITEM_MAP[s.id].col : '#ff4a6a') : '#7a5a3a';
+      g.lineWidth = 2;
+      g.strokeRect(RX + 0.5, cy + 0.5, RW - 1, ch - 1);
+      g.lineWidth = 1;
+      const mx = RX + RW / 2;
+      if (s && s.kind === 'item') {
         const it = ITEM_MAP[s.id];
-        panel(g, 290, 58, 150, 100);
-        drawIcon(g, ITEM_ICON[s.id], 345, 66, 40, it.col);
-        text(g, it.name, 365, 112, { size: 9, align: 'center', color: '#ffffff', bold: true });
-        text(g, it.desc, 365, 126, { size: 7, align: 'center', color: '#c8c0d8' });
-        text(g, `소모품 (${this.run.items.length}/3)`, 365, 140, { size: 6, align: 'center', color: '#8a8098' });
+        g.fillStyle = rgba(it.col, 0.15);
+        g.fillRect(mx - 20, cy + 8, 40, 40);
+        drawIcon(g, ITEM_ICON[s.id], mx - 15, cy + 13, 30, it.col);
+        text(g, it.name, mx, cy + 54, { size: 8, align: 'center', color: '#ffffff', bold: true });
+        text(g, '소모품', mx, cy + 65, { size: 6, align: 'center', color: '#a8e0b0' });
+        textBlock(g, it.desc, RX + 8, cy + 82, RW - 16, { size: 7, color: '#d8d0e8' }, 10);
+        text(g, `들고 있는 소모품 ${this.run.items.length}/3`, mx, cy + ch - 14, { size: 6, align: 'center', color: this.run.items.length >= 3 ? '#ff8080' : '#8a8098' });
+      } else if (s) {
+        g.fillStyle = rgba('#ff4a6a', 0.15);
+        g.fillRect(mx - 20, cy + 8, 40, 40);
+        drawIcon(g, 'heart', mx - 15, cy + 13, 30, '#ff4a6a');
+        text(g, '치료 (체력 40%)', mx, cy + 54, { size: 8, align: 'center', color: '#ffffff', bold: true });
+        text(g, '상처를 치료한다', mx, cy + 68, { size: 7, align: 'center', color: '#d8d0e8' });
+        const hp = Math.round(this.run.hp);
+        const mh = Math.round(this.room.maxHp());
+        text(g, `현재 체력 ${hp} / ${mh}`, mx, cy + 84, { size: 7, align: 'center', color: hp >= mh ? '#8a8098' : '#ff9ab0' });
       } else {
-        panel(g, 290, 58, 150, 80);
-        drawIcon(g, 'heart', 345, 66, 40, '#ff4a6a');
-        text(g, '상처를 치료한다', 365, 116, { size: 8, align: 'center', color: '#ffffff' });
+        drawIcon(g, 'door', mx - 15, cy + 18, 30, '#c8a070');
+        text(g, '가게를 나간다', mx, cy + 58, { size: 8, align: 'center', color: '#ffffff', bold: true });
+        text(g, '"또 오게. 살아 있다면 말이지."', mx, cy + 74, { size: 7, align: 'center', color: '#c8b8a0' });
       }
     }
-    keyHint(g, [['↑↓', '선택'], [app.input.label('attack'), '구매'], ['Esc', '나가기']]);
+    // 가격 + 구매 버튼
+    if (s) {
+      const afford = this.run.gold >= s.price;
+      const full = s.kind === 'item' && this.run.items.length >= 3;
+      drawIcon(g, 'coin', RX + 2, cy + ch + 6, 8, '#ffd040');
+      text(g, s.sold ? '판매 완료' : `${s.price} 금화`, RX + 13, cy + ch + 6, { size: 8, color: s.sold ? '#8a8098' : afford ? '#ffe080' : '#ff6a6a', bold: true });
+      if (!s.sold && !afford) text(g, `${s.price - this.run.gold} 부족`, RX + RW - 2, cy + ch + 7, { size: 6, align: 'right', color: '#ff8080' });
+      const label = s.sold ? '판매 완료' : !afford ? '금화 부족' : full ? '소모품 가득 참' : `구매하기 [${app.input.label('attack')}]`;
+      const dis = s.sold || !afford || full;
+      button(g, RX, cy + ch + 18, RW, 20, label, !dis, { disabled: dis, col: '#e0a830', size: 8 });
+      hot.add(`shop:${this.sel}`, RX, cy + ch + 18, RW, 20);
+    }
+    button(g, RX, cy + ch + 42, RW, 18, '나가기', this.sel === n, { size: 7 });
+    hot.add(`shop:${n}`, RX, cy + ch + 42, RW, 18);
+    keyHint(g, [['←→↑↓', '선택'], [app.input.label('attack'), '구매'], ['Esc', '나가기']]);
   }
 }
 

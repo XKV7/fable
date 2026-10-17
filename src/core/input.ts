@@ -136,6 +136,12 @@ export class Input {
   private repeatTimers = new Map<string, number>();
   anyPressedFlag = false;
   mouseClicked = false;
+  /** 터치 패드가 누르고 있는 동작 (실시간) */
+  touch = new Set<Action>();
+  /** 스텝 사이에 눌렀다 뗀 짧은 터치도 놓치지 않게 */
+  touchTap = new Set<Action>();
+  private curTouch = new Set<Action>();
+  private prevTouch = new Set<Action>();
 
   constructor(target: HTMLElement) {
     window.addEventListener('keydown', (e) => {
@@ -168,6 +174,8 @@ export class Input {
   poll(): void {
     this.curKeys = new Set([...this.keys, ...this.keyLatch]);
     this.keyLatch.clear();
+    this.curTouch = new Set([...this.touch, ...this.touchTap]);
+    this.touchTap.clear();
     const pads = typeof navigator !== 'undefined' && navigator.getGamepads ? navigator.getGamepads() : [];
     const nb: boolean[] = [];
     let ax = 0;
@@ -202,12 +210,14 @@ export class Input {
 
   endStep(): void {
     this.prevKeys = new Set(this.curKeys);
+    this.prevTouch = new Set(this.curTouch);
     this.mouseClicked = false;
   }
 
   private computeAnyPressed(): boolean {
     for (const k of this.curKeys) if (!this.prevKeys.has(k)) return true;
     for (let i = 0; i < this.padButtons.length; i++) if (this.padButtons[i] && !this.prevPad[i]) return true;
+    for (const a of this.curTouch) if (!this.prevTouch.has(a)) return true;
     return false;
   }
 
@@ -229,14 +239,19 @@ export class Input {
     return false;
   }
 
+  /** 키보드·패드·터치 중 하나라도 그 동작을 누르고 있는지 (prev: 이전 스텝) */
+  private act(a: Action, prev = false): boolean {
+    return this.bindHeld(this.bindings[a], prev) || this.axisHeld(a, prev) || (prev ? this.prevTouch : this.curTouch).has(a);
+  }
+
   held(a: Action): boolean {
-    return this.bindHeld(this.bindings[a], false) || this.axisHeld(a);
+    return this.act(a);
   }
   pressed(a: Action): boolean {
-    return (this.bindHeld(this.bindings[a], false) || this.axisHeld(a)) && !(this.bindHeld(this.bindings[a], true) || this.axisHeld(a, true));
+    return this.act(a) && !this.act(a, true);
   }
   released(a: Action): boolean {
-    return !this.held(a) && (this.bindHeld(this.bindings[a], true) || this.axisHeld(a, true));
+    return !this.act(a) && this.act(a, true);
   }
   raw(code: string): boolean {
     return this.curKeys.has(code) && !this.prevKeys.has(code);
@@ -249,19 +264,20 @@ export class Input {
     if (this.bindHeld(MENU_KEYS[k], prev)) return true;
     const x = prev ? this.prevAxisX : this.axisX;
     const y = prev ? this.prevAxisY : this.axisY;
-    if (k === 'mleft') return x < 0 || this.bindHeld(this.bindings.left, prev);
-    if (k === 'mright') return x > 0 || this.bindHeld(this.bindings.right, prev);
-    if (k === 'mup') return y < 0 || this.bindHeld(this.bindings.up, prev);
-    if (k === 'mdown') return y > 0 || this.bindHeld(this.bindings.down, prev);
+    const tc = prev ? this.prevTouch : this.curTouch;
+    if (k === 'mleft') return x < 0 || this.bindHeld(this.bindings.left, prev) || tc.has('left');
+    if (k === 'mright') return x > 0 || this.bindHeld(this.bindings.right, prev) || tc.has('right');
+    if (k === 'mup') return y < 0 || this.bindHeld(this.bindings.up, prev) || tc.has('up');
+    if (k === 'mdown') return y > 0 || this.bindHeld(this.bindings.down, prev) || tc.has('down');
     if (k === 'ok') {
       const dirs = new Set([...this.bindings.left.keys, ...this.bindings.right.keys, ...this.bindings.up.keys, ...this.bindings.down.keys]);
       const jumpKeys = { keys: this.bindings.jump.keys.filter((x) => !dirs.has(x)), pad: this.bindings.jump.pad };
-      return this.bindHeld(this.bindings.attack, prev) || this.bindHeld(jumpKeys, prev) || this.bindHeld(this.bindings.interact, prev);
+      return this.bindHeld(this.bindings.attack, prev) || this.bindHeld(jumpKeys, prev) || this.bindHeld(this.bindings.interact, prev) || tc.has('attack') || tc.has('jump') || tc.has('interact');
     }
-    if (k === 'tabL') return this.bindHeld(this.bindings.skill1, prev);
-    if (k === 'tabR') return this.bindHeld(this.bindings.skill2, prev);
+    if (k === 'tabL') return this.bindHeld(this.bindings.skill1, prev) || tc.has('skill1');
+    if (k === 'tabR') return this.bindHeld(this.bindings.skill2, prev) || tc.has('skill2');
     // 뒤로: 일시정지 키 + 패드의 대시 버튼(B). 키보드 대시(Shift)는 메뉴 뒤로로 쓰지 않음
-    if (k === 'back') return this.bindHeld(this.bindings.pause, prev) || this.bindHeld({ keys: [], pad: this.bindings.dash.pad }, prev);
+    if (k === 'back') return this.bindHeld(this.bindings.pause, prev) || this.bindHeld({ keys: [], pad: this.bindings.dash.pad }, prev) || tc.has('pause') || tc.has('dash');
     return false;
   }
 

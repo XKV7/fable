@@ -5,6 +5,9 @@ import { text } from '../gfx/renderer';
 import { newSave, sanitize } from '../game/save';
 import { redeemCoupon } from '../data/coupons';
 import { button, hot, keyHint, Menu, panel } from '../ui/widgets';
+import type { TouchMode } from '../ui/touchpad';
+
+const TOUCH_LABEL: Record<TouchMode, string> = { auto: '자동 (터치 화면이면 켜기)', on: '켜기', off: '끄기' };
 
 type Mode = 'main' | 'keys' | 'capture' | 'reset' | 'io';
 
@@ -30,6 +33,7 @@ export class SettingsScene implements Scene {
       { label: `효과음 음량  ◀ ${pctS(s.sfx)} ▶` },
       { label: `화면 흔들림  ◀ ${pctS(s.shake)} ▶` },
       { label: `데미지 숫자  ◀ ${s.dmgNumbers ? '켜기' : '끄기'} ▶` },
+      { label: `터치 패드  ◀ ${TOUCH_LABEL[s.touch ?? 'auto']} ▶` },
       { label: '조작 키 설정 (키 바꾸기)' },
       { label: '저장 데이터 내보내기 / 가져오기' },
       { label: '쿠폰 코드 입력', col: '#ffe080' },
@@ -55,6 +59,10 @@ export class SettingsScene implements Scene {
     if (i === 1) s.sfx = step(s.sfx);
     if (i === 2) s.shake = Math.max(0, Math.min(1.5, Math.round((s.shake + d * 0.25) * 4) / 4));
     if (i === 3) s.dmgNumbers = !s.dmgNumbers;
+    if (i === 4) {
+      const order: TouchMode[] = ['auto', 'on', 'off'];
+      s.touch = order[(order.indexOf(s.touch ?? 'auto') + (d > 0 ? 1 : 2)) % 3];
+    }
     app.applySettings();
     if (this.back.room) {
       this.back.room.cam.shakeScale = s.shake;
@@ -133,22 +141,22 @@ export class SettingsScene implements Scene {
       return;
     }
     const i = this.main.sel;
-    if (i <= 3) {
+    if (i <= 4) {
       if (inp.menu('mleft')) this.adjust(i, -1);
       if (inp.menu('mright')) this.adjust(i, 1);
     }
     const r = this.main.update(inp);
-    if (r === 'back' || (r === 'ok' && i === 8)) {
+    if (r === 'back' || (r === 'ok' && i === 9)) {
       app.persist();
       app.go(this.back, false);
       return;
     }
     if (r === 'ok') {
-      if (i <= 3) this.adjust(i, 1);
-      if (i === 4) this.mode = 'keys';
-      if (i === 5) this.openDom();
-      if (i === 6) this.openCoupon();
-      if (i === 7) {
+      if (i <= 4) this.adjust(i, 1);
+      if (i === 5) this.mode = 'keys';
+      if (i === 6) this.openDom();
+      if (i === 7) this.openCoupon();
+      if (i === 8) {
         this.mode = 'reset';
         this.confirm.sel = 1;
       }
@@ -270,7 +278,7 @@ export class SettingsScene implements Scene {
       keyHint(g, [['↑↓', '선택'], ['Enter', '변경'], ['Esc', '돌아가기']], 260);
       return;
     }
-    this.main.render(g, 120, 30, 240, 20, 3, 8);
+    this.main.render(g, 120, 30, 240, 18, 3, 8);
     if (this.mode === 'reset') {
       panel(g, 120, 100, 240, 70, { border: '#ff4060' });
       text(g, '모든 진행(영웅·무기·재화)이 사라집니다. 정말 초기화할까요?', 240, 112, { size: 7, align: 'center', color: '#ffffff', maxW: 230 });

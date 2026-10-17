@@ -10,6 +10,8 @@ export interface Settings {
   sfx: number;
   shake: number;
   dmgNumbers: boolean;
+  /** 터치 패드: auto = 터치 화면이면 켜기 */
+  touch?: 'auto' | 'on' | 'off';
   bindings: Bindings;
   bindVer?: number;
 }
@@ -67,7 +69,7 @@ export const SAVE_KEY = 'pact_save_v1';
 export const BIND_VER = 5;
 
 export function defaultSettings(): Settings {
-  return { music: 0.6, sfx: 0.8, shake: 1, dmgNumbers: true, bindings: cloneBindings(DEFAULT_BINDINGS), bindVer: BIND_VER };
+  return { music: 0.6, sfx: 0.8, shake: 1, dmgNumbers: true, touch: 'auto', bindings: cloneBindings(DEFAULT_BINDINGS), bindVer: BIND_VER };
 }
 
 export function newSave(): SaveData {

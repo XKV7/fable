@@ -5,7 +5,7 @@ export const H = 270;
 export const FONT = '"Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo","WenQuanYi Zen Hei","NanumGothic",sans-serif';
 
 /**
- * 월드는 480×270 오프스크린 캔버스에 그린 뒤 정수 배율로 확대(픽셀 선명),
+ * 월드는 480×270 오프스크린 캔버스에 그린 뒤 창 크기에 맞는 배율로 확대(가장 가까운 픽셀),
  * UI는 확대된 디스플레이 캔버스에 같은 좌표계(scale 변환)로 그려 한글이 또렷하게 보이게 한다.
  */
 export class Renderer {
@@ -29,17 +29,23 @@ export class Renderer {
     this.t.imageSmoothingEnabled = false;
     this.resize();
     window.addEventListener('resize', () => this.resize());
+    window.addEventListener('orientationchange', () => setTimeout(() => this.resize(), 120));
+    window.visualViewport?.addEventListener('resize', () => this.resize());
   }
 
   resize(): void {
+    // 창(태블릿·스마트폰·노트북·모니터) 크기에 맞춰 16:9를 유지하며 꽉 차게 — 소수 배율도 허용
     const dpr = Math.min(window.devicePixelRatio || 1, 3);
-    const availW = window.innerWidth * dpr;
-    const availH = window.innerHeight * dpr;
-    this.scale = Math.max(1, Math.floor(Math.min(availW / W, availH / H)));
-    this.display.width = W * this.scale;
-    this.display.height = H * this.scale;
-    this.display.style.width = `${(W * this.scale) / dpr}px`;
-    this.display.style.height = `${(H * this.scale) / dpr}px`;
+    const vv = window.visualViewport;
+    const cw = (vv?.width ?? window.innerWidth) || W;
+    const ch = (vv?.height ?? window.innerHeight) || H;
+    const fit = Math.min(cw / W, ch / H);
+    const bw = Math.max(W, Math.floor(W * fit * dpr));
+    this.scale = bw / W;
+    this.display.width = bw;
+    this.display.height = Math.round(H * this.scale);
+    this.display.style.width = `${Math.floor(W * fit)}px`;
+    this.display.style.height = `${Math.floor(H * fit)}px`;
     this.d.imageSmoothingEnabled = false;
   }
 
@@ -61,7 +67,7 @@ export class Renderer {
     d.save();
     d.setTransform(1, 0, 0, 1, 0, 0);
     d.imageSmoothingEnabled = false;
-    d.drawImage(this.top, Math.round(shakeX) * this.scale, Math.round(shakeY) * this.scale, W * this.scale, H * this.scale);
+    d.drawImage(this.top, Math.round(shakeX) * this.scale, Math.round(shakeY) * this.scale, this.display.width, this.display.height);
     d.restore();
   }
 
@@ -73,7 +79,7 @@ export class Renderer {
     d.fillStyle = '#000';
     d.fillRect(0, 0, this.display.width, this.display.height);
     d.imageSmoothingEnabled = false;
-    d.drawImage(this.world, Math.round(shakeX) * this.scale, Math.round(shakeY) * this.scale, W * this.scale, H * this.scale);
+    d.drawImage(this.world, Math.round(shakeX) * this.scale, Math.round(shakeY) * this.scale, this.display.width, this.display.height);
     d.setTransform(this.scale, 0, 0, this.scale, 0, 0);
     d.imageSmoothingEnabled = false;
   }

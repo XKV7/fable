@@ -6,6 +6,7 @@ import { newSave, sanitize, type SaveData } from './game/save';
 import { accounts } from './core/account';
 import { drawHDQueue, hdQueue, hdTop } from './gfx/hd';
 import { hot } from './ui/widgets';
+import { TouchPad } from './ui/touchpad';
 import { ACHIEVEMENTS } from './data/meta';
 import type { Room } from './game/room';
 
@@ -29,6 +30,7 @@ interface Toast {
 export class App {
   r: Renderer;
   input: Input;
+  touch!: TouchPad;
   loop: Loop;
   save: SaveData;
   hasSave: boolean;
@@ -45,6 +47,7 @@ export class App {
   constructor(canvas: HTMLCanvasElement) {
     this.r = new Renderer(canvas);
     this.input = new Input(canvas);
+    this.touch = new TouchPad(this.input);
     // 기록은 로그인 후 계정에서 불러온다 (login)
     this.hasSave = false;
     this.save = newSave();
@@ -79,6 +82,7 @@ export class App {
   applySettings(): void {
     const s = this.save.settings;
     this.input.bindings = s.bindings;
+    this.touch?.setMode(s.touch ?? 'auto');
     audio.musicVol = s.music;
     audio.sfxVol = s.sfx;
     audio.applyVolumes();

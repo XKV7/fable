@@ -493,9 +493,13 @@ export class Player {
     }
     // 추적 화살이 날아다니는 동안은 동작을 붙잡아 둔다 (그 자리에 멈춤)
     if (act.holdYaka && this.room.yaka) {
-      this.b.vx = 0;
-      if (this.actF >= act.dur) this.actF = act.dur - 1;
-      return;
+      // 안전장치: 화살 수명 + 2초가 넘도록 묶여 있으면 화살을 거두고 풀어 준다
+      if (this.room.yaka.t > this.room.yaka.ev.life + 120) this.room.yaka = null;
+      else {
+        this.b.vx = 0;
+        if (this.actF >= act.dur) this.actF = act.dur - 1;
+        return;
+      }
     }
     if (this.actF >= act.dur) {
       if (!act.landEnd || this.b.onGround) this.endAct();

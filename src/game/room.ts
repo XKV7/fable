@@ -923,11 +923,15 @@ export class Room {
     let da = want - y.ang;
     while (da > Math.PI) da -= Math.PI * 2;
     while (da < -Math.PI) da += Math.PI * 2;
-    const turn = 0.2 + Math.min(0.25, y.t * 0.002);
+    // 돌아올 때는 곧장 아리엔에게 (회전 제한이 있으면 주위를 빙빙 돌며 도착하지 못해 캐릭터가 계속 묶였음)
+    const turn = home ? Math.PI : 0.2 + Math.min(0.25, y.t * 0.002);
     y.ang += Math.max(-turn, Math.min(turn, da));
-    const spd = ev.spd * (home ? 1.2 : 1);
+    const spd = ev.spd * (home ? 2.5 : 1);
     y.x += Math.cos(y.ang) * spd;
     y.y += Math.sin(y.ang) * spd;
+    // 방 밖으로 멀리 나가지 않게 (멀리 나가면 돌아오는 데 오래 걸려 캐릭터가 오래 묶였음)
+    y.x = Math.max(-20, Math.min(this.world.pxW + 20, y.x));
+    y.y = Math.max(-20, Math.min(this.world.pxH + 20, y.y));
     y.trail.push({ x: y.x, y: y.y });
     if (y.trail.length > 16) y.trail.shift();
     if (y.t % 2 === 0) this.fx.parts.push({ x: y.x, y: y.y, vx: (Math.random() - 0.5) * 0.6, vy: (Math.random() - 0.5) * 0.6, life: 0, max: 18, col: ev.col, size: 1, grav: 0, kind: 'px', drag: 0.96 });
@@ -942,11 +946,11 @@ export class Room {
       if (y.hits % 3 === 0) audio.play('hit_ranged', 1.2);
       if (e === y.tgt) y.tgt = null;
     }
-    if (home && Math.hypot(p.cx - y.x, p.cy - 6 - y.y) < 14) {
+    if (home && Math.hypot(p.cx - y.x, p.cy - 6 - y.y) < Math.max(14, spd + 2)) {
       this.fx.burst(y.x, y.y, ev.col, 16, 2.5);
       this.fx.ring(y.x, y.y, ev.col, 24);
       this.yaka = null;
-    } else if (y.t > ev.life + 240) this.yaka = null; // 안전장치
+    } else if (y.t > ev.life + 90) this.yaka = null; // 안전장치: 어떤 경우에도 1.5초 안에 끝 (캐릭터가 묶여 있지 않게)
   }
 
   private renderYaka(g: CanvasRenderingContext2D, cx: number, cy: number): void {

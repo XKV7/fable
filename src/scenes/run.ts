@@ -117,7 +117,7 @@ export class RunScene implements Scene {
     this.room = new Room({ template: this.template(node.type), chapter: ch, mode: 'run', type: node.type, next: node.next, depth: node.layer, bossId }, run, app.save);
     if (prevRoom) {
       this.room.combo = 0;
-      // 스킬·궁극기·교대 쿨타임은 방을 넘어가도 이어진다
+      // 스킬·궁극기·교대 쿨타임은 방을 넘어가도 이어진다 (대기 영웅 것도)
       const a = prevRoom.player;
       const b = this.room.player;
       b.skillCd = [...a.skillCd];
@@ -125,6 +125,7 @@ export class RunScene implements Scene {
       b.ultCd = a.ultCd;
       b.ultMax = a.ultMax;
       b.swapCd = a.swapCd;
+      b.bench = { skillCd: [...a.bench.skillCd], skillMax: [...a.bench.skillMax], ultCd: a.bench.ultCd, ultMax: a.bench.ultMax };
     }
     this.room.debug = app.debug;
     this.room.showHitboxes = app.debug;
@@ -354,6 +355,7 @@ export class RunScene implements Scene {
         break;
       case 'lantern':
         p.skillCd = [0, 0];
+        p.bench.skillCd = [0, 0];
         p.swapCd = 0;
         room.fx.ring(p.cx, p.cy, '#9ef0ff', 40);
         audio.play('gem');

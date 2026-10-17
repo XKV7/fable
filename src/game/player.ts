@@ -67,6 +67,8 @@ export class Player {
   ultMax = 1;
   swapCd = 0;
   swapMax = 7;
+  /** 대기 중인 영웅의 스킬·궁극기 쿨타임 — 영웅마다 따로, 교대하면 서로 바뀐다 (대기 중에도 흐른다) */
+  bench: { skillCd: [number, number]; skillMax: [number, number]; ultCd: number; ultMax: number } = { skillCd: [0, 0], skillMax: [1, 1], ultCd: 0, ultMax: 1 };
   inv = 0;
   /** 대시 무적: 대시(11프레임)와 끝난 뒤 조금 더 (깜빡임 없이) */
   dashInv = 0;
@@ -160,6 +162,9 @@ export class Player {
     if (this.ultCd > 0) this.ultCd = Math.max(0, this.ultCd - dt);
     for (let i = 0; i < 2; i++) if (this.skillCd[i] > 0) this.skillCd[i] = Math.max(0, this.skillCd[i] - dt * (1 + cdr * 0));
     if (this.swapCd > 0) this.swapCd = Math.max(0, this.swapCd - dt);
+    const bn = this.bench;
+    if (bn.ultCd > 0) bn.ultCd = Math.max(0, bn.ultCd - dt);
+    for (let i = 0; i < 2; i++) if (bn.skillCd[i] > 0) bn.skillCd[i] = Math.max(0, bn.skillCd[i] - dt);
     const maxCharges = 1 + r.build.flag('dashCharges');
     if (this.dashCharges < maxCharges) {
       this.dashRegen -= dt;
@@ -342,11 +347,22 @@ export class Player {
     return this.swapCd <= 0 && this.other !== null && this.state !== 'dead';
   }
 
+  /** 교대: 나가는 영웅의 쿨타임은 대기석으로, 들어오는 영웅의 쿨타임을 가져온다 */
+  swapCooldowns(): void {
+    const bn = this.bench;
+    this.bench = { skillCd: this.skillCd, skillMax: this.skillMax, ultCd: this.ultCd, ultMax: this.ultMax };
+    this.skillCd = bn.skillCd;
+    this.skillMax = bn.skillMax;
+    this.ultCd = bn.ultCd;
+    this.ultMax = bn.ultMax;
+  }
+
   doSwap(): void {
     const r = this.room;
     r.fx.ghost(this.frame(), this.cx - 24, this.b.y + this.b.h - 44, this.facing < 0, this.def.fx, 24);
     this.endAct();
     r.swapActive();
+    this.swapCooldowns();
     this.swapMax = 7 * (1 - Math.min(0.7, r.stats.swapCdr ?? 0));
     this.swapCd = this.swapMax;
     this.afterSwap = 180;

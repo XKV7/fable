@@ -834,6 +834,88 @@ export const CHARACTERS_EX: CharDef[] = [
     ],
   },
   {
+    // 컨셉아트: 「푸른 별의 예언자」 — 후드 망토, 별의 지팡이·별의 구체. 마법사.
+    // 스프라이트는 전용 시트(sheets/vega). 역할: 앞으로 천천히 나아가다 닿으면 터지는 별 구체 · 하늘에서 쏟아지는 유성우
+    id: 'vega', name: '베가', title: '푸른 별의 예언자', rarity: 6, type: 'magic', crest: 'soul',
+    lore: '「…별이 가리키는 곳에, 너의 운명이 있어.」 별의 움직임으로 앞날을 읽는 예언자. 그녀가 지팡이를 들면, 예언된 별이 하늘에서 떨어진다.',
+    atk: 70, hp: 215, speed: 2.05, fx: '#80c8ff',
+    look: { skin: '#f4ecf0', hair: '#e8ecf4', hairStyle: 'hood', body: '#141c30', trim: '#80ffc0', legs: '#f0f0f4', boots: '#1a1e2a', cape: '#1a2a48', eye: '#80e0ff', weapon: 'staff', wcol: '#a0d8ff', wcol2: '#2a3a5a', build: 'slim', glow: '#80c8ff' },
+    combo: [
+      shot({ dur: 14, t: 5, m: 0.85, p: { spr: 'orb', spd: 6.5, life: 55, w: 10, h: 10, col: '#80c8ff', el: 'holy', pic: { name: 'vega:orb', w: 16, spin: 0.2 } }, w: 'windHigh', s: 'slashDown', sfx: 'cast' }),
+      shot({ dur: 14, t: 5, m: 0.6, n: 2, spread: 12, p: { spr: 'orb', spd: 6.5, life: 55, w: 10, h: 10, col: '#80c8ff', el: 'holy', pic: { name: 'vega:orb', w: 16, spin: 0.2 } }, w: 'windLow', s: 'slashUp', sfx: 'cast' }),
+      shot({ dur: 20, t: 7, m: 1.2, p: { spr: 'orb', spd: 5.5, life: 60, w: 14, h: 14, col: '#a0ffd0', el: 'holy', pierce: 2, boom: { r: 20, m: 0.5, el: 'holy', col: '#80c8ff' }, boomPic: { name: 'vega:burst', s0: 10, s1: 36, life: 10 }, pic: { name: 'vega:orb', w: 22, spin: 0.2 } }, w: 'windHigh', s: 'spin', sfx: 'cast' }),
+    ],
+    air: shot({ dur: 16, t: 5, m: 0.8, p: { spr: 'orb', spd: 6.5, life: 50, w: 10, h: 10, col: '#80c8ff', el: 'holy', pic: { name: 'vega:orb', w: 16, spin: 0.2 } }, w: 'windHigh', s: 'slashDown', sfx: 'cast', air: true }),
+    dashAtk: shot({ dur: 18, t: 6, m: 1.3, p: { spr: 'orb', spd: 8, life: 50, w: 12, h: 12, col: '#a0ffd0', el: 'holy', pierce: 3, pic: { name: 'vega:orb', w: 20, spin: 0.2 } }, w: 'thrustWind', s: 'thrust', sfx: 'cast' }),
+    skills: [
+      {
+        name: '예언의 별',
+        desc: '커다란 별 구체를 쏜다. 구체는 앞으로 천천히 나아가다 적에게 닿으면 터진다 (닿을 때 120% + 폭발 260%, 넓은 범위).',
+        cd: 7,
+        act: {
+          dur: 26,
+          pose: [[0, 'castUp'], [8, 'cast']],
+          ev: [
+            { t: 2, k: 'sfx', s: 'cast' },
+            { t: 2, k: 'pic', name: 'vega:sigil', dx: 14, dy: -10, s0: 14, s1: 40, life: 16, spin: 0.08 },
+            { t: 8, k: 'proj', dx: 16, dy: -8, m: 1.2, p: { spr: 'orb', spd: 3, life: 150, w: 22, h: 22, col: '#80c8ff', el: 'holy', boom: { r: 46, m: 2.6, el: 'holy', col: '#80c8ff' }, boomPic: { name: 'vega:burst', s0: 20, s1: 96, life: 16 }, pic: { name: 'vega:orb', w: 34, spin: 0.12 } } },
+            { t: 8, k: 'sfx', s: 'gem' },
+          ],
+        },
+      },
+      {
+        name: '유성우',
+        desc: '지팡이를 하늘로 들어 앞쪽에 유성 12개를 쏟아붓는다 (각 110% + 폭발 범위, 신성).',
+        cd: 11,
+        act: {
+          dur: 40,
+          pose: [[0, 'cast'], [6, 'castUp']],
+          armor: true,
+          ev: [
+            { t: 2, k: 'sfx', s: 'cast' },
+            { t: 2, k: 'pic', name: 'vega:sigil', dx: 0, dy: -46, s0: 20, s1: 80, life: 34, spin: 0.05 },
+            { t: 6, k: 'pic', name: 'vega:star', dx: 0, dy: -46, s0: 10, s1: 40, life: 26, spin: 0.1 },
+            { t: 10, k: 'meteor', n: 12, m: 1.1, spread: 150, el: 'holy', look: { pic: { name: 'vega:comet', w: 40 }, boomPic: { name: 'vega:burst', s0: 10, s1: 44, life: 10 }, r: 26, col: '#80c8ff', gap: 3 } },
+            { t: 10, k: 'shake', v: 2 },
+            { t: 24, k: 'sfx', s: 'explode' },
+          ],
+        },
+      },
+    ],
+    swap: {
+      name: '교대: 별의 계시',
+      desc: '별의 마법진을 펼치며 등장해 주변에 별빛을 터뜨린다 (공격력 360%).',
+      act: {
+        dur: 30,
+        pose: [[0, 'castUp'], [14, 'cast']],
+        inv: [0, 18],
+        ev: [
+          { t: 2, k: 'sfx', s: 'cast' },
+          { t: 2, k: 'pic', name: 'vega:sigil', dx: 0, dy: -8, s0: 40, s1: 130, life: 22, spin: 0.04 },
+          { t: 14, k: 'pic', name: 'vega:burst', dx: 0, dy: -10, s0: 50, s1: 150, life: 20, spin: 0.03 },
+          { t: 14, k: 'nova', r: 74, m: 3.6, el: 'holy', up: -3, col: '#80c8ff' },
+          { t: 14, k: 'shake', v: 6 },
+          { t: 14, k: 'sfx', s: 'explode' },
+        ],
+      },
+    },
+    passive: {
+      name: '별의 인도',
+      desc: '스킬 피해 +20%, 치명타 확률 +10%. 6초마다 가장 가까운 적에게 유성 하나가 떨어진다 (공격력 180%).',
+      effects: [
+        { stats: { skillDmg: 0.2, crit: 0.1 } },
+        { on: 'interval', every: 6, do: [{ k: 'meteor', m: 1.8 }] },
+      ],
+    },
+    awaken: [
+      { desc: '예언의 별 피해 +40%', mods: [{ target: 'skill1', dmg: 0.4 }] },
+      { desc: '유성우 쿨타임 -2초', mods: [{ target: 'skill2', cd: 2 }] },
+      { desc: '공격력 +10%', effects: [{ stats: { atk: 0.1 } }] },
+      { desc: '별의 계시 피해 +60%', mods: [{ target: 'swap', dmg: 0.6 }] },
+      { desc: '모든 기술 피해 +35%, 스킬 쿨타임 -10%', mods: [{ target: 'all', dmg: 0.35 }], effects: [{ stats: { cdr: 0.1 } }] },
+    ],
+  },
+  {
     // 컨셉아트: 「바람의 잎사귀를 짓는 자」 — 후드 망토, 바람의 활·바람의 화살촉·활집. 궁수(원거리, 유도 화살).
     // 스프라이트는 전용 시트(sheets/arien). ★6 첫 궁극기(X): 모든 적을 꿰뚫으며 쫓아가는 화살 하나 (야카 화살)
     id: 'arien', name: '아리엔', title: '바람의 잎사귀를 짓는 자', rarity: 6, type: 'ranged', crest: 'swift',

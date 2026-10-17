@@ -1,5 +1,7 @@
 /** 게임 전체에서 공유하는 데이터 정의 타입. 실제 수치는 src/data/* 에 있다. */
 
+/** 유성 모양 바꾸기 (컨셉아트 그림·폭발 반경·색) */
+export interface MeteorLook { pic: ProjDef['pic']; boomPic?: ProjDef['boomPic']; r?: number; col?: string; gap?: number }
 export type CharType = 'power' | 'speed' | 'ranged' | 'magic' | 'guard';
 /** 희귀도. ★6·★7은 등급만 있고 아직 해당 영웅·무기가 없다 (나오면 ★5로 대체) */
 export type Rarity = 3 | 4 | 5 | 6 | 7;
@@ -195,7 +197,7 @@ export type ActEvent =
   | { t: number; k: 'timestop'; dur: number }
   | { t: number; k: 'counter'; dur: number; m: number }
   | { t: number; k: 'tp'; dx: number; toEnemy?: boolean; exact?: boolean; range?: number; front?: boolean } // exact: 적의 높이까지 정확히 (발판 위·공중의 적에게도) 붙는다 · range: 찾는 거리(기본 220) · front: 적 앞쪽(내 쪽)에 서서 적을 바라본다
-  | { t: number; k: 'meteor'; n: number; m: number; spread: number; el?: Element; st?: StatusId; big?: boolean; spr?: ProjSprite }
+  | { t: number; k: 'meteor'; n: number; m: number; spread: number; el?: Element; st?: StatusId; big?: boolean; spr?: ProjSprite; look?: MeteorLook }
   | { t: number; k: 'fx'; fx: SlashFx }
   /** 컨셉아트 이펙트 그림: name = '영웅id:그림'(생략 시 카일루스). 플레이어 기준 (dx, dy)에서 크기 s0→s1, life 프레임 */
   | { t: number; k: 'pic'; name: string; dx: number; dy: number; s0: number; s1: number; life: number; spin?: number }

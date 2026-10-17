@@ -259,7 +259,10 @@ for name, spec in cfg.get('fx', {}).items():
         if spec[3] not in _srcs: _srcs[spec[3]] = np.asarray(Image.open(spec[3]).convert('RGB')).astype(float)
         SRC_IM = _srcs[spec[3]]
     x0, y0, x1, y1 = box
-    a = SRC_IM[y0:y1, x0:x1]; bgc = bg_of(a); d = np.abs(a - bgc).sum(2)
+    a = SRC_IM[y0:y1, x0:x1]
+    # fxBgColor: true — 이펙트도 bgColor 고정 배경색 기준 (상자 가장자리에 다른 반짝이가 걸려 배경 추정이 틀어지는 것 방지)
+    bgc = np.broadcast_to(np.array(cfg['bgColor'], float), a.shape) if cfg.get('fxBgColor') and 'bgColor' in cfg else bg_of(a)
+    d = np.abs(a - bgc).sum(2)
     if mode == 'add':
         # 색은 원본 그대로, 배경보다 밝은 정도를 빛의 양으로 (배경색을 빼면 남색 배경에서 파랑이 빠져 누렇게 변함)
         lum = lambda x: x @ np.array([0.3, 0.55, 0.15])

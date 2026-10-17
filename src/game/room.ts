@@ -18,7 +18,7 @@ import { Fx, Camera } from './fx';
 import { NO_INPUT, Player, type ActKind, type PlayerInput } from './player';
 import type { PartyMember, RunState } from './run';
 import type { SaveData } from './save';
-import type { ActEvent, CondKey, Look, EffectDo, Element, FieldDef, ProjDef, Stats, StatusId, SummonDef } from './types';
+import type { ActEvent, CondKey, Look, EffectDo, MeteorLook, Element, FieldDef, ProjDef, Stats, StatusId, SummonDef } from './types';
 import { Tile, TS, World, type Body } from './world';
 import { makeCanvas } from '../gfx/pixel';
 import { hdFx, hdState, worldAbove } from '../gfx/hd';
@@ -847,7 +847,7 @@ export class Room {
         const refY = tgt ? tgt.b.y + tgt.b.h - 4 : undefined;
         for (let i = 0; i < n; i++) {
           const ox = n === 1 ? 0 : (i / (n - 1) - 0.5) * ev.spread + (Math.random() - 0.5) * 16;
-          this.later(i * 5, () => this.meteor(cx0 + ox, ev.m * dm, ev.el, ev.st, ev.big, ev.spr, this.kindOf(k), refY));
+          this.later(i * (ev.look?.gap ?? 5), () => this.meteor(cx0 + ox, ev.m * dm, ev.el, ev.st, ev.big, ev.spr, this.kindOf(k), refY, ev.look));
         }
         break;
       }
@@ -1271,7 +1271,7 @@ export class Room {
    * 하늘에서 떨어지는 낙하체. 착탄 지점 x와 기준 높이 refY(기본: 플레이어 발밑)에서 아래로 지면을 찾아
    * 그 위 220px에서 비스듬히 떨어뜨린다. 천장·발판에 막혀 엉뚱한 곳에서 터지지 않도록 벽을 무시하고 지면에서 착탄.
    */
-  meteor(x: number, m: number, el?: Element, st?: StatusId, big?: boolean, spr?: ProjDef['spr'], kind: DmgKind = 'skill', refY?: number): void {
+  meteor(x: number, m: number, el?: Element, st?: StatusId, big?: boolean, spr?: ProjDef['spr'], kind: DmgKind = 'skill', refY?: number, look?: MeteorLook): void {
     x = Math.max(12, Math.min(this.world.pxW - 12, x));
     const ref = refY ?? this.player.b.y + this.player.b.h - 4;
     // 착탄 지점이 벽 속이면 플레이어 쪽으로 당겨 빈 공간에 떨어지게
@@ -1291,6 +1291,12 @@ export class Room {
     if (spr === 'starsword') {
       // 카일루스: 하늘에서 별빛 장검이 꽂힌다
       this.addProj('player', { spr, spd: 8, life: 120, w: 10, h: 10, col: '#a8c0ff', boom: { r: 26, m: 1, el: el ?? 'holy', st, col: '#a8c0ff' }, landY: gy - 4 }, sx, sy, ang, m, kind);
+      return;
+    }
+    if (look) {
+      // 컨셉아트 그림 유성 (베가 「유성우」 등)
+      const rr = look.r ?? 26;
+      this.addProj('player', { spr: 'star', spd: 7.5, life: 120, w: 10, h: 10, col: look.col ?? '#a0d0ff', boom: { r: rr, m: 1, el: el ?? 'holy', st, col: look.col }, boomPic: look.boomPic, pic: look.pic, landY: gy - 4 }, sx, sy, ang, m, kind);
       return;
     }
     const r = big ? 70 : 24;

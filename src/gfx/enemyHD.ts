@@ -2,6 +2,7 @@ import type { Look, PoseName } from '../game/types';
 import { ENEMY_MAP } from '../data/enemies';
 import { AI_ANIM, ENEMY_LOOKS, HUMANOID_ANIM } from './sprites';
 import { drawHeroHD } from './hdHero';
+import { CREATURE_HD_IDS, drawCreatureHD } from './creaturesHD';
 
 /**
  * 적·보스용 고해상도(2배 정밀) 프레임. 영웅(hdHero.ts)과 같은 96×96 칸, 발 y=88.
@@ -40,6 +41,8 @@ const CREATURE_HD: Record<string, CreatureHD> = {};
 export function registerCreatureHD(id: string, fn: CreatureHD): void {
   CREATURE_HD[id] = fn;
 }
+// 생물형 적(creaturesHD.ts) 전부 등록
+for (const id of CREATURE_HD_IDS) registerCreatureHD(id, (anim, ff) => drawCreatureHD(id, anim, ff));
 
 /** 적 고해상도 프레임: 96×96, 그릴 수 없으면 null → 호출한 쪽이 enemyFrame(48칸)으로 그린다 */
 export function enemyFrameHD(id: string, anim: string, f: number): HTMLCanvasElement | null {

@@ -29,7 +29,8 @@ def bg_of(a):
 def cut(box, flip=False):
     x0, y0, x1, y1 = box
     a = IM[y0:y1, x0:x1]
-    d = np.abs(a - bg_of(a)).sum(2)
+    # bgColor: [r,g,b] — 단색 배경 시트는 고정 배경색 사용 (칸 테두리에 몸이 걸려 테두리 추정 배경이 틀어지는 것 방지)
+    d = np.abs(a - (np.array(cfg['bgColor'], float) if 'bgColor' in cfg else bg_of(a))).sum(2)
     near = d <= TOL
     seeds = np.zeros(d.shape, bool); seeds[0] = seeds[-1] = True; seeds[:, 0] = seeds[:, -1] = True
     lab, _ = ndimage.label(near)
@@ -67,10 +68,10 @@ def body_only(k, frac=1.0, it=None):
     out = ndimage.binary_dilation(kept, structure=np.ones((3, 3)), iterations=it) & k
     return largest(out)[0] if frac >= 1 else clean(out, 0.02)
 
-def shrink(img, sc):
+def shrink(img, sc, sharpen=110):
     w, h = img.size
     nw, nh = max(1, round(w * sc)), max(1, round(h * sc))
-    rgb = img.convert('RGB').filter(ImageFilter.UnsharpMask(radius=1.2, percent=110, threshold=2))
+    rgb = img.convert('RGB').filter(ImageFilter.UnsharpMask(radius=1.2, percent=sharpen, threshold=2))
     rgb = ImageEnhance.Color(ImageEnhance.Contrast(rgb).enhance(1.1)).enhance(1.12)
     a = np.asarray(img)[:, :, 3:4].astype(float) / 255
     pm = Image.fromarray(np.dstack([np.asarray(rgb).astype(float) * a, a * 255]).clip(0, 255).astype(np.uint8), 'RGBA')
@@ -78,6 +79,34 @@ def shrink(img, sc):
     al = sm[:, :, 3] / 255
     col = np.where(al[..., None] > 0, sm[:, :, :3] / np.maximum(al[..., None], 1e-6), 0)
     return col.clip(0, 255), al >= 0.45
+
+_PROP = {}
+def drop_prop(img, spec):
+    import cv2
+    if 'tpl' not in _PROP:
+        fb = cfg['frames'][spec['from']]; bx0, by0, bx1, by1 = spec['box']
+        x0, y0 = fb[0] + bx0, fb[1] + by0
+        m = np.asarray(cut(fb[:4]))[by0:by1, bx0:bx1, 3] > 0
+        m = largest(m)[0]; ys, xs = np.where(m)
+        m = m[ys.min():ys.max() + 1, xs.min():xs.max() + 1]; x0 += xs.min(); y0 += ys.min()
+        _PROP['tpl'] = (IM[y0:y0 + m.shape[0], x0:x0 + m.shape[1]].mean(2).astype(np.float32), m)
+    tpl, tm = _PROP['tpl']
+    a = np.asarray(img).copy(); g = a[:, :, :3].astype(np.float32).mean(2)
+    best = (-1, None, None)
+    for sc in np.arange(0.8, 1.45, 0.05):
+        t = cv2.resize(tpl, None, fx=sc, fy=sc, interpolation=cv2.INTER_AREA)
+        if t.shape[0] > g.shape[0] or t.shape[1] > g.shape[1]: continue
+        r = cv2.matchTemplate(g, t, cv2.TM_CCOEFF_NORMED); _, mv, _, ml = cv2.minMaxLoc(r)
+        if mv > best[0]: best = (mv, ml, sc)
+    mv, (lx, ly), sc = best if best[1] else (0, (0, 0), 1)
+    if mv < spec.get('thr', 0.6): return img
+    mk = cv2.resize(tm.astype(np.uint8), None, fx=sc, fy=sc, interpolation=cv2.INTER_NEAREST) > 0
+    gr = spec.get('grow', 2)
+    mk = ndimage.binary_dilation(np.pad(mk, gr), iterations=gr)
+    full = np.zeros((g.shape[0] + 2 * gr, g.shape[1] + 2 * gr), bool); h, w = mk.shape
+    full[ly:ly + h, lx:lx + w] = mk; full = full[gr:-gr, gr:-gr]
+    a[full, 3] = 0
+    return Image.fromarray(a, 'RGBA')
 
 # ── 원본 해상도 칸 + 생성 칸
 raw = {}
@@ -88,6 +117,14 @@ for name, b in cfg['frames'].items():
     for pre, (ex0, ey0, ex1, ey1) in cfg.get('erase', {}).items():
         if name.rstrip('0123456789') == pre:
             arr = np.asarray(raw[name]).copy(); arr[ey0:ey1, ex0:ex1, 3] = 0; raw[name] = Image.fromarray(arr, 'RGBA')
+    # eraseAt: {칸 이름: [[x0,y0,x1,y1], ...]} — 원본 그림 좌표의 사각형을 그 칸에서만 지운다 (몸에 닿은 반짝이 하나 등)
+    for ex0, ey0, ex1, ey1 in cfg.get('eraseAt', {}).get(name, []):
+        arr = np.asarray(raw[name]).copy(); bx, by = b[0], b[1]
+        arr[max(0, ey0 - by):max(0, ey1 - by), max(0, ex0 - bx):max(0, ex1 - bx), 3] = 0; raw[name] = Image.fromarray(arr, 'RGBA')
+    # dropProp: {from: 칸, box: [칸 안 상자], frames: [접두어], thr, grow} — 칸마다 따라다니는 떠 있는 소품(구체 등)을
+    # 기준 칸의 모양으로 찾아(템플릿 정합, 여러 크기) 지운다. 몸에 번져 붙어도 떨어지고, 칸마다 있다 없다 하는 깜빡임이 없어진다
+    if 'dropProp' in cfg and name.rstrip('0123456789') in cfg['dropProp']['frames']:
+        raw[name] = drop_prop(raw[name], cfg['dropProp'])
     # 원본 해상도에서 떠 있는 구체·반짝이 떼기 (공격·시전 칸은 큰 검기·마법진은 남김)
     if name.startswith('die'):  # 누운 몸은 가늘게 끊기기 쉬워 큰 조각은 모두 남김
         raw[name] = gen.detach(raw[name], 3, 0.25)
@@ -111,7 +148,9 @@ print('scale', round(SC, 3), 'body', np.median(bodyh))
 
 parts = []
 for n, img in raw.items():
-    c, k = shrink(img, SC)
+    if cfg.get('denoise'):  # denoise: 축소 전 중앙값 필터 크기 (그림의 잔 얼룩·압축 잡티가 축소 후 자글거리는 점이 되는 것 방지)
+        img = Image.merge('RGBA', (*img.convert('RGB').filter(ImageFilter.MedianFilter(cfg['denoise'])).split(), img.getchannel('A')))
+    c, k = shrink(img, SC, cfg.get('sharpen', 110))  # sharpen: 선명화 세기 (낮추면 축소 후 자글거림이 줄어듦)
     # 몸에서 떨어진 조각(떠 있는 구체·반짝이)은 지운다: 공격·시전 칸은 큰 검기·마법진만 남기고(30%), 나머지는 몸통만
     fx_frame = n.split('_')[0].rstrip('0123456789') in ('attack', 'big', 'cast')
     parts.append((n, c, body_only(k, cfg.get('keep_fx', 0.3)) if fx_frame else body_only(k, 0.25) if n.startswith('die') else body_only(k)))
@@ -121,11 +160,36 @@ pal = np.array(Image.fromarray(allpx.reshape(-1, 1, 3), 'RGB').quantize(colors=N
 def snap(c):
     return pal[((c[..., None, :] - pal[None, None]) ** 2).sum(-1).argmin(-1)]
 
+def despeckle(rgb, keep, passes):
+    """despeckle: 외톨이 픽셀 정리 — 이웃 4칸 중 3칸 이상이 비었으면 지우고, 4칸이 다 찬 1픽셀 구멍은 메우고,
+    8이웃과 모두 다른 색인데 이웃 5칸 이상이 한 색이면 그 색으로 (축소·양자화로 생긴 자글거리는 점)"""
+    rgb = rgb.copy(); keep = keep.copy()
+    sh4 = [(1, 0), (-1, 0), (0, 1), (0, -1)]; sh8 = sh4 + [(1, 1), (1, -1), (-1, 1), (-1, -1)]
+    roll = lambda a, d: np.roll(np.roll(a, d[0], 0), d[1], 1)
+    for _ in range(passes):
+        kp = np.pad(keep, 1)
+        n4 = sum(roll(kp, d) for d in sh4)[1:-1, 1:-1].astype(int)
+        filled = ~keep & (n4 >= 4)
+        keep = (keep & (n4 >= 2)) | filled
+        idx = (rgb[..., 0].astype(np.int64) << 16) | (rgb[..., 1].astype(np.int64) << 8) | rgb[..., 2].astype(np.int64)
+        idx = np.where(keep & ~filled, idx, -1); ip = np.pad(idx, 1, constant_values=-1)
+        nb = np.stack([roll(ip, d)[1:-1, 1:-1] for d in sh8])
+        same = (nb == idx[None]).sum(0)
+        best, cnt = idx.copy(), np.zeros(idx.shape, int)
+        for j in range(8):
+            c = (nb == nb[j][None]).sum(0); better = (c > cnt) & (nb[j] >= 0); best = np.where(better, nb[j], best); cnt = np.where(better, c, cnt)
+        fix = (keep & ~filled & (same == 0) & (cnt >= 5)) | filled  # 메운 구멍은 이웃 최다 색으로
+        best = np.where(best < 0, 0, best)
+        rgb = np.where(fix[..., None], np.stack([(best >> 16) & 255, (best >> 8) & 255, best & 255], -1), rgb)
+    return rgb, keep
+
 frames, tiles = {}, []
 for name, col, keep in parts:
     h, w = keep.shape
     out = np.zeros((h + 2, w + 2, 4), np.uint8)
-    out[1:-1, 1:-1, :3] = np.where(keep[..., None], snap(col), 0); out[1:-1, 1:-1, 3] = keep * 255
+    sc_ = np.where(keep[..., None], snap(col), 0)
+    if cfg.get('despeckle'): sc_, keep = despeckle(sc_, keep, cfg['despeckle'])
+    out[1:-1, 1:-1, :3] = sc_; out[1:-1, 1:-1, 3] = keep * 255
     k2 = out[..., 3] > 0
     ring = (~k2) & (np.roll(k2, 1, 0) | np.roll(k2, -1, 0) | np.roll(k2, 1, 1) | np.roll(k2, -1, 1))
     out[ring] = [10, 8, 16, 255]

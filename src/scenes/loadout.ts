@@ -23,6 +23,9 @@ type Focus = 0 | 1 | 2 | 3 | 4 | 5; // 슬롯1, 슬롯2, 무기, 저주, 출정,
 /** 보스 러시: 스토리 1~4를 모두 완수하면 열림 */
 export const rushUnlocked = (): boolean => [1, 2, 3, 4].every((i) => !!app.save.storyClear[i]);
 
+/** 영웅·무기 선택 창에 한 번에 보이는 줄 수 (넘치면 스크롤) */
+const PICK_ROWS = 4;
+
 export class LoadoutScene implements Scene {
   focus: Focus = 4;
   /** 무기 칸에서 위로 갈 때 돌아갈 영웅 칸 */
@@ -30,6 +33,8 @@ export class LoadoutScene implements Scene {
   /** 스토리 칸에서 「보스 러시」를 고른 상태 (스토리 1~4를 모두 완수하면 열림) */
   rush = false;
   picking: 'char' | 'weapon' | null = null;
+  /** 선택 창 스크롤 (맨 위 줄 번호) — 한 화면 4줄 */
+  pickScroll = 0;
   pick = 0;
   t = 0;
   constructor(public back: Scene) {}
@@ -82,6 +87,16 @@ export class LoadoutScene implements Scene {
       if (inp.menu('mdown')) this.pick = Math.min(list.length - 1, this.pick + cols);
       if (this.pick !== before) audio.play('select');
       const h = hot.hover();
+      // 스크롤: ▲▼ 클릭은 한 줄씩, 선택한 칸은 항상 보이게
+      const rows = Math.ceil(list.length / cols);
+      if (h === 'lpup' && hot.mouse.click) this.pickScroll = Math.max(0, this.pickScroll - 1);
+      if (h === 'lpdown' && hot.mouse.click) this.pickScroll = Math.min(Math.max(0, rows - PICK_ROWS), this.pickScroll + 1);
+      if (this.pick !== before) {
+        const r = Math.floor(this.pick / cols);
+        if (r < this.pickScroll) this.pickScroll = r;
+        if (r >= this.pickScroll + PICK_ROWS) this.pickScroll = r - PICK_ROWS + 1;
+      }
+      this.pickScroll = Math.max(0, Math.min(this.pickScroll, Math.max(0, rows - PICK_ROWS)));
       let click = false;
       if (h?.startsWith('lp:')) {
         if (hot.mouse.moved) this.pick = Number(h.slice(3));
@@ -134,9 +149,11 @@ export class LoadoutScene implements Scene {
       if (this.focus <= 1) {
         this.picking = 'char';
         this.pick = Math.max(0, this.ownedChars().indexOf(lo.chars[this.focus as 0 | 1]));
+        this.pickScroll = Math.max(0, Math.floor(this.pick / 8) - PICK_ROWS + 1);
       } else if (this.focus === 2) {
         this.picking = 'weapon';
         this.pick = Math.max(0, this.ownedWeapons().indexOf(lo.weapon));
+        this.pickScroll = Math.max(0, Math.floor(this.pick / 8) - PICK_ROWS + 1);
       } else if (this.focus === 3) {
         if (!this.curseLocked()) app.save.curse = app.save.curse >= app.save.curseMax ? 0 : app.save.curse + 1;
       } else if (this.focus === 5) {
@@ -352,9 +369,20 @@ export class LoadoutScene implements Scene {
       panel(g, 40, 24, 400, 220);
       text(g, this.picking === 'char' ? '영웅 선택' : '무기 선택', 50, 30, { size: 10, color: '#e0d0ff', bold: true });
       if (app.debug) text(g, '[디버그] 보유하지 않은 영웅·무기도 선택 가능 (기록에는 추가되지 않음)', 430, 33, { size: 6, align: 'right', color: '#80ffa0' });
+      const rows = Math.ceil(list.length / 8);
+      if (this.pickScroll > 0) {
+        text(g, `▲ (${this.pickScroll}줄 더)`, 240, 36, { size: 6, align: 'center', color: '#c0b0e0' });
+        hot.add('lpup', 190, 34, 100, 10);
+      }
+      if (this.pickScroll + PICK_ROWS < rows) {
+        text(g, `▼ (${rows - this.pickScroll - PICK_ROWS}줄 더)`, 240, 222, { size: 6, align: 'center', color: '#c0b0e0' });
+        hot.add('lpdown', 190, 220, 100, 10);
+      }
       list.forEach((id, i) => {
+        const row = Math.floor(i / 8) - this.pickScroll;
+        if (row < 0 || row >= PICK_ROWS) return;
         const x = 48 + (i % 8) * 48;
-        const y = 46 + Math.floor(i / 8) * 44;
+        const y = 46 + row * 44;
         const sel = i === this.pick;
         if (this.picking === 'char') {
           const c = CHAR_MAP[id];

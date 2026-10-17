@@ -22,6 +22,7 @@ import type { ActEvent, CondKey, Look, EffectDo, Element, FieldDef, ProjDef, Sta
 import { Tile, TS, World, type Body } from './world';
 import { makeCanvas } from '../gfx/pixel';
 import { hdFx, hdState, worldAbove } from '../gfx/hd';
+import { drawPropHD, propHD } from '../gfx/propsHD';
 
 export interface HitOpts {
   m: number;
@@ -1899,62 +1900,84 @@ export class Room {
   }
 
   private renderProp(g: CanvasRenderingContext2D, p: Prop, cx: number, cy: number, t: number): void {
-    let img: HTMLCanvasElement | null = null;
+    // 시설 종류 → [기존 그림, 프레임, 고해상도 그림(propsHD), 프레임]
+    let k: [string, number, string, number] | null = null;
     switch (p.kind) {
       case 'door':
-        img = propSprite(p.open ? 'door_open' : 'door_closed');
+        k = [p.open ? 'door_open' : 'door_closed', 0, p.open ? 'door_open' : 'door_closed', Math.floor(t / 6) % 12];
         break;
       case 'chest':
         if (p.hidden) return;
-        img = propSprite(p.used ? 'chest_open' : 'chest');
+        k = [p.used ? 'chest_open' : 'chest', 0, `${p.label === 'big' ? 'chest_big' : 'chest'}${p.used ? '_open' : ''}`, 0];
         break;
       case 'shop':
-        img = propSprite('shopkeeper');
+        k = ['shopkeeper', 0, 'shop', Math.floor(t / 8) % 48];
         break;
       case 'altar':
-        img = propSprite('altar', Math.floor(t / 8) % 6);
+        k = ['altar', Math.floor(t / 8) % 6, 'altar', Math.floor(t / 8) % 6];
         break;
       case 'armory':
-        img = propSprite('anvil');
+        k = ['anvil', 0, 'armory', 0];
         break;
       case 'rest':
-        img = propSprite('campfire', Math.floor(t / 6) % 3);
+        k = ['campfire', Math.floor(t / 6) % 3, 'rest', Math.floor(t / 5) % 12];
         break;
       case 'event':
-        img = propSprite('question');
+        k = ['question', 0, 'event', Math.floor(t / 8) % 12];
         break;
       case 'sign':
-        img = propSprite('sign');
+        k = ['sign', 0, 'sign', 0];
         break;
       case 'hub': {
         const m: Record<string, string> = { ach: 'stele', codex: 'book', gacha: 'altar', portal: 'portal', loadout: 'banner', growth: 'crystal', upgrade: 'anvil', dummy: 'banner' };
+        const hm: Record<string, [string, number]> = {
+          ach: ['stele', Math.floor(t / 10) % 6], codex: ['book', Math.floor(t / 6) % 12], gacha: ['gacha', Math.floor(t / 8) % 6], portal: ['portal', Math.floor(t / 6) % 12],
+          loadout: ['banner', 0], growth: ['crystal', Math.floor(t / 6) % 12], upgrade: ['anvil', Math.floor(t / 8) % 6],
+        };
         if (p.hub === 'dummy') return;
-        img = propSprite(m[p.hub ?? ''] ?? 'stele', p.hub === 'portal' ? Math.floor(t / 6) % 12 : p.hub === 'gacha' ? Math.floor(t / 8) % 6 : 0);
+        const h = hm[p.hub ?? ''] ?? ['stele', 0];
+        k = [m[p.hub ?? ''] ?? 'stele', p.hub === 'portal' ? Math.floor(t / 6) % 12 : p.hub === 'gacha' ? Math.floor(t / 8) % 6 : 0, h[0], h[1]];
         break;
       }
     }
-    if (!img) return;
-    const x = Math.round(p.x - img.width / 2 - cx);
-    const y = Math.round(p.y - img.height - cy);
-    if (x < -img.width || x > W) return;
+    if (!k) return;
+    // 방 배치에서 시설 자리가 바닥보다 한 칸 위인 경우가 많아, 그림만 바로 아래 바닥에 붙인다 (판정 위치는 그대로)
+    const gy = Math.min(p.y + 24, this.world.groundBelow(p.x, p.y - 4, 28));
+    const hd = hdState.off ? null : propHD(k[2], k[3]);
+    const img = hd ?? propSprite(k[0], k[1]);
+    const iw = hd ? hd.width / 2 : img.width;
+    const ih = hd ? hd.height / 2 : img.height;
+    const x = Math.round(p.x - iw / 2 - cx);
+    const y = Math.round(gy - ih - cy);
+    if (x < -iw || x > W) return;
     if ((p.kind === 'hub' && (p.hub === 'gacha' || p.hub === 'portal')) || p.kind === 'altar' || (p.kind === 'door' && p.open)) {
       g.save();
       g.globalCompositeOperation = 'lighter';
-      const gr = g.createRadialGradient(x + img.width / 2, y + img.height / 2, 0, x + img.width / 2, y + img.height / 2, 30);
-      const col = p.hub === 'portal' || p.kind === 'door' ? '#9a6bff' : '#9ef0ff';
+      const gr = g.createRadialGradient(x + iw / 2, y + ih / 2, 0, x + iw / 2, y + ih / 2, 30);
+      const col = p.hub === 'portal' || p.kind === 'door' ? '#9a6bff' : p.hub === 'gacha' ? '#ff9af0' : '#9ef0ff';
       gr.addColorStop(0, rgba(col, 0.35 + 0.1 * Math.sin(t * 0.08)));
       gr.addColorStop(1, rgba(col, 0));
       g.fillStyle = gr;
-      g.fillRect(x - 20, y - 20, img.width + 40, img.height + 40);
+      g.fillRect(x - 20, y - 20, iw + 40, ih + 40);
       g.restore();
     }
-    g.drawImage(img, x, y);
     if (p.kind === 'chest' && !p.used && p.label === 'big') {
       g.save();
       g.globalCompositeOperation = 'lighter';
-      g.fillStyle = rgba('#ffe080', 0.2 + 0.1 * Math.sin(t * 0.1));
-      g.fillRect(x - 2, y - 2, img.width + 4, img.height + 4);
+      if (hd) {
+        // 고해상도 상자는 월드 층보다 위에 그려지므로 빛은 상자 뒤에서 둥글게
+        const gr = g.createRadialGradient(x + iw / 2, y + ih / 2, 0, x + iw / 2, y + ih / 2, 24);
+        gr.addColorStop(0, rgba('#ffe080', 0.35 + 0.15 * Math.sin(t * 0.1)));
+        gr.addColorStop(1, rgba('#ffe080', 0));
+        g.fillStyle = gr;
+        g.fillRect(x - 14, y - 14, iw + 28, ih + 28);
+      } else {
+        g.fillStyle = rgba('#ffe080', 0.2 + 0.1 * Math.sin(t * 0.1));
+        g.fillRect(x - 2, y - 2, iw + 4, ih + 4);
+      }
       g.restore();
     }
+    if (hd) drawPropHD(k[2], k[3], p.x - cx, gy - cy);
+    else g.drawImage(img, x, y);
   }
 }

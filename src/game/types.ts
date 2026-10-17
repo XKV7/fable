@@ -155,6 +155,8 @@ export interface ProjDef {
   landY?: number; // 낙하체(유성·창비): 벽·발판을 무시하고 이 높이에 닿으면 착탄
   /** 컨셉아트 에셋 그림으로 그리기: name='영웅id:그림', w=월드 너비, rot=그림 속 진행 방향(rad), spin=회전 속도 */
   pic?: { name: string; w: number; rot?: number; spin?: number };
+  /** 도박 카드: 적중 순간 셋 중 하나 (각 1/3) — 폭발(카드 배율의 boom배·반경 r), 피해 1/10, 카드 배율의 big배 */
+  gamble?: { boom: number; r: number; big: number };
   /** 터질 때 에셋 그림 (크기 s0→s1, life 프레임) */
   boomPic?: { name: string; s0: number; s1: number; life: number };
 }
@@ -211,6 +213,8 @@ export type ActEvent =
   | { t: number; k: 'yaka'; m: number; life: number; spd: number; hitCd: number; pic?: string; picW?: number; picRot?: number; col: string; el?: Element; st?: StatusId }
   /** 가까운 적 n명의 자리에 마법진(pic)을 새기고 delay 프레임 뒤 그 자리에서 폭발(반경 r, 공격력 m) */
   /** feet: 그림을 적 발밑에서 피어나게 (그림 아래를 발에서 feet만큼 아래에 맞춤, 회전 없음), picW: 그 그림 너비 */
+  /** 룰렛: 머리 위에서 wheel 그림이 spin 프레임 돌고 결과(×7·×4·×1·×1/4·×1/7, 각 1/5)에 따라 그 배율의 카드(p)를 정해진 장수만큼 가까운 적들에게 던진다 */
+  | { t: number; k: 'roulette'; p: ProjDef; m: number; spin: number; wheel: string }
   | { t: number; k: 'marks'; n: number; range: number; r: number; m: number; delay: number; pic: string; boom?: string; el?: Element; st?: StatusId; col?: string; feet?: number; picW?: number };
 
 export interface ActionDef {

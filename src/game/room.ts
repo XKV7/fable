@@ -558,6 +558,26 @@ export class Room {
           if (e.dead || p.hit.has(e) || e.state === 'spawn' || !overlap(e.b, r)) continue;
           p.hit.add(e);
           const d = p.def;
+          if (d.gamble) {
+            // 도박 카드: 폭발 / 1/10 / 대박(big배) 중 하나 (각 1/3)
+            const roll = Math.floor(Math.random() * 3);
+            const hit = { kind: p.kind, el: d.el, st: d.st, kb: d.kb ?? 1.5, up: d.up ?? 0, hs: d.hs ?? 2, dir: Math.sign(p.vx) || 1 };
+            if (roll === 0) {
+              this.nova(p.x, p.y, d.gamble.r, p.mult * d.gamble.boom, p.kind, d.el, d.st, -2, d.col);
+              if (d.boomPic) this.fx.pic(d.boomPic.name, p.x, p.y, d.boomPic.s0, d.boomPic.s1, d.boomPic.life);
+              this.toastWorld(e.cx, e.b.y - 14, '폭발!', '#ffd040');
+              this.cam.shake(3, 8);
+            } else if (roll === 1) {
+              this.damageEnemy(e, { ...hit, m: p.mult * 0.1 });
+              this.toastWorld(e.cx, e.b.y - 14, '꽝…', '#a0a0a0');
+            } else {
+              this.damageEnemy(e, { ...hit, m: p.mult * d.gamble.big });
+              this.toastWorld(e.cx, e.b.y - 14, `${Math.round(d.gamble.big * 100)}%!`, '#80ff80');
+              this.cam.shake(4, 8);
+            }
+            p.dead = true;
+            break;
+          }
           this.damageEnemy(e, { m: p.mult, kind: p.kind, el: d.el, st: d.st, stn: d.stn, kb: d.kb ?? 1.5, up: d.up ?? 0, hs: d.hs ?? 2, dir: Math.sign(p.vx) || 1, proc: p.kind === 'proc' });
           if (p.pierceLeft-- <= 0) {
             p.die(this);
@@ -880,6 +900,40 @@ export class Room {
         this.yaka = { x: p.cx + f * 12, y: p.cy - 6, ang: f > 0 ? 0 : Math.PI, t: 0, ev, m: ev.m * dm, kind: this.kindOf(k), tgt: null, cd: new Map(), trail: [], hits: 0 };
         audio.play('arrow', 0.6);
         this.flash(ev.col, 0.25);
+        break;
+      }
+      case 'roulette': {
+        // 룰렛을 돌리고, 결과에 따라 배율·장수가 정해진 카드를 가까운 적들에게 던진다
+        const OUT = [
+          { mul: 7, n: 7, label: '×7 잭팟!', col: '#ffe040' },
+          { mul: 4, n: 5, label: '×4 대박!', col: '#a0ff60' },
+          { mul: 1, n: 3, label: '×1', col: '#ffffff' },
+          { mul: 1 / 4, n: 2, label: '×1/4…', col: '#a0a0b0' },
+          { mul: 1 / 7, n: 1, label: '×1/7 꽝', col: '#808090' },
+        ];
+        const o = OUT[Math.floor(Math.random() * OUT.length)];
+        const kind = this.kindOf(k);
+        this.fx.pic(ev.wheel, p.cx, p.b.y - 26, 20, 46, ev.spin + 14, 0.35);
+        this.later(ev.spin, () => {
+          const pl = this.player;
+          this.toastWorld(pl.cx, pl.b.y - 30, o.label, o.col);
+          audio.play(o.mul >= 4 ? 'gem' : 'select');
+          if (o.mul >= 4) this.flash(o.col, 0.25);
+          for (let i = 0; i < o.n; i++) {
+            this.later(i * 3, () => {
+              const q = this.player;
+              const tg = this.allEnemies()
+                .filter((e) => !e.dead && e.state !== 'spawn' && Math.hypot(e.cx - q.cx, e.cy - q.cy) <= 300)
+                .sort((a, b) => Math.hypot(a.cx - q.cx, a.cy - q.cy) - Math.hypot(b.cx - q.cx, b.cy - q.cy));
+              const e = tg[i % Math.max(1, tg.length)];
+              const sx = q.cx + q.facing * 8;
+              const sy = q.cy - 6;
+              const ang = e ? Math.atan2(e.cy - sy, e.cx - sx) + (Math.random() - 0.5) * 0.15 : (q.facing > 0 ? 0 : Math.PI) + (i - (o.n - 1) / 2) * 0.12;
+              this.addProj('player', ev.p, sx, sy, ang, ev.m * dm * o.mul, kind);
+              audio.play('throw', 1.2);
+            });
+          }
+        });
         break;
       }
       case 'marks': {

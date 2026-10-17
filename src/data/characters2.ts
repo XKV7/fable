@@ -1000,6 +1000,79 @@ export const CHARACTERS_EX: CharDef[] = [
     ],
   },
   {
+    // 컨셉아트: 「행운의 도박사」 — 검은 모자·코트, 카드(손패)·룰렛 휠. 카드 투척 원거리.
+    // 스프라이트는 전용 시트(sheets/gambler). 역할: 룰렛 결과(×7·×4·×1·×1/4·×1/7)대로 배율·장수가 정해지는 카드 투척 · 결과가 셋 중 하나인 도박 카드
+    id: 'gambler', name: '잭', title: '행운의 도박사', rarity: 6, type: 'ranged', crest: 'swift',
+    lore: '「…운은 준비된 자에게만 미소 짓지. 자, 판을 흔들어볼까?」 모든 것을 걸고 판을 뒤집는 도박사. 그의 카드는 언제나, 가장 중요한 순간에 뒤집힌다.',
+    atk: 60, hp: 215, speed: 2.15, fx: '#a0ff60',
+    look: { skin: '#f4ecf0', hair: '#e8e8e8', hairStyle: 'hood', body: '#141814', trim: '#d0c040', legs: '#101210', boots: '#1a1a14', cape: '#2a4a20', eye: '#a0ff60', weapon: 'talisman', wcol: '#f0f0e0', wcol2: '#2a6a20', build: 'slim', glow: '#a0ff60' },
+    combo: [
+      shot({ dur: 12, t: 4, m: 0.8, p: { spr: 'arrow', spd: 8, life: 50, w: 10, h: 8, col: '#e0ffc0', pic: { name: 'gambler:card', w: 8, spin: 0.35 } }, w: 'shootWind', s: 'shoot', sfx: 'throw' }),
+      shot({ dur: 12, t: 4, m: 0.55, n: 2, spread: 10, p: { spr: 'arrow', spd: 8, life: 50, w: 10, h: 8, col: '#e0ffc0', pic: { name: 'gambler:card', w: 8, spin: 0.35 } }, w: 'shootWind', s: 'shoot', sfx: 'throw' }),
+      shot({ dur: 20, t: 7, m: 0.5, n: 3, spread: 12, p: { spr: 'arrow', spd: 8, life: 60, w: 10, h: 8, col: '#a0ff60', pierce: 1, pic: { name: 'gambler:card', w: 8, spin: 0.35 } }, w: 'windHigh', s: 'throw', sfx: 'throw' }),
+    ],
+    air: shot({ dur: 14, t: 4, m: 0.8, p: { spr: 'arrow', spd: 8, life: 50, w: 10, h: 8, col: '#e0ffc0', pic: { name: 'gambler:card', w: 8, spin: 0.35 } }, w: 'shootWind', s: 'shoot', sfx: 'throw', air: true }),
+    dashAtk: shot({ dur: 18, t: 6, m: 1.2, p: { spr: 'arrow', spd: 9, life: 50, w: 12, h: 8, col: '#a0ff60', pierce: 3, pic: { name: 'gambler:card', w: 8, spin: 0.35 } }, w: 'shootWind', s: 'shoot', sfx: 'throw' }),
+    skills: [
+      {
+        name: '운명의 룰렛',
+        desc: '머리 위의 룰렛을 돌린다. 결과(각 1/5)에 따라 카드의 배율과 장수가 정해진다 — ×7 잭팟 7장 · ×4 5장 · ×1 3장 · ×1/4 2장 · ×1/7 1장 (카드 1장 기본 100%, 가까운 적들에게 투척).',
+        cd: 9,
+        act: {
+          dur: 44,
+          pose: [[0, 'castUp'], [30, 'throw']],
+          armor: true,
+          ev: [
+            { t: 0, k: 'sfx', s: 'cast' },
+            { t: 2, k: 'roulette', spin: 28, wheel: 'gambler:wheel', m: 1.0, p: { spr: 'arrow', spd: 8.5, life: 70, w: 12, h: 8, col: '#ffe040', pierce: 1, pic: { name: 'gambler:card', w: 9, spin: 0.35 } } },
+          ],
+        },
+      },
+      {
+        name: '도박 카드',
+        desc: '카드 한 장을 던진다. 맞는 순간 결과가 정해진다 (각 1/3): 폭발 170% · 피해 10% · 대박 1000%.',
+        cd: 4,
+        act: {
+          dur: 18,
+          pose: [[0, 'shootWind'], [6, 'throw']],
+          ev: [
+            { t: 6, k: 'proj', m: 1.0, dx: 10, dy: -6, p: { spr: 'arrow', spd: 8, life: 70, w: 12, h: 10, col: '#a0ff60', gamble: { boom: 1.7, r: 34, big: 10 }, boomPic: { name: 'gambler:burst', s0: 16, s1: 70, life: 14 }, pic: { name: 'gambler:card', w: 11, spin: 0.3 } } },
+            { t: 6, k: 'sfx', s: 'throw' },
+          ],
+        },
+      },
+    ],
+    swap: {
+      name: '교대: 올인',
+      desc: '카드를 흩뿌리며 등장해 주변을 터뜨린다 (공격력 360%).',
+      act: {
+        dur: 30,
+        pose: [[0, 'castUp'], [14, 'throw']],
+        inv: [0, 18],
+        ev: [
+          { t: 2, k: 'sfx', s: 'cast' },
+          { t: 2, k: 'pic', name: 'gambler:wheel', dx: 0, dy: -10, s0: 30, s1: 90, life: 22, spin: 0.2 },
+          { t: 14, k: 'pic', name: 'gambler:burst', dx: 0, dy: -10, s0: 50, s1: 140, life: 20 },
+          { t: 14, k: 'nova', r: 74, m: 3.6, up: -3, col: '#a0ff60' },
+          { t: 14, k: 'shake', v: 6 },
+          { t: 14, k: 'sfx', s: 'explode' },
+        ],
+      },
+    },
+    passive: {
+      name: '승부사의 감',
+      desc: '치명타 확률 +15%, 치명타 피해 +40%, 공격 속도 +10%.',
+      effects: [{ stats: { crit: 0.15, critDmg: 0.4, aspd: 0.1 } }],
+    },
+    awaken: [
+      { desc: '운명의 룰렛 피해 +40%', mods: [{ target: 'skill1', dmg: 0.4 }] },
+      { desc: '도박 카드 쿨타임 -1초', mods: [{ target: 'skill2', cd: 1 }] },
+      { desc: '공격력 +10%', effects: [{ stats: { atk: 0.1 } }] },
+      { desc: '올인 피해 +60%', mods: [{ target: 'swap', dmg: 0.6 }] },
+      { desc: '모든 기술 피해 +35%, 스킬 쿨타임 -10%', mods: [{ target: 'all', dmg: 0.35 }], effects: [{ stats: { cdr: 0.1 } }] },
+    ],
+  },
+  {
     // 컨셉아트: 「바람의 잎사귀를 짓는 자」 — 후드 망토, 바람의 활·바람의 화살촉·활집. 궁수(원거리, 유도 화살).
     // 스프라이트는 전용 시트(sheets/arien). ★6 첫 궁극기(X): 모든 적을 꿰뚫으며 쫓아가는 화살 하나 (야카 화살)
     id: 'arien', name: '아리엔', title: '바람의 잎사귀를 짓는 자', rarity: 6, type: 'ranged', crest: 'swift',

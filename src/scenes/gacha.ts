@@ -29,6 +29,9 @@ const BANNERS: BannerKind[] = ['pickup', 'char', 'weapon'];
 const PICK5 = (): typeof CHARACTERS => CHARACTERS.filter((c) => c.rarity === 5);
 const PICK4 = (): typeof CHARACTERS => CHARACTERS.filter((c) => c.rarity === 4);
 
+/** [디버그] 픽업 선택 창 한 줄 칸 수 */
+const PK_COLS = 9;
+
 export class GachaScene implements Scene {
   banner = 0;
   btn = 1;
@@ -376,10 +379,28 @@ export class GachaScene implements Scene {
       return;
     }
     const rowLen = (r: number): number => (r === 0 ? PICK5().length : r === 1 ? PICK4().length : 3);
-    const prevRow = pk.row;
-    if (inp.menu('mup')) pk.row = (pk.row + 2) % 3;
-    if (inp.menu('mdown')) pk.row = (pk.row + 1) % 3;
-    if (pk.row !== prevRow) pk.col = pk.row === 2 ? 0 : Math.min(pk.col, rowLen(pk.row) - 1);
+    // ★5·★4 목록은 PK_COLS칸씩 여러 줄(격자): 위아래는 목록 안에서 한 줄씩, 끝에서 다음 구역으로
+    const C = PK_COLS;
+    if (inp.menu('mdown')) {
+      if (pk.row < 2 && pk.col + C < rowLen(pk.row)) pk.col += C;
+      else {
+        const c = pk.col % C;
+        pk.row = (pk.row + 1) % 3;
+        pk.col = pk.row === 2 ? 0 : Math.min(c, rowLen(pk.row) - 1);
+      }
+    }
+    if (inp.menu('mup')) {
+      if (pk.row < 2 && pk.col - C >= 0) pk.col -= C;
+      else {
+        const c = pk.row === 2 ? 0 : pk.col % C;
+        pk.row = (pk.row + 2) % 3;
+        if (pk.row < 2) {
+          const n = rowLen(pk.row);
+          const last = Math.floor((n - 1) / C) * C;
+          pk.col = Math.min(last + c, n - 1);
+        } else pk.col = 0;
+      }
+    }
     if (inp.menu('mleft')) pk.col--;
     if (inp.menu('mright')) pk.col++;
     pk.col = (pk.col + rowLen(pk.row)) % rowLen(pk.row);
@@ -432,25 +453,38 @@ export class GachaScene implements Scene {
     panel(g, 36, 18, 408, 230, { border: '#80ffa0' });
     text(g, '[디버그] 픽업 직접 선택', 46, 24, { size: 10, color: '#80ffa0', bold: true });
     text(g, app.save.pickupOverride ? '현재: 직접 지정' : '현재: 자동 로테이션', 434, 27, { size: 6, align: 'right', color: '#a8a0c0' });
-    const cell = (c: { id: string; name: string; rarity: Rarity }, x: number, y: number, w: number, on: boolean, cur: boolean, hid: string): void => {
+    // 칸: 9칸씩 줄바꿈하는 격자 (영웅이 늘어도 옆으로 넘치지 않게)
+    const CW = 41;
+    const CH = 38;
+    const cell = (c: { id: string; name: string; rarity: Rarity }, x: number, y: number, on: boolean, cur: boolean, hid: string): void => {
       g.fillStyle = on ? rgba(RARITY_COL[c.rarity], 0.4) : 'rgba(255,255,255,0.05)';
-      g.fillRect(x, y, w, 46);
+      g.fillRect(x, y, CW, CH);
       g.strokeStyle = cur ? '#ffffff' : on ? RARITY_COL[c.rarity] : '#3a3048';
-      g.strokeRect(x + 0.5, y + 0.5, w - 1, 45);
-      g.drawImage(charArt(c.id, on ? 'castUp' : 'idle0'), x + w / 2 - 24, y - 12, 48, 48);
-      text(g, c.name, x + w / 2, y + 36, { size: 6, align: 'center', color: on ? '#ffe080' : '#ffffff', maxW: w - 2 });
-      if (on) text(g, '✔', x + w - 3, y + 2, { size: 6, align: 'right', color: '#80ffa0', bold: true });
-      hot.add(hid, x, y, w, 46);
+      g.strokeRect(x + 0.5, y + 0.5, CW - 1, CH - 1);
+      g.save();
+      g.beginPath();
+      g.rect(x + 1, y + 1, CW - 2, CH - 2);
+      g.clip();
+      g.drawImage(charArt(c.id, on ? 'castUp' : 'idle0'), x + CW / 2 - 20, y - 10, 40, 40);
+      g.restore();
+      text(g, c.name, x + CW / 2, y + 29, { size: 5, align: 'center', color: on ? '#ffe080' : '#ffffff', maxW: CW - 2 });
+      if (on) text(g, '✔', x + CW - 3, y + 2, { size: 6, align: 'right', color: '#80ffa0', bold: true });
+      hot.add(hid, x, y, CW, CH);
     };
-    text(g, '★5 픽업 (1명)', 46, 42, { size: 7, color: RARITY_COL[5] });
-    PICK5().forEach((c, i) => cell(c, 46 + i * 52, 54, 48, pk.five === c.id, pk.row === 0 && pk.col === i, `pk5:${i}`));
-    text(g, `★4 픽업 (2명) — ${pk.four.length}/2`, 46, 108, { size: 7, color: RARITY_COL[4] });
-    PICK4().forEach((c, i) => cell(c, 46 + i * 43, 120, 41, pk.four.includes(c.id), pk.row === 1 && pk.col === i, `pk4:${i}`));
+    const grid = (list: { id: string; name: string; rarity: Rarity }[], y0: number, row: number, on: (id: string) => boolean, hp: string): number => {
+      list.forEach((c, i) => cell(c, 46 + (i % PK_COLS) * (CW + 2), y0 + Math.floor(i / PK_COLS) * (CH + 2), on(c.id), pk.row === row && pk.col === i, `${hp}:${i}`));
+      return y0 + Math.ceil(list.length / PK_COLS) * (CH + 2);
+    };
+    text(g, '★5 픽업 (1명)', 46, 40, { size: 7, color: RARITY_COL[5] });
+    let y = grid(PICK5(), 50, 0, (id) => pk.five === id, 'pk5');
+    text(g, `★4 픽업 (2명) — ${pk.four.length}/2`, 46, y + 2, { size: 7, color: RARITY_COL[4] });
+    y = grid(PICK4(), y + 12, 1, (id) => pk.four.includes(id), 'pk4');
+    const by = Math.min(212, y + 6);
     ['적용', '자동 로테이션 복귀', '취소'].forEach((l, i) => {
-      button(g, 70 + i * 116, 184, 108, 22, l, pk.row === 2 && pk.col === i, { col: i === 0 ? '#80ffa0' : '#9ef0ff' });
-      hot.add(`pkb:${i}`, 70 + i * 116, 184, 108, 22);
+      button(g, 70 + i * 116, by, 108, 20, l, pk.row === 2 && pk.col === i, { col: i === 0 ? '#80ffa0' : '#9ef0ff' });
+      hot.add(`pkb:${i}`, 70 + i * 116, by, 108, 20);
     });
-    text(g, '천장 카운트는 그대로 유지된다', 240, 214, { size: 6, align: 'center', color: '#8a8098' });
+    text(g, '천장 카운트는 그대로 유지된다', 240, by + 23, { size: 6, align: 'center', color: '#8a8098' });
     keyHint(g, [['방향키', '이동'], [app.input.label('attack'), '선택'], ['Esc', '취소']]);
   }
 

@@ -580,7 +580,7 @@ export const CHARACTERS_EX: CharDef[] = [
     ult: {
       name: '잿불 성흔우',
       desc: '하늘 가득 성흔 구체 16개를 띄우고, 구체마다 붉은 창 3자루씩(모두 48자루)을 가까운 적들에게 사출한다 (각 110% + 폭발 60%, 화상). 시전 중 경직 무시.',
-      cd: 30,
+      cd: 60,
       act: {
         dur: 76,
         armor: true,

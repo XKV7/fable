@@ -115,7 +115,17 @@ export class RunScene implements Scene {
     const bossId = node.type === 'boss' ? ch.boss : undefined;
     const prevRoom = this.room as Room | undefined;
     this.room = new Room({ template: this.template(node.type), chapter: ch, mode: 'run', type: node.type, next: node.next, depth: node.layer, bossId }, run, app.save);
-    if (prevRoom) this.room.combo = 0;
+    if (prevRoom) {
+      this.room.combo = 0;
+      // 스킬·궁극기·교대 쿨타임은 방을 넘어가도 이어진다
+      const a = prevRoom.player;
+      const b = this.room.player;
+      b.skillCd = [...a.skillCd];
+      b.skillMax = [...a.skillMax];
+      b.ultCd = a.ultCd;
+      b.ultMax = a.ultMax;
+      b.swapCd = a.swapCd;
+    }
     this.room.debug = app.debug;
     this.room.showHitboxes = app.debug;
     this.room.god = prevRoom?.god ?? false;
